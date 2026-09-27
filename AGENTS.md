@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Default branch: **main**. Environment config: `.cursor/environment.json` → `scripts/cloud-agent-install.sh`.
 - **Secrets** (Cursor environment panel, never commit): `DATABASE_URL` (RDS writer, `sslmode=require`), `AUTH_SECRET`. Admin login is **database-only** (`Admin` table); no env-file password fallback.
-- RDS writer host: `database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`, database `shiv-dental-clinic`, user `admin`.
+- RDS host: `shiv-dental-clinic.c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`, database `postgres`, user `admin`. Instance must be **PostgreSQL**, **publicly accessible**, SG allows 5432.
 - Verify DB: `npx tsx scripts/test-rds-pool.ts` or `npm run db:setup` (push + seed). Health: `/api/health/db`, `/api/health/config`.
 - Dev: `npm run dev` (terminal). Production build: `NODE_OPTIONS=--max-old-space-size=8192 npm run build`. Cloudflare: `npm run cf:build` / `npm run deploy` (see `CLOUDFLARE.md`).
 - If RDS returns `PAM authentication failed` / `28P01`: disable IAM DB auth on the cluster or reset the master password and allow inbound **5432** on the RDS security group for agent egress IPs.

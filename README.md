@@ -11,9 +11,9 @@ Production-style dental clinic software: premium patient website, online booking
 
 ## AWS RDS
 
-Writer endpoint (use in `DATABASE_URL`):
+RDS endpoint (use in `DATABASE_URL`; must be **Aurora/PostgreSQL**, not MySQL):
 
-`database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`
+`shiv-dental-clinic.c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`
 
 Read replica (optional):
 

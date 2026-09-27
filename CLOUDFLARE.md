@@ -48,7 +48,7 @@ Set in **Workers & Pages → your project → Settings → Variables** for **Pro
 
 | Variable | Required | Example |
 |----------|----------|---------|
-| `DATABASE_URL` | Yes | `postgresql://admin:****@database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432/shiv-dental-clinic?schema=public&sslmode=require` |
+| `DATABASE_URL` | Yes | `postgresql://admin:****@shiv-dental-clinic.c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432/postgres?schema=public&sslmode=require` |
 | `AUTH_SECRET` | Yes | `openssl rand -base64 32` output |
 | `AUTH_URL` | Yes | `https://shive-dental-clinics.<account>.workers.dev` (your live site URL) |
 | `NEXTAUTH_URL` | Yes | same as `AUTH_URL` |
@@ -63,6 +63,18 @@ From repo root (after `wrangler login` or `CLOUDFLARE_API_TOKEN`):
 npm run secrets:cloudflare
 npm run deploy
 ```
+
+### API token permissions (required)
+
+The token you create must **not** be R2-only. Use **Create Custom Token** with at least:
+
+- **Account** → **Workers Scripts** → **Edit**
+- **Account** → **Workers Secrets Store** → **Edit** (or **Workers Scripts** → Edit covers secrets on many accounts)
+
+Account ID (this project): `b82993580bed27dbe1dae142d07fa7e7`  
+Worker name: `shive-dental-clinics`
+
+If deploy returns *No access to the specified resource*, the token is missing **Workers Scripts Edit**.
 
 Until RDS works, login uses **ADMIN_LOGIN_ID** + **ADMIN_PASSWORD** from Cloudflare secrets. After RDS works, run `npm run admin:reset` and DB login takes over.
 

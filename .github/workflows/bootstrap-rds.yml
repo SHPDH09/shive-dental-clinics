@@ -1,0 +1,25 @@
+name: Bootstrap RDS (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Push schema and seed admin
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_LOGIN_ID: 1A74N3077
+          ADMIN_EMAIL: rk331159@gmail.com
+          ADMIN_PASSWORD: Raunak@12583
+        run: |
+          test -n "$DATABASE_URL"
+          npm run db:setup
+          npm run admin:reset
