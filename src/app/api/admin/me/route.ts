@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { resolveAdminDbId } from "@/lib/admin-resolve-id";
 import { requireAdminContext } from "@/lib/api-auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import { mergePermissions, roleLabel } from "@/lib/rbac/permissions";
@@ -45,13 +46,24 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
     }
 
+    const adminDbId = await resolveAdminDbId(session!.user.id, session!.user.email);
+    if (!adminDbId) {
+      return NextResponse.json(
+        {
+          error:
+            "Admin account not linked to this session — sign out and sign in with your current admin email.",
+        },
+        { status: 404 },
+      );
+    }
+
     let hash: string | null = null;
     if (canUseSupabaseDataLayer()) {
-      const row = await findAdminById(session!.user.id);
+      const row = await findAdminById(adminDbId);
       hash = row?.passwordHash ?? null;
     } else {
       const row = await prisma.admin.findUnique({
-        where: { id: session!.user.id },
+        where: { id: adminDbId },
         select: { passwordHash: true },
       });
       hash = row?.passwordHash ?? null;
@@ -63,20 +75,20 @@ export async function PATCH(req: Request) {
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
     if (canUseSupabaseDataLayer()) {
-      await updateAdminRow(session!.user.id, { passwordHash });
+      await updateAdminRow(adminDbId, { passwordHash });
     } else {
       await prisma.admin.update({
-        where: { id: session!.user.id },
+        where: { id: adminDbId },
         data: { passwordHash },
       });
     }
 
     await writeAdminAudit({
-      adminId: session!.user.id,
+      adminId: adminDbId,
       adminName: session!.user.name ?? "Admin",
       action: "PASSWORD_CHANGE",
       entityType: "admin",
-      entityId: session!.user.id,
+      entityId: adminDbId,
     });
 
     return NextResponse.json({ ok: true });
@@ -95,20 +107,31 @@ export async function PATCH(req: Request) {
   }
 
   try {
+    const adminDbId = await resolveAdminDbId(session!.user.id, session!.user.email);
+    if (!adminDbId) {
+      return NextResponse.json(
+        {
+          error:
+            "Admin account not linked to this session — sign out and sign in with your current admin email.",
+        },
+        { status: 404 },
+      );
+    }
+
     if (canUseSupabaseDataLayer()) {
-      const updated = await updateAdminRow(session!.user.id, data);
+      const updated = await updateAdminRow(adminDbId, data);
       await writeAdminAudit({
-        adminId: session!.user.id,
+        adminId: adminDbId,
         adminName: session!.user.name ?? "Admin",
         action: "UPDATE",
         entityType: "profile",
-        entityId: session!.user.id,
+        entityId: adminDbId,
       });
       return NextResponse.json(updated);
     }
 
     const updated = await prisma.admin.update({
-      where: { id: session!.user.id },
+      where: { id: adminDbId },
       data,
       select: {
         id: true,
@@ -120,11 +143,11 @@ export async function PATCH(req: Request) {
     });
 
     await writeAdminAudit({
-      adminId: session!.user.id,
+      adminId: adminDbId,
       adminName: session!.user.name ?? "Admin",
       action: "UPDATE",
       entityType: "profile",
-      entityId: session!.user.id,
+      entityId: adminDbId,
     });
 
     return NextResponse.json(updated);

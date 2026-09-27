@@ -3,6 +3,7 @@ import { decode } from "next-auth/jwt";
 import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
 import {
   can,
+  mergePermissions,
   type PermissionAction,
   type PermissionResource,
 } from "@/lib/rbac/permissions";
@@ -98,8 +99,8 @@ export async function requirePermission(
   const { session, admin, error } = await requireAdminContext();
   if (error) return { session: null, admin: null, error };
 
-  const matrix = admin?.permissions;
-  if (!matrix || !can(matrix, resource, action)) {
+  const matrix = admin?.permissions ?? mergePermissions(session!.user.role, null);
+  if (!can(matrix, resource, action)) {
     return {
       session: null,
       admin: null,

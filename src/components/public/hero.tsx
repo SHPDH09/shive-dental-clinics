@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import type { PublicHeroSlide } from "@/lib/hero-slides";
+import { HeroCarousel } from "@/components/public/hero-carousel";
 
 type Stat = { label: string; value: string };
 
 type HeroProps = {
   clinicName: string;
   stats: Stat[];
+  slides?: PublicHeroSlide[];
 };
 
-export function HeroSection({ clinicName, stats }: HeroProps) {
+export function HeroSection({ clinicName, stats, slides = [] }: HeroProps) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-sky-50 via-white to-cyan-50">
       <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
@@ -41,12 +44,7 @@ export function HeroSection({ clinicName, stats }: HeroProps) {
 
         <div className="relative">
           <div className="card-premium overflow-hidden p-2">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-sky-600 to-teal-500">
-              <div className="absolute inset-0 flex flex-col justify-end p-8 text-white">
-                <p className="text-sm font-medium text-sky-100">Your trusted dental partner</p>
-                <p className="mt-1 text-2xl font-bold">Comfort-first dentistry</p>
-              </div>
-            </div>
+            <HeroCarousel slides={slides} />
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {stats.map((s) => (

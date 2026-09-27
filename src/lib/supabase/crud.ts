@@ -26,6 +26,7 @@ export type SupabaseModelName =
   | "Enquiry"
   | "MessageTemplate"
   | "HeroStat"
+  | "HeroSlide"
   | "Notification"
   | "Branch"
   | "Admin";
@@ -43,6 +44,7 @@ const modelToTable: Record<string, SupabaseModelName> = {
   enquiry: "Enquiry",
   messageTemplate: "MessageTemplate",
   heroStat: "HeroStat",
+  heroSlide: "HeroSlide",
   notification: "Notification",
   branch: "Branch",
 };
@@ -85,6 +87,8 @@ export async function supabaseList(
 
   if (table === "ServiceCategory") {
     query = query.order("sortOrder", { ascending: true }).order("name", { ascending: true }).range(from, to);
+  } else if (table === "HeroSlide") {
+    query = query.order("sortOrder", { ascending: true }).range(from, to);
   } else {
     const orderCol = table === "HeroStat" ? "updatedAt" : "createdAt";
     query = query.order(orderCol, { ascending: false }).range(from, to);
@@ -101,12 +105,13 @@ export async function supabaseCreate(model: string, data: Record<string, unknown
   const row: Record<string, unknown> = {
     id: (data.id as string) ?? createId(),
     ...data,
-    updatedAt: data.updatedAt ?? now,
   };
   if (table !== "HeroStat" && table !== "Notification") {
     row.createdAt = data.createdAt ?? now;
-  }
-  if (table === "Notification") {
+    row.updatedAt = data.updatedAt ?? now;
+  } else if (table === "HeroStat") {
+    row.updatedAt = data.updatedAt ?? now;
+  } else if (table === "Notification") {
     row.createdAt = data.createdAt ?? now;
   }
 

@@ -44,6 +44,8 @@ async function main() {
   await runFile(client, "supabase/migration-branches-premium.sql");
   await runFile(client, "supabase/migration-services-premium.sql");
   await runFile(client, "supabase/migration-settings-premium.sql");
+  await runFile(client, "supabase/migration-messages-premium.sql");
+  await runFile(client, "supabase/migration-hero-slides.sql");
   await runFile(client, "supabase/rls-authenticated-admin.sql");
   await client.query(`NOTIFY pgrst, 'reload schema';`);
 

@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { AdminHeader } from "@/components/admin/admin-header";
-import { AdminSidebar } from "@/components/admin/sidebar";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -11,13 +10,5 @@ export default async function AdminPanelLayout({ children }: { children: React.R
     redirect("/admin/login?callbackUrl=/admin");
   }
 
-  return (
-    <div className="flex min-h-screen bg-slate-50">
-      <AdminSidebar />
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <AdminHeader />
-        <div className="flex-1 p-4 md:p-8">{children}</div>
-      </div>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

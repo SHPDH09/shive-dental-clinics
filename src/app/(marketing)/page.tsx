@@ -10,6 +10,7 @@ import { BeforeAfterSection } from "@/components/public/before-after-section";
 import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
+import { getPublicHeroSlides } from "@/lib/hero-slides";
 import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
   getPublicBeforeAfter,
@@ -23,10 +24,11 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, branches, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
+  const [settings, stats, heroSlides, services, branches, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
+    getPublicHeroSlides(),
     getPublicServices(),
     getPublicBranches(),
     getFeaturedDoctor(),
@@ -45,7 +47,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroSection clinicName={settings.clinicName} stats={stats} />
+      <HeroSection clinicName={settings.clinicName} stats={stats} slides={heroSlides} />
       <section id="book" className="-mt-6 pb-8 md:-mt-10">
         <div className="mx-auto max-w-4xl px-4 md:px-6">
           <div className="card-premium p-6 md:p-8">
