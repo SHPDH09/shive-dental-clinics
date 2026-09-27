@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Clock, MapPin, Phone } from "lucide-react";
 import type { PublicBranch } from "@/lib/public-branch-types";
 
 export type FooterBranch = PublicBranch;
@@ -73,23 +73,18 @@ export function PublicFooter({
         </div>
 
         <div>
-          <p className="font-semibold text-white">Head office</p>
+          <p className="font-semibold text-white">Contact us</p>
           <ul className="mt-4 space-y-3 text-sm">
-            <li className="flex gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
-              <span>{address}</span>
-            </li>
             <li className="flex gap-2">
               <Phone className="h-4 w-4 shrink-0 text-sky-400" />
               <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-white">
                 {phone}
               </a>
             </li>
-            <li className="flex gap-2">
-              <Mail className="h-4 w-4 shrink-0 text-sky-400" />
-              <a href={`mailto:${email}`} className="hover:text-white">
-                {email}
-              </a>
+            <li>
+              <Link href="/contact" className="font-medium text-sky-400 hover:text-white">
+                Send a message →
+              </Link>
             </li>
           </ul>
         </div>
