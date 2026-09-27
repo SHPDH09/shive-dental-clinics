@@ -1,10 +1,12 @@
+import { createId } from "@paralleldrive/cuid2";
 import { requireAdminSession } from "@/lib/api-auth";
 import { createCrudHandlers } from "@/lib/crud-route";
 import { prisma } from "@/lib/prisma";
-import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
+import { getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
+import { useSupabaseCrud } from "@/lib/supabase/crud";
+import { errorMessageFromUnknown, mapSupabaseErrorMessage } from "@/lib/supabase/errors";
 import { serviceCategorySchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const listHandlers = createCrudHandlers("serviceCategory", { searchFields: ["name", "slug"] });
 
@@ -57,32 +59,45 @@ export async function POST(req: Request) {
 
   if (useSupabaseCrud()) {
     try {
-      const sb = createSupabaseServiceClient();
-      const { data: existing } = await sb.from("ServiceCategory").select("id").eq("slug", slug).maybeSingle();
+      const sb = await getAdminWriteSupabaseClient();
+      const { data: existing } = await sb
+        .from("ServiceCategory")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
       if (existing) {
-        return NextResponse.json({ error: "Category slug already exists — try another name." }, { status: 409 });
+        return NextResponse.json(
+          { error: "Category slug already exists — try another name." },
+          { status: 409 },
+        );
       }
-      const item = await supabaseCreate("serviceCategory", {
-        name,
-        slug,
-        sortOrder,
-      });
+
+      const now = new Date().toISOString();
+      const { data: item, error: insertError } = await sb
+        .from("ServiceCategory")
+        .insert({
+          id: createId(),
+          name,
+          slug,
+          sortOrder,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        const msg = mapSupabaseErrorMessage(insertError.message);
+        console.error("POST service-category insert:", insertError);
+        const status = /permission|RLS|42501/i.test(insertError.message) ? 403 : 400;
+        return NextResponse.json({ error: msg }, { status });
+      }
+
       return NextResponse.json(item, { status: 201 });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not create category";
+      const raw = errorMessageFromUnknown(e);
+      const msg = mapSupabaseErrorMessage(raw);
       console.error("POST service-category (Supabase):", e);
-      if (/relation|does not exist/i.test(msg)) {
-        return NextResponse.json(
-          { error: "ServiceCategory table missing — run supabase/migration-services-premium.sql" },
-          { status: 503 },
-        );
-      }
-      if (/permission|policy|RLS/i.test(msg)) {
-        return NextResponse.json(
-          { error: "Database permission denied — run supabase/rls-authenticated-admin.sql (includes ServiceCategory)" },
-          { status: 403 },
-        );
-      }
       return NextResponse.json({ error: msg }, { status: 400 });
     }
   }
@@ -94,6 +109,9 @@ export async function POST(req: Request) {
     return NextResponse.json(item, { status: 201 });
   } catch (e) {
     console.error("POST service-category (Prisma):", e);
-    return NextResponse.json({ error: "Could not create category (duplicate slug?)" }, { status: 400 });
+    return NextResponse.json(
+      { error: mapSupabaseErrorMessage(errorMessageFromUnknown(e)) },
+      { status: 400 },
+    );
   }
 }
