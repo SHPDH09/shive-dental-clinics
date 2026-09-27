@@ -183,17 +183,55 @@ export const serviceCategorySchema = z.object({
   sortOrder: z.number().optional(),
 });
 
-export const adminCreateSchema = z.object({
-  loginId: z
-    .string()
-    .min(4, "Admin ID at least 4 characters")
-    .max(32)
-    .regex(/^[A-Za-z0-9]+$/, "Admin ID: letters and numbers only"),
-  name: z.string().min(2),
-  email: z.string().email().optional().or(z.literal("")),
-  password: z.string().min(8, "Password at least 8 characters"),
-  role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
-});
+const adminPasswordSchema = z
+  .string()
+  .min(8, "Password at least 8 characters")
+  .regex(/[A-Z]/, "Include an uppercase letter")
+  .regex(/[a-z]/, "Include a lowercase letter")
+  .regex(/[0-9]/, "Include a number");
+
+const adminPhoneSchema = z
+  .string()
+  .regex(/^(\+91[\s-]?)?[6-9]\d{9}$/, "Enter a valid Indian mobile number")
+  .optional()
+  .or(z.literal(""));
+
+export const adminCreateSchema = z
+  .object({
+    loginId: z
+      .string()
+      .min(4, "Admin ID at least 4 characters")
+      .max(32)
+      .regex(/^[A-Za-z0-9]+$/, "Admin ID: letters and numbers only")
+      .optional(),
+    name: z.string().min(2, "Full name is required"),
+    email: z.string().email("Valid email is required"),
+    phone: z
+      .string()
+      .min(10)
+      .regex(/^(\+91[\s-]?)?[6-9]\d{9}$/, "Enter a valid Indian mobile number"),
+    profilePhotoUrl: z.string().url().optional().or(z.literal("")),
+    password: adminPasswordSchema,
+    confirmPassword: z.string().min(8),
+    role: z.enum(["SUPER_ADMIN", "MANAGER", "RECEPTIONIST", "STAFF"]).default("RECEPTIONIST"),
+    branchId: z.string().optional().nullable(),
+    active: z.boolean().default(true),
+    permissions: z.record(z.string(), z.record(z.string(), z.boolean())).optional(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+export const adminResetPasswordSchema = z
+  .object({
+    password: adminPasswordSchema,
+    confirmPassword: z.string().min(8),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 export const beforeAfterSchema = z.object({
   caseName: z.string().min(2, "Case name is required"),
@@ -271,6 +309,28 @@ export const testimonialSchema = z.object({
 export const adminUpdateSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional().or(z.literal("")),
-  password: z.string().min(8).optional(),
-  role: z.enum(["SUPER_ADMIN", "STAFF"]).optional(),
+  phone: adminPhoneSchema,
+  profilePhotoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  password: adminPasswordSchema.optional(),
+  role: z.enum(["SUPER_ADMIN", "MANAGER", "RECEPTIONIST", "STAFF"]).optional(),
+  branchId: z.string().optional().nullable(),
+  active: z.boolean().optional(),
+  permissions: z.record(z.string(), z.record(z.string(), z.boolean())).optional().nullable(),
 });
+
+export const adminProfileUpdateSchema = z.object({
+  name: z.string().min(2).optional(),
+  phone: adminPhoneSchema,
+  profilePhotoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+});
+
+export const adminChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    password: adminPasswordSchema,
+    confirmPassword: z.string().min(8),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });

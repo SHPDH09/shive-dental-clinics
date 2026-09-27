@@ -1,4 +1,4 @@
-import { requireAdminSession } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { buildReportsData } from "@/lib/reports/build-reports";
 import { csvWithMeta, toCsv } from "@/lib/reports/csv";
@@ -143,10 +143,10 @@ async function legacyCsv(
 }
 
 export async function GET(req: Request) {
-  const { session, error } = await requireAdminSession();
+  const { session, admin, error } = await requirePermission("reports", "export");
   if (error) return error;
 
-  const access = reportsAccessForRole(session!.user.role);
+  const access = reportsAccessForRole(session!.user.role, admin);
   const { searchParams } = new URL(req.url);
   const filters = parseReportFilters(searchParams);
   const format = (searchParams.get("format") ?? "csv").toLowerCase();

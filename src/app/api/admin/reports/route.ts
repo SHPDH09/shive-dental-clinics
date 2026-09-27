@@ -1,16 +1,16 @@
-import { requireAdminSession } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
 import { buildReportsData } from "@/lib/reports/build-reports";
 import { parseReportFilters } from "@/lib/reports/parse-params";
 import { reportsAccessForRole } from "@/lib/reports/permissions";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const { session, error } = await requireAdminSession();
+  const { session, admin, error } = await requirePermission("reports", "view");
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
   const filters = parseReportFilters(searchParams);
-  const access = reportsAccessForRole(session!.user.role);
+  const access = reportsAccessForRole(session!.user.role, admin);
 
   const data = await buildReportsData(filters, access);
 

@@ -6,6 +6,9 @@ import {
   getSupabaseSecretKey,
 } from "@/lib/supabase/env";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { writeAdminAudit } from "@/lib/admin-audit";
+import { isLocked, recordLoginFailure, recordLoginSuccess } from "@/lib/admin-login-state";
+import { verifyEnvAdmin } from "@/lib/env-admin";
 
 type AdminRow = {
   id: string;
@@ -14,6 +17,9 @@ type AdminRow = {
   email: string | null;
   passwordHash: string;
   role: string;
+  active?: boolean;
+  loginAttempts?: number;
+  lockedUntil?: string | null;
 };
 
 type SupabaseAuthUser = {
@@ -36,7 +42,7 @@ async function findAdminRow(loginId: string): Promise<AdminRow | null> {
     const supabase = createSupabaseServiceClient();
     const { data, error } = await supabase
       .from("Admin")
-      .select("id, loginId, name, email, passwordHash, role")
+      .select("id, loginId, name, email, passwordHash, role, active, loginAttempts, lockedUntil")
       .or(`loginId.eq.${loginId},email.eq.${loginId}`)
       .maybeSingle();
     if (error || !data) return null;
@@ -110,12 +116,13 @@ function sessionUserFromAuth(
   };
 }
 
-/** Supabase Auth (email) + optional Admin table password hash. */
+/** Supabase Auth (email) + optional Admin table password hash + emergency env fallback. */
 export async function authenticateAdmin(loginId: string, password: string): Promise<AdminAuthResult | null> {
   const trimmed = loginId.trim();
   const admin = await findAdminRow(trimmed);
   const email = admin?.email ?? (trimmed.includes("@") ? trimmed : null);
 
+  // Try Supabase Auth
   if (email) {
     const auth =
       (await supabasePasswordSignIn(email, password)) ??
@@ -125,9 +132,24 @@ export async function authenticateAdmin(loginId: string, password: string): Prom
     }
   }
 
+  // Try Admin table password hash
   if (admin) {
+    if (admin.active === false) {
+      return null;
+    }
+    if (isLocked(admin.lockedUntil ? new Date(admin.lockedUntil) : null)) {
+      return null;
+    }
+
     const valid = await bcrypt.compare(password, admin.passwordHash);
     if (valid) {
+      await recordLoginSuccess(admin.id);
+      void writeAdminAudit({
+        adminId: admin.id,
+        adminName: admin.name,
+        action: "LOGIN",
+        entityType: "session",
+      });
       return {
         id: admin.id,
         email: admin.email ?? admin.loginId,
@@ -135,6 +157,13 @@ export async function authenticateAdmin(loginId: string, password: string): Prom
         role: admin.role,
       };
     }
+    await recordLoginFailure(admin.id);
+  }
+
+  // Emergency fallback: environment variables
+  const envAdmin = verifyEnvAdmin(loginId, password);
+  if (envAdmin) {
+    return envAdmin;
   }
 
   return null;

@@ -1,14 +1,16 @@
-import { requireAdminSession } from "@/lib/api-auth";
+import { branchScopeFilter } from "@/lib/admin-context";
+import { requireAdminContext } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { admin, error } = await requireAdminContext();
   if (error) return error;
 
   const { searchParams } = new URL(req.url);
-  const branchId = searchParams.get("branchId")?.trim() || undefined;
+  const branchId =
+    searchParams.get("branchId")?.trim() || branchScopeFilter(admin ?? null) || undefined;
 
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
