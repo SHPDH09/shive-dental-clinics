@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shiv Dental Clinic — Management Platform
 
-## Getting Started
+Production-style dental clinic software: premium patient website, online booking, and a full admin dashboard (appointments, patients, leads/CRM, content, reports).
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + TypeScript + Tailwind CSS
+- **PostgreSQL** on **AWS RDS** via Prisma 7 (`@prisma/adapter-pg`)
+- **NextAuth** (admin credentials)
+- Optional **AWS S3** for media (local `/public/uploads` fallback)
+
+## AWS RDS
+
+Writer endpoint (use in `DATABASE_URL`):
+
+`database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`
+
+Read replica (optional):
+
+`database-1.cluster-ro-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`
+
+### Database connection check
+
+1. Copy `env.example` → `.env` and set real RDS username, password, and database name.
+2. Run:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run db:push
+npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Verify:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+curl http://localhost:3000/api/health/db
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Or: `npx tsx scripts/test-rds-pool.ts`
 
-## Learn More
+**Status from this environment:** the RDS host is **reachable on port 5432**, but the app is **not fully connected** until valid credentials replace `YOUR_USERNAME` / `YOUR_PASSWORD` in `.env`. Without those, authentication fails (expected).
 
-To learn more about Next.js, take a look at the following resources:
+Ensure the RDS security group allows inbound **5432** from your app server IP/VPC.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+cp env.example .env
+# Edit .env: DATABASE_URL, AUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD
+npm run db:push
+npm run db:seed
+npm run dev
+```
 
-## Deploy on Vercel
+- **Website:** http://localhost:3000  
+- **Admin:** http://localhost:3000/admin/login  
+- **Default admin (after seed):** `admin@shivdentalclinic.com` / `Admin@123` (change in production)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Area | Capabilities |
+|------|----------------|
+| Public site | Hero, services, doctors, testimonials, gallery, before/after, contact, WhatsApp/call CTAs, SEO (sitemap, robots, JSON-LD) |
+| Booking | Validated appointment form → `Pending` status + appointment ID + admin notification |
+| Admin | Dashboard charts, appointments, patients, leads CRM, services, doctors, media, reports CSV export, settings |
+| Security | Protected `/admin` routes, JWT session, validated uploads |
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run db:push` | Apply Prisma schema to RDS |
+| `npm run db:seed` | Seed admin, services, demo content |
+
+## IAM / RDS
+
+For IAM database authentication, configure RDS IAM auth on the instance and use an IAM-enabled connection flow in addition to updating `DATABASE_URL`. The current app uses standard username/password PostgreSQL URLs.

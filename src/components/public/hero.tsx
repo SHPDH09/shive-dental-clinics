@@ -21,14 +21,10 @@ export function HeroSection({ clinicName, stats }: HeroProps) {
             Premium dental care
           </span>
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-5xl lg:text-[3.25rem]">
-            Healthy smiles start at{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--cta)] bg-clip-text text-transparent">
-              {clinicName}
-            </span>
+            Your Smile Deserves the Best Care
           </h1>
           <p className="mt-5 max-w-xl text-lg text-slate-600">
-            Expert dentists, gentle treatments, and a welcoming clinic designed around your comfort.
-            Book your visit in minutes.
+            Professional, compassionate and modern dental care for you and your family at {clinicName}.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link href="/appointment" className="btn-primary gap-2">

@@ -32,6 +32,17 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection clinicName={settings.clinicName} stats={stats} />
+      <section id="book" className="-mt-6 pb-8 md:-mt-10">
+        <div className="mx-auto max-w-4xl px-4 md:px-6">
+          <div className="card-premium p-6 md:p-8">
+            <div className="mb-6 text-center md:text-left">
+              <h2 className="text-2xl font-bold text-slate-900">Book an appointment in under a minute</h2>
+              <p className="mt-2 text-slate-600">Tell us your preferred time — we will confirm shortly.</p>
+            </div>
+            <AppointmentForm services={services.map((s) => ({ id: s.id, name: s.name }))} compact />
+          </div>
+        </div>
+      </section>
       <ServicesSection services={services} />
       <AboutSection
         aboutIntro={settings.aboutIntro}
@@ -40,17 +51,6 @@ export default async function HomePage() {
         whyChooseUs={settings.whyChooseUs}
       />
       <DoctorsSection doctors={doctors} />
-      <section className="bg-gradient-to-br from-teal-50 to-sky-50 py-20">
-        <div className="mx-auto max-w-3xl px-4 md:px-6">
-          <div className="mb-8 text-center">
-            <h2 className="section-title">Ready for your visit?</h2>
-            <p className="section-subtitle mx-auto">Fill in your details and we will confirm your appointment.</p>
-          </div>
-          <AppointmentForm
-            services={services.map((s) => ({ id: s.id, name: s.name }))}
-          />
-        </div>
-      </section>
       <TestimonialsSection testimonials={testimonials} />
       <GallerySection items={gallery} />
       <BeforeAfterSection cases={beforeAfter} />
