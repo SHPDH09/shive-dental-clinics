@@ -1,4 +1,4 @@
-import { requireSuperAdminSession } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
 import { loadSettingsRow } from "@/lib/clinic-settings/service";
 import type { ClinicSecrets } from "@/lib/clinic-settings/types";
 import { NextResponse } from "next/server";
@@ -9,7 +9,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const { error } = await requireSuperAdminSession();
+  const { error } = await requirePermission("settings", "edit");
   if (error) return error;
 
   const body = await req.json();

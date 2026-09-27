@@ -59,7 +59,7 @@ const MANAGER_DEFAULT: PermissionMatrix = {
   messages: { view: true, create: true, edit: true },
   reports: { view: true, export: true },
   admins: { view: false },
-  settings: { view: false },
+  settings: { view: true, edit: true },
 };
 
 const RECEPTIONIST_DEFAULT: PermissionMatrix = {
