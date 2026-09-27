@@ -1,5 +1,5 @@
 {
-  "name": "Shiv Dental Clinic — main + AWS RDS",
+  "name": "Shiv Dental Clinic",
   "install": "bash scripts/cloud-agent-install.sh",
   "terminals": [
     {

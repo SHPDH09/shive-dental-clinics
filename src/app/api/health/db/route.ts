@@ -7,7 +7,7 @@ export async function GET() {
     const host = process.env.DATABASE_URL?.replace(/:[^:@/]+@/, ":****@") ?? "not configured";
     return NextResponse.json({
       connected: true,
-      message: "Successfully connected to PostgreSQL (AWS RDS)",
+      message: "Successfully connected to PostgreSQL",
       databaseHost: host.split("@")[1]?.split("/")[0] ?? "unknown",
     });
   } catch (error) {

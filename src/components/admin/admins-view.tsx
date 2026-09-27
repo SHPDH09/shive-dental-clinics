@@ -97,7 +97,7 @@ export function AdminsView() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Admin accounts</h1>
           <p className="text-sm text-slate-500">
-            Stored in AWS RDS. Create new Admin IDs here — no manual database edits.
+            Stored in PostgreSQL. Create new Admin IDs here — no manual database edits.
           </p>
         </div>
         <Button type="button" onClick={() => setFormOpen(true)}>

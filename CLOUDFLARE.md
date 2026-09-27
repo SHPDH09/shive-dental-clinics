@@ -7,100 +7,45 @@ This app uses **OpenNext** (`@opennextjs/cloudflare`), not plain `next build` al
 
 ---
 
-## Cloudflare dashboard — what to enter
+## Deploy commands
 
-### If you have **one** “Build / Deploy command” field
+| Scenario | Command |
+|----------|---------|
+| Single build/deploy field | `npm run deploy` |
+| Separate build | `npm run cf:build` then `npx wrangler deploy` |
 
-Use:
-
-```bash
-npm run deploy
-```
-
-This runs OpenNext build + `wrangler deploy`.
-
----
-
-### If you have **separate** Build and Deploy fields
-
-| Field | Command |
-|--------|---------|
-| **Build command** | `npm run cf:build` |
-| **Deploy command** | `npx wrangler deploy` |
-
-Do **not** use only `npm run build` — that skips OpenNext and Workers packaging.
-
-Do **not** use only `npx wrangler deploy` on first setup without `cf:build` — build output must exist in `.open-next/`.
-
----
-
-### Optional: Preview locally
-
-```bash
-npm run preview
-```
+Local preview: `npm run preview`
 
 ---
 
 ## Environment variables (required)
 
-Set in **Workers & Pages → your project → Settings → Variables** for **Production** and **Build**:
+Set in **Workers & Pages → Settings → Variables** (Production):
 
-| Variable | Required | Example |
-|----------|----------|---------|
-| `DATABASE_URL` | Yes | `postgresql://admin:****@shiv-dental-clinic.c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432/postgres?schema=public&sslmode=require` |
-| `AUTH_SECRET` | Yes | `openssl rand -base64 32` output |
-| `AUTH_URL` | Yes | `https://shive-dental-clinics.<account>.workers.dev` (your live site URL) |
-| `NEXTAUTH_URL` | Yes | same as `AUTH_URL` |
-| `NEXT_PUBLIC_APP_URL` | Yes | same as `AUTH_URL` |
-| `ADMIN_LOGIN_ID` | Yes (or wrangler var) | `1A74N3077` |
-| `ADMIN_PASSWORD` | Yes **Encrypt** | e.g. `Raunak@12583` — emergency login when RDS is down (with `ADMIN_LOGIN_ID` / `ADMIN_EMAIL`) |
-| `ADMIN_EMAIL` | Optional (wrangler var) | `rk331159@gmail.com` — can sign in with email when env fallback is active |
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `DATABASE_URL` | Yes* | Any PostgreSQL URL reachable from Workers (e.g. Neon, Supabase). Add `?sslmode=require` if the host requires SSL. |
+| `AUTH_SECRET` | Yes | `openssl rand -base64 32` |
+| `AUTH_URL` / `NEXTAUTH_URL` / `NEXT_PUBLIC_APP_URL` | Yes | Your live Worker URL |
+| `ADMIN_LOGIN_ID` | Yes (var) | e.g. `1A74N3077` |
+| `ADMIN_PASSWORD` | Yes **Encrypt** | Emergency login when DB is offline |
+| `ADMIN_EMAIL` | Optional | Sign in with email when env fallback is active |
 
-From repo root (after `wrangler login` or `CLOUDFLARE_API_TOKEN`):
+\*Without `DATABASE_URL`, admin can still sign in via **ADMIN_LOGIN_ID** + **ADMIN_PASSWORD**; dashboard data features need a database.
 
 ```bash
 npm run secrets:cloudflare
 npm run deploy
 ```
 
-### API token permissions (required)
+Account ID: `b82993580bed27dbe1dae142d07fa7e7`
 
-The token you create must **not** be R2-only. Use **Create Custom Token** with at least:
+### Health checks
 
-- **Account** → **Workers Scripts** → **Edit**
-- **Account** → **Workers Secrets Store** → **Edit** (or **Workers Scripts** → Edit covers secrets on many accounts)
+- `/api/health/config` — secrets configured?
+- `/api/health/db` — PostgreSQL reachable?
+- `/api/health/login-hints` — login checklist
 
-Account ID (this project): `b82993580bed27dbe1dae142d07fa7e7`  
-Worker name: `shive-dental-clinics`
+Use **Node 20** or **22** in the dashboard if selectable.
 
-If deploy returns *No access to the specified resource*, the token is missing **Workers Scripts Edit**.
-
-Until RDS works, login uses **ADMIN_LOGIN_ID** + **ADMIN_PASSWORD** from Cloudflare secrets. After RDS works, run `npm run admin:reset` and DB login takes over.
-
-**Admin `/api/auth/session` 500 error** almost always means **`AUTH_SECRET` or `AUTH_URL` is missing** in Cloudflare Variables (Production).
-
-After deploy, check:
-
-- `https://YOUR-SITE/api/health/config` — auth + DATABASE_URL configured?
-- `https://YOUR-SITE/api/health/db` — RDS reachable?
-
-### AWS RDS from Cloudflare
-
-1. RDS must be **publicly accessible** (or use **Cloudflare Hyperdrive** to your RDS URL).
-2. Security group: allow **PostgreSQL 5432** from the internet (or Hyperdrive only).
-3. Use the writer endpoint and database name `shiv-dental-clinic`.
-
-Build works without real env vars; **Production must have all variables above**.
-
----
-
-## Node.js
-
-Use **Node 20** or **22** if the dashboard lets you choose (24 often works; 20 is safest).
-
----
-
-## Branch
-
-Connect **GitHub `main`** branch for automatic deploys.
+Connect GitHub **`main`** for automatic deploys.

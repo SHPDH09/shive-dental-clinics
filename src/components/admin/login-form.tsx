@@ -85,7 +85,7 @@ export function LoginForm() {
           <p className="font-semibold">Server checklist</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
-            <li>Database: {hints.databaseOk ? "Connected (RDS)" : "Not connected"}</li>
+            <li>Database: {hints.databaseOk ? "Connected" : "Not connected"}</li>
             <li>
               Emergency login:{" "}
               {hints.envFallbackOk ? "Configured (Cloudflare secrets)" : "Not configured"}

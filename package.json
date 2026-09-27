@@ -18,8 +18,6 @@
     "cf:build": "node scripts/with-build-env.mjs opennextjs-cloudflare build"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1141.0",
-    "@aws-sdk/rds-signer": "^3.1141.0",
     "@hookform/resolvers": "^5.9.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",

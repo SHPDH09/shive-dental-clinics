@@ -11,7 +11,7 @@ function safeEqualString(a: string, b: string): boolean {
   return timingSafeEqual(ba, bb);
 }
 
-/** Fallback login when RDS is down — set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare (encrypted). */
+/** Fallback login when the database is down — set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare (encrypted). */
 export function verifyEnvAdmin(loginId: string, password: string) {
   const envId = process.env.ADMIN_LOGIN_ID?.trim();
   const envEmail = process.env.ADMIN_EMAIL?.trim();

@@ -25,7 +25,7 @@ export async function GET() {
       : dbOk
         ? "OK — sign in with Admin ID or email and password from the Admin table."
         : envFallbackOk
-          ? "Database offline — you can still sign in with ADMIN_LOGIN_ID / ADMIN_EMAIL and ADMIN_PASSWORD from Cloudflare secrets until RDS is fixed."
+          ? "Database offline — you can still sign in with ADMIN_LOGIN_ID / ADMIN_EMAIL and ADMIN_PASSWORD from Cloudflare secrets."
           : "Database unreachable. Set DATABASE_URL or configure ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare.",
   });
 }

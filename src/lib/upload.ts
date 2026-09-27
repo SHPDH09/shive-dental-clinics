@@ -1,4 +1,3 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
@@ -8,11 +7,6 @@ const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const VIDEO_TYPES = ["video/mp4", "video/webm"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
-
-function getS3Client() {
-  if (!process.env.AWS_S3_BUCKET || !process.env.AWS_REGION) return null;
-  return new S3Client({ region: process.env.AWS_REGION });
-}
 
 export function validateUpload(file: File, kind: "image" | "video") {
   const allowed = kind === "image" ? IMAGE_TYPES : VIDEO_TYPES;
@@ -25,6 +19,7 @@ export function validateUpload(file: File, kind: "image" | "video") {
   }
 }
 
+/** Saves uploads under `public/uploads` (local dev). On Cloudflare Workers, prefer R2 or external storage. */
 export async function saveUpload(file: File, folder: string): Promise<string> {
   validateUpload(file, VIDEO_TYPES.includes(file.type) ? "video" : "image");
   const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
@@ -37,22 +32,6 @@ export async function saveUpload(file: File, folder: string): Promise<string> {
       .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
-  }
-
-  const s3 = getS3Client();
-  const key = `${folder}/${filename.replace(/\.[^.]+$/, IMAGE_TYPES.includes(file.type) ? ".webp" : `.${ext}`)}`;
-
-  if (s3 && process.env.AWS_S3_BUCKET) {
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: key,
-        Body: outputBuffer,
-        ContentType: IMAGE_TYPES.includes(file.type) ? "image/webp" : file.type,
-      }),
-    );
-    const base = process.env.AWS_S3_PUBLIC_URL || `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com`;
-    return `${base}/${key}`;
   }
 
   const uploadDir = path.join(process.cwd(), "public", "uploads", folder);

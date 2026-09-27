@@ -20,7 +20,7 @@ export async function GET() {
     hint: !hasAuth
       ? "Set AUTH_SECRET in Cloudflare Variables (Production + Preview)"
       : !hasDatabaseUrl
-        ? "Set DATABASE_URL to your AWS RDS PostgreSQL URL"
+        ? "Set DATABASE_URL to your PostgreSQL connection string"
         : "Configuration looks present; check /api/health/db for DB connectivity",
   });
 }

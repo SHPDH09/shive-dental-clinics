@@ -28,11 +28,8 @@ async function main() {
   const ok = await testConnection();
   if (!ok) {
     console.error(`
-Could not connect. Common fixes (no password change needed):
-1. RDS → Modify → set "IAM DB authentication" to DISABLED → Apply
-2. Security group: allow inbound TCP 5432 from this machine's IP
-3. Confirm master username is exactly: admin
-4. If IAM must stay ON: set DATABASE_IAM_AUTH=true and configure AWS credentials
+Could not connect. Check DATABASE_URL (host, port, user, password, database name).
+For hosted Postgres with SSL, add ?sslmode=require to the URL.
 `);
     process.exit(1);
   }
