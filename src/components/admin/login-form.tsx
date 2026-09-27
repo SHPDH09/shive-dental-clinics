@@ -60,8 +60,7 @@ export function LoginForm() {
     router.refresh();
   };
 
-  const checklistOk =
-    hints?.supabaseConfigured && hints?.databaseOk && hints?.authSecretOk;
+  const checklistOk = hints?.canLogin ?? (hints?.supabaseConfigured && hints?.databaseOk && hints?.authSecretOk);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="card-premium mx-auto w-full max-w-md space-y-5 p-8">
