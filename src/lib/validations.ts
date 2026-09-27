@@ -4,11 +4,48 @@ export const appointmentPublicSchema = z.object({
   patientName: z.string().min(2, "Name is required"),
   phone: z.string().min(10, "Valid phone number required"),
   email: z.string().email("Valid email required").optional().or(z.literal("")),
+  doctorId: z.string().optional(),
   treatmentName: z.string().min(1, "Select a treatment"),
   serviceId: z.string().optional(),
   appointmentDate: z.string().min(1, "Date is required"),
   appointmentTime: z.string().min(1, "Time is required"),
   message: z.string().max(1000).optional(),
+});
+
+const dayScheduleSchema = z.object({
+  enabled: z.boolean(),
+  start: z.string().min(1),
+  end: z.string().min(1),
+});
+
+export const doctorSchema = z.object({
+  name: z.string().min(2),
+  slug: z.string().min(2).optional(),
+  qualification: z.string().min(2),
+  specialization: z.string().min(2),
+  experienceYears: z.number().int().min(0),
+  bio: z.string().min(20),
+  summary: z.string().min(10),
+  image: z.string().min(1, "Profile photo is required"),
+  areasOfExpertise: z.array(z.string().min(1)).optional(),
+  languagesSpoken: z.string().optional(),
+  weeklySchedule: z
+    .object({
+      monday: dayScheduleSchema,
+      tuesday: dayScheduleSchema,
+      wednesday: dayScheduleSchema,
+      thursday: dayScheduleSchema,
+      friday: dayScheduleSchema,
+      saturday: dayScheduleSchema,
+      sunday: dayScheduleSchema,
+    })
+    .optional(),
+  consultationHours: z.string().optional(),
+  registrationNumber: z.string().optional(),
+  phone: z.string().optional(),
+  featured: z.boolean().optional(),
+  enabled: z.boolean().optional(),
+  sortOrder: z.number().optional(),
 });
 
 export const enquirySchema = z.object({

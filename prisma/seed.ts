@@ -295,6 +295,7 @@ async function main() {
     await prisma.doctor.create({
       data: {
         name: "Dr. Rishikesh Prasad",
+        slug: "dr-rishikesh-prasad",
         qualification: "B.D.S. (Hons), M.Sc (Microbiology), MIDA, C.C.C.M.",
         specialization: "Oral & Dental Surgeon",
         experienceYears: 10,
@@ -304,7 +305,23 @@ async function main() {
         phone: "9973479904",
         bio: "Dr. Rishikesh Prasad (डॉ. ऋषिकेश प्रसाद) is an Oral & Dental Surgeon at Shiv Dental Clinic with qualifications including B.D.S. (Honours), M.Sc in Microbiology, MIDA, and C.C.C.M. Patients receive careful diagnosis, clear guidance, and comfortable treatment in a professional setting.",
         image: "/images/shiv-dental-branding.jpg",
-        consultationHours: "Mon – Sat: By appointment",
+        areasOfExpertise: [
+          "Dental Implants",
+          "Root Canal Treatment",
+          "Cosmetic Dentistry",
+          "Oral Surgery",
+        ],
+        languagesSpoken: "Hindi, English",
+        weeklySchedule: {
+          monday: { enabled: true, start: "10:00", end: "18:00" },
+          tuesday: { enabled: true, start: "10:00", end: "18:00" },
+          wednesday: { enabled: true, start: "10:00", end: "18:00" },
+          thursday: { enabled: true, start: "10:00", end: "18:00" },
+          friday: { enabled: true, start: "10:00", end: "18:00" },
+          saturday: { enabled: true, start: "10:00", end: "14:00" },
+          sunday: { enabled: false, start: "10:00", end: "14:00" },
+        },
+        consultationHours: "Mon – Sat: 10:00 AM – 6:00 PM (Sat until 2:00 PM)",
         featured: true,
         enabled: true,
         sortOrder: 0,

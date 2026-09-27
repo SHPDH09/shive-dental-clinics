@@ -130,22 +130,27 @@ model Service {
 }
 
 model Doctor {
-  id                 String   @id @default(cuid())
+  id                 String        @id @default(cuid())
   name               String
+  slug               String        @unique
   qualification      String
   specialization     String
   experienceYears    Int
   bio                String
   summary            String?
+  areasOfExpertise   Json          @default("[]")
+  languagesSpoken    String?
+  weeklySchedule     Json?
   registrationNumber String?
   phone              String?
   image              String?
   consultationHours  String?
-  featured           Boolean  @default(false)
-  enabled            Boolean  @default(true)
-  sortOrder          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  featured           Boolean       @default(false)
+  enabled            Boolean       @default(true)
+  sortOrder          Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  appointments       Appointment[]
 }
 
 model Appointment {
@@ -158,6 +163,8 @@ model Appointment {
   email           String?
   serviceId       String?
   service         Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  doctorId        String?
+  doctor          Doctor?           @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   treatmentName   String
   appointmentDate DateTime
   appointmentTime String
@@ -170,6 +177,7 @@ model Appointment {
   @@index([appointmentDate])
   @@index([status])
   @@index([createdAt])
+  @@index([doctorId, appointmentDate, appointmentTime])
 }
 
 model Lead {

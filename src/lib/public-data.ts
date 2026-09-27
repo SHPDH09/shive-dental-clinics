@@ -7,32 +7,13 @@ export {
 } from "@/lib/public-services";
 export type { PublicService } from "@/lib/public-service-types";
 
-export async function getPublicDoctors() {
-  try {
-    return await prisma.doctor.findMany({
-      where: { enabled: true },
-      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }],
-    });
-  } catch {
-    return [];
-  }
-}
-
-export async function getFeaturedDoctor() {
-  try {
-    const featured = await prisma.doctor.findFirst({
-      where: { enabled: true, featured: true },
-      orderBy: { sortOrder: "asc" },
-    });
-    if (featured) return featured;
-    return await prisma.doctor.findFirst({
-      where: { enabled: true },
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return null;
-  }
-}
+export {
+  getPublicDoctorsList as getPublicDoctors,
+  getPublicDoctorBySlug,
+  getFeaturedPublicDoctor as getFeaturedDoctor,
+  getFeaturedPublicDoctors,
+} from "@/lib/public-doctors";
+export type { PublicDoctor } from "@/lib/public-doctor-types";
 
 export { getPublicTestimonials } from "@/lib/public-testimonials";
 
