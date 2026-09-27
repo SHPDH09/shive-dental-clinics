@@ -17,7 +17,11 @@ export function mapSupabaseErrorMessage(message: string): string {
   }
   if (/relation.*does not exist|Could not find the table/i.test(message)) {
     if (/ServiceCategory/i.test(message)) {
-      return 'ServiceCategory table missing — run supabase/migration-services-premium.sql in Supabase SQL Editor.';
+      return (
+        "ServiceCategory table missing on the Supabase project this Worker is using. " +
+        "In Supabase SQL Editor run supabase/migration-services-premium.sql, then NOTIFY pgrst, 'reload schema';. " +
+        "If the table already exists, fix Cloudflare: remove a wrong SUPABASE_SECRET_KEY secret or redeploy so SUPABASE_SKEY_B64 from wrangler.jsonc is used."
+      );
     }
     return 'Database table missing — run the latest supabase/migration-*.sql files in Supabase SQL Editor.';
   }

@@ -19,3 +19,6 @@ ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "benefits" JSONB NOT NULL DEFAULT
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "treatmentSteps" JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "faqs" JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "featured" BOOLEAN NOT NULL DEFAULT false;
+
+-- Refresh PostgREST schema cache (Supabase SQL Editor / psql)
+NOTIFY pgrst, 'reload schema';

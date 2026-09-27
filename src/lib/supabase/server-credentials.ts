@@ -10,12 +10,16 @@ function decodeBase64Env(name: string): string | undefined {
   }
 }
 
-/** Worker secrets first; optional base64 vars for deploy when encrypted secrets are not set. */
+/**
+ * Service role key for server-side Supabase.
+ * Prefer `SUPABASE_SKEY_B64` from wrangler.jsonc (same repo as SUPABASE_URL) so a stale
+ * Cloudflare `SUPABASE_SECRET_KEY` secret cannot point at a different project.
+ */
 export function resolveSupabaseSecretKey(): string | undefined {
   return (
+    decodeBase64Env("SUPABASE_SKEY_B64") ||
     readWorkerEnv("SUPABASE_SECRET_KEY") ||
-    readWorkerEnv("SUPABASE_SERVICE_ROLE_KEY") ||
-    decodeBase64Env("SUPABASE_SKEY_B64")
+    readWorkerEnv("SUPABASE_SERVICE_ROLE_KEY")
   );
 }
 
