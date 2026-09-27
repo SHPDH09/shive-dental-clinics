@@ -82,7 +82,7 @@ export function LoginForm() {
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>Supabase project: {hints.supabaseConfigured ? "OK" : "Missing public keys"}</li>
             <li>Admin table (DB): {hints.databaseOk ? "OK" : "Not ready"}</li>
-            <li>Session secret: {hints.authSecretOk ? "OK" : "Set AUTH_SECRET on server"}</li>
+            <li>Session (AUTH_SECRET): {hints.authSecretOk ? "OK" : "Missing on server"}</li>
           </ul>
           <p className="mt-2">{hints.message}</p>
         </div>

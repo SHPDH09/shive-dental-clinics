@@ -32,16 +32,11 @@ async function findAdminRow(loginId: string): Promise<AdminRow | null> {
   }
 }
 
-function resolveEmail(loginId: string, admin: AdminRow | null): string | null {
-  if (admin?.email) return admin.email;
-  if (loginId.includes("@")) return loginId;
-  return null;
-}
-
-/** Supabase Auth + Admin table password (no Cloudflare login secrets). */
+/** Supabase Auth (email) first; Admin table password when service key is available. */
 export async function authenticateAdmin(loginId: string, password: string) {
-  const admin = await findAdminRow(loginId);
-  const email = resolveEmail(loginId, admin);
+  const trimmed = loginId.trim();
+  const admin = await findAdminRow(trimmed);
+  let email = admin?.email ?? (trimmed.includes("@") ? trimmed : null);
 
   const publishable = getSupabasePublishableKey();
   if (email && publishable) {
