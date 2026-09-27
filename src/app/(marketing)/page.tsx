@@ -5,6 +5,7 @@ import { DoctorsSection } from "@/components/public/doctors-section";
 import { FeaturedDoctorSection } from "@/components/public/featured-doctor-section";
 import { TestimonialsSection } from "@/components/public/testimonials-section";
 import { GallerySection } from "@/components/public/gallery-section";
+import { WatchLearnSection } from "@/components/public/watch-learn-section";
 import { BeforeAfterSection } from "@/components/public/before-after-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
@@ -16,10 +17,11 @@ import {
   getPublicGallery,
   getPublicServices,
   getPublicTestimonials,
+  getPublicVideos,
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, beforeAfter] =
+  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, videos, beforeAfter] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
@@ -28,6 +30,7 @@ export default async function HomePage() {
     getPublicDoctors(),
     getPublicTestimonials(),
     getPublicGallery(),
+    getPublicVideos(6),
     getPublicBeforeAfter(),
   ]);
 
@@ -58,6 +61,7 @@ export default async function HomePage() {
       <DoctorsSection doctors={doctors} />
       <TestimonialsSection testimonials={testimonials} />
       <GallerySection items={gallery} />
+      <WatchLearnSection videos={videos} />
       <BeforeAfterSection cases={beforeAfter} />
       <ContactSection
         phone={settings.phone}

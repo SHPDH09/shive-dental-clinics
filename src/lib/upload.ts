@@ -4,7 +4,7 @@ import path from "path";
 import sharp from "sharp";
 
 const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const VIDEO_TYPES = ["video/mp4", "video/webm"];
+const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-quicktime"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 

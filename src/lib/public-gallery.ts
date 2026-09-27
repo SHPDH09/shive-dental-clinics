@@ -9,6 +9,7 @@ export type PublicGalleryItem = {
   description: string | null;
   mediaType: MediaType;
   mediaUrl: string;
+  thumbnailUrl?: string | null;
   category: string;
   createdAt: Date;
 };
@@ -30,6 +31,7 @@ async function fetchFromSupabase(take: number) {
   const { data, error } = await sb
     .from("Media")
     .select("*")
+    .eq("mediaType", "IMAGE")
     .eq("status", "PUBLISHED")
     .eq("isPublic", true)
     .order("createdAt", { ascending: false })
@@ -41,7 +43,7 @@ async function fetchFromSupabase(take: number) {
 export async function getPublicGalleryItems(take = 48): Promise<PublicGalleryItem[]> {
   try {
     const rows = await prisma.media.findMany({
-      where: { status: "PUBLISHED", isPublic: true },
+      where: { mediaType: "IMAGE", status: "PUBLISHED", isPublic: true },
       orderBy: { createdAt: "desc" },
       take,
     });

@@ -1,10 +1,13 @@
 import { AdminPageShell } from "@/components/admin/page-shell";
-import { GalleryView } from "@/components/admin/gallery-view";
+import { VideosView } from "@/components/admin/videos-view";
 
 export default function AdminVideosPage() {
   return (
-    <AdminPageShell title="Videos" description="Video gallery — managed together with clinic gallery">
-      <GalleryView defaultMediaType="VIDEO" />
+    <AdminPageShell
+      title="Videos"
+      description="Upload, preview, and publish clinic videos — patient content stays private by default"
+    >
+      <VideosView />
     </AdminPageShell>
   );
 }

@@ -5,7 +5,11 @@ import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
 import { LoadingState } from "@/components/admin/loading-state";
 import { MediaUploadField } from "@/components/admin/media-upload-field";
-import { GALLERY_CATEGORIES, isPatientRelatedCategory } from "@/lib/gallery-categories";
+import {
+  GALLERY_CATEGORIES,
+  isPatientRelatedCategory,
+  type GalleryCategoryId,
+} from "@/lib/gallery-categories";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
@@ -23,14 +27,24 @@ type MediaRecord = {
   createdAt: string;
 };
 
-const emptyForm = {
+type GalleryForm = {
+  title: string;
+  description: string;
+  mediaType: "IMAGE" | "VIDEO";
+  mediaUrl: string;
+  category: GalleryCategoryId;
+  isPublic: boolean;
+  status: "DRAFT" | "PUBLISHED";
+};
+
+const emptyForm: GalleryForm = {
   title: "",
   description: "",
-  mediaType: "IMAGE" as const,
+  mediaType: "IMAGE",
   mediaUrl: "",
-  category: "clinic" as const,
+  category: "clinic",
   isPublic: false,
-  status: "DRAFT" as const,
+  status: "DRAFT",
 };
 
 type Props = {
@@ -86,7 +100,7 @@ export function GalleryView({ defaultMediaType = "ALL" }: Props) {
       description: m.description ?? "",
       mediaType: m.mediaType,
       mediaUrl: m.mediaUrl,
-      category: m.category as typeof emptyForm.category,
+      category: m.category as GalleryCategoryId,
       isPublic: m.isPublic,
       status: m.status,
     });
@@ -222,7 +236,7 @@ export function GalleryView({ defaultMediaType = "ALL" }: Props) {
               <select
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 value={form.category}
-                onChange={(e) => onCategoryChange(e.target.value as typeof form.category)}
+                onChange={(e) => onCategoryChange(e.target.value as GalleryCategoryId)}
               >
                 {GALLERY_CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>

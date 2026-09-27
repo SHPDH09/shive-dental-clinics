@@ -52,11 +52,7 @@ export { getPublicTestimonials } from "@/lib/public-testimonials";
 
 export { getPublicGalleryItems as getPublicGallery } from "@/lib/public-gallery";
 
-export async function getPublicVideos() {
-  const { getPublicGalleryItems } = await import("@/lib/public-gallery");
-  const items = await getPublicGalleryItems(24);
-  return items.filter((i) => i.mediaType === "VIDEO");
-}
+export { getPublicVideos } from "@/lib/public-videos";
 
 export async function getPublicBranches() {
   try {

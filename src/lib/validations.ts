@@ -69,6 +69,26 @@ export const adminCreateSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
 });
 
+export const videoMediaSchema = z.object({
+  title: z.string().min(2, "Video title is required"),
+  description: z.string().max(4000).optional().or(z.literal("")),
+  mediaUrl: z.string().min(1, "Upload a video file"),
+  thumbnailUrl: z.string().min(1, "Upload a thumbnail"),
+  category: z.enum([
+    "dental-treatments",
+    "smile-transformations",
+    "doctor-advice",
+    "clinic-tour",
+    "patient-experiences",
+    "clinic-updates",
+    "dental-education",
+  ]),
+  durationSeconds: z.coerce.number().int().min(0).optional(),
+  uploadDate: z.string().optional(),
+  isPublic: z.boolean().default(false),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
+});
+
 export const galleryMediaSchema = z.object({
   title: z.string().min(2, "Title is required"),
   description: z.string().max(2000).optional().or(z.literal("")),
