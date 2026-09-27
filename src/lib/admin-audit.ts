@@ -13,6 +13,7 @@ export type AuditInput = {
   metadata?: Record<string, unknown>;
 };
 
+/** Best-effort audit log when AdminActivityLog table exists. */
 export async function writeAdminAudit(entry: AuditInput): Promise<void> {
   const row = {
     id: createId(),

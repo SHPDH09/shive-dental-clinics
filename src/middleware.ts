@@ -35,9 +35,32 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
   }
 
+  const isStatic =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname === "/maintenance" ||
+    pathname.includes(".");
+
+  if (!isAdminArea && !isStatic) {
+    try {
+      const statusUrl = new URL("/api/site-status", req.nextUrl.origin);
+      const res = await fetch(statusUrl);
+      if (res.ok) {
+        const json = (await res.json()) as { maintenance?: boolean };
+        if (json.maintenance && pathname !== "/maintenance") {
+          const url = req.nextUrl.clone();
+          url.pathname = "/maintenance";
+          return NextResponse.rewrite(url);
+        }
+      }
+    } catch {
+      // Continue if status check fails
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: ["/admin/:path*", "/admin", "/((?!_next/static|_next/image).*)"],
 };
