@@ -16,10 +16,11 @@
 
 | Name | Where to get value |
 |------|---------------------|
-| `AUTH_SECRET` | Random: `openssl rand -base64 32` |
-| `ADMIN_PASSWORD` | Website admin login password |
+| `AUTH_SECRET` | Random: `openssl rand -base64 32` (session cookie only — **not** login password) |
 | `SUPABASE_SECRET_KEY` | Supabase Dashboard → Project Settings → API → **secret** key |
 | `SUPABASE_DB_PASSWORD` | Supabase Dashboard → Database → connection password |
+
+Admin **login password** lives in **Supabase** (`Admin` table + Supabase Auth user), not Cloudflare.
 
 Optional: `DATABASE_URL` — full Postgres URL if not using `SUPABASE_DB_PASSWORD`.
 
