@@ -2,6 +2,9 @@ import { requireAdminSession } from "@/lib/api-auth";
 import { saveUpload } from "@/lib/upload";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;

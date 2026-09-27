@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
+import { parseJsonResponse } from "@/lib/parse-json-response";
 
 type Props = {
   label?: string;
@@ -27,9 +28,11 @@ export function ImageUploadField({ label = "Photo", folder = "doctors", value, o
       const res = await fetch(`/api/admin/upload?folder=${encodeURIComponent(folder)}`, {
         method: "POST",
         body: form,
+        credentials: "same-origin",
       });
-      const json = await res.json();
+      const json = await parseJsonResponse<{ url?: string; error?: string }>(res);
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
+      if (!json.url) throw new Error("Upload succeeded but no URL was returned");
       onChange(json.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");

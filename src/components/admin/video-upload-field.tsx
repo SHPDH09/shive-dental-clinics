@@ -45,9 +45,18 @@ export function VideoUploadField({ videoUrl, onVideoUrl, onDuration }: Props) {
     xhr.onload = () => {
       setUploading(false);
       try {
-        const json = JSON.parse(xhr.responseText) as { url?: string; error?: string };
+        const text = xhr.responseText?.trim() ?? "";
+        if (!text) {
+          throw new Error(
+            xhr.status === 401
+              ? "Please sign in again"
+              : `Upload failed (${xhr.status}). Check storage configuration.`,
+          );
+        }
+        const json = JSON.parse(text) as { url?: string; error?: string };
         if (xhr.status >= 400) throw new Error(json.error ?? "Upload failed");
-        if (json.url) onVideoUrl(json.url);
+        if (!json.url) throw new Error("Upload succeeded but no URL was returned");
+        onVideoUrl(json.url);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
       }

@@ -423,17 +423,3 @@ model ClinicSettings {
   monthlyRevenue     Decimal? @db.Decimal(12, 2)
   updatedAt          DateTime @updatedAt
 }
-
-model AdminActivityLog {
-  id          String   @id @default(cuid())
-  adminId     String?
-  adminName   String
-  action      String
-  entityType  String?
-  entityId    String?
-  entityLabel String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-
-  @@index([createdAt])
-}

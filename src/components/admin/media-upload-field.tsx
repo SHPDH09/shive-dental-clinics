@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Film, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
+import { parseJsonResponse } from "@/lib/parse-json-response";
 
 type Props = {
   label?: string;
@@ -39,8 +40,9 @@ export function MediaUploadField({
         body: form,
         credentials: "same-origin",
       });
-      const json = await res.json();
+      const json = await parseJsonResponse<{ url?: string; error?: string }>(res);
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
+      if (!json.url) throw new Error("Upload succeeded but no URL was returned");
       onChange(json.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
