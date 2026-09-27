@@ -56,10 +56,11 @@ export function BeforeAfterSlider({
       role="img"
       aria-label={`${beforeLabel} and ${afterLabel} comparison`}
     >
+      {/* Base layer = after (right of handle); clipped left = before */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={beforeSrc}
-        alt={beforeLabel}
+        src={afterSrc}
+        alt={afterLabel}
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
@@ -70,8 +71,8 @@ export function BeforeAfterSlider({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={afterSrc}
-          alt={afterLabel}
+          src={beforeSrc}
+          alt={beforeLabel}
           loading="lazy"
           className="absolute inset-0 h-full w-full object-cover"
           draggable={false}
