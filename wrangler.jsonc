@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "shive-dental-clinics",
+  "account_id": "b82993580bed27dbe1dae142d07fa7e7",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-25",
   "compatibility_flags": ["nodejs_compat"],
