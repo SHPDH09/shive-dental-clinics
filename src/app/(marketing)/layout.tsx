@@ -4,17 +4,12 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
 import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
 import { DentalClinicJsonLd } from "@/components/public/json-ld";
-import { getPublicHeroSlides } from "@/lib/hero-slides";
+import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { getPublicBranches } from "@/lib/public-data";
 import { getClinicSettings } from "@/lib/settings";
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const [settings, branches, heroSlides] = await Promise.all([
-    getClinicSettings(),
-    getPublicBranches(),
-    getPublicHeroSlides(),
-  ]);
-  const headerBackgroundUrl = heroSlides[0]?.imageUrl ?? "/branding/clinic-header-bg.png";
+  const [settings, branches] = await Promise.all([getClinicSettings(), getPublicBranches()]);
   const social = (settings.socialLinks ?? {}) as Record<string, string>;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://shivdentalclinic.com";
 
@@ -32,7 +27,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
         clinicName={settings.clinicName}
         phone={settings.phone}
         logoUrl={settings.logoUrl}
-        backgroundImageUrl={headerBackgroundUrl}
+        backgroundImageUrl={CLINIC_STOREFRONT_BG}
       />
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
       <PublicFooter

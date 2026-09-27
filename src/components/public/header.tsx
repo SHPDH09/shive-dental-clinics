@@ -16,7 +16,7 @@ const nav = [
   { href: "/contact", label: "Contact" },
 ];
 
-const DEFAULT_HEADER_BG = "/branding/clinic-header-bg.png";
+import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 
 type HeaderProps = {
   clinicName: string;
@@ -26,7 +26,7 @@ type HeaderProps = {
 };
 
 export function PublicHeader({ clinicName, phone, backgroundImageUrl }: HeaderProps) {
-  const bgUrl = backgroundImageUrl?.trim() || DEFAULT_HEADER_BG;
+  const bgUrl = backgroundImageUrl?.trim() || CLINIC_STOREFRONT_BG;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
