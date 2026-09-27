@@ -144,8 +144,9 @@ async function main() {
         patientName: "Priya Sharma",
         rating: 5,
         testimonial:
-          "Excellent treatment and very friendly staff. The entire experience was comfortable and professional.",
-        treatment: "Dental Cleaning",
+          "Very professional treatment and friendly staff. I felt completely comfortable throughout my treatment.",
+        treatment: "Root Canal Treatment",
+        verifiedPatient: true,
         status: "PUBLISHED",
       },
     });

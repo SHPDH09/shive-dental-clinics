@@ -171,16 +171,17 @@ model Lead {
 }
 
 model Testimonial {
-  id           String        @id @default(cuid())
-  patientName  String
-  patientImage String?
-  rating       Int           @default(5)
-  testimonial  String
-  treatment    String?
-  testimonialDate DateTime   @default(now())
-  status       PublishStatus @default(PUBLISHED)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  patientName     String
+  patientImage    String?
+  rating          Int           @default(5)
+  testimonial     String
+  treatment       String?
+  testimonialDate DateTime      @default(now())
+  verifiedPatient Boolean       @default(true)
+  status          PublishStatus @default(PUBLISHED)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model Media {

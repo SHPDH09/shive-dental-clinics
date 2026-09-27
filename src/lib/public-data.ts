@@ -48,17 +48,7 @@ export async function getFeaturedDoctor() {
   }
 }
 
-export async function getPublicTestimonials() {
-  try {
-    return await prisma.testimonial.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: { testimonialDate: "desc" },
-      take: 12,
-    });
-  } catch {
-    return [];
-  }
-}
+export { getPublicTestimonials } from "@/lib/public-testimonials";
 
 export async function getPublicGallery() {
   try {

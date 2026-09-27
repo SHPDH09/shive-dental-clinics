@@ -69,6 +69,17 @@ export const adminCreateSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
 });
 
+export const testimonialSchema = z.object({
+  patientName: z.string().min(2, "Patient name is required"),
+  patientImage: z.string().max(2048).optional().or(z.literal("")),
+  rating: z.coerce.number().int().min(1).max(5),
+  treatment: z.string().min(1, "Treatment is required"),
+  testimonial: z.string().min(10, "Testimonial is too short"),
+  testimonialDate: z.string().optional(),
+  verifiedPatient: z.boolean().default(true),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("PUBLISHED"),
+});
+
 export const adminUpdateSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional().or(z.literal("")),

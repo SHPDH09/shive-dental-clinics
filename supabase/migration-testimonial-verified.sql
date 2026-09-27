@@ -1,0 +1,2 @@
+ALTER TABLE "Testimonial"
+  ADD COLUMN IF NOT EXISTS "verifiedPatient" BOOLEAN NOT NULL DEFAULT true;

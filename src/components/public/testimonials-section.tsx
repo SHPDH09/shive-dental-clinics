@@ -1,36 +1,32 @@
-import { Star } from "lucide-react";
+import Link from "next/link";
+import { TestimonialsCarousel } from "@/components/public/testimonials-carousel";
+import type { PublicTestimonial } from "@/lib/public-testimonials";
 
-type Testimonial = {
-  id: string;
-  patientName: string;
-  rating: number;
-  testimonial: string;
-  treatment: string | null;
-};
-
-export function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
+export function TestimonialsSection({ testimonials }: { testimonials: PublicTestimonial[] }) {
   if (testimonials.length === 0) return null;
 
   return (
-    <section id="testimonials" className="scroll-mt-24 bg-sky-50/50 py-20">
+    <section id="testimonials" className="scroll-mt-24 bg-gradient-to-b from-slate-50 via-white to-teal-50/30 py-20">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
-        <h2 className="section-title">Patient stories</h2>
-        <p className="section-subtitle">Real feedback from people who trust us with their smiles.</p>
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {testimonials.map((t) => (
-            <blockquote key={t.id} className="card-premium p-6">
-              <div className="flex gap-1 text-amber-400">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-600">&ldquo;{t.testimonial}&rdquo;</p>
-              <footer className="mt-4 border-t border-slate-100 pt-4">
-                <p className="font-semibold text-slate-900">{t.patientName}</p>
-                {t.treatment && <p className="text-xs text-slate-500">{t.treatment}</p>}
-              </footer>
-            </blockquote>
-          ))}
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-teal-600">Testimonials</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+            What Our Patients Say
+          </h2>
+          <p className="mt-3 text-base text-slate-600">
+            Real experiences from patients who trusted Shiv Dental Clinic.
+          </p>
+        </div>
+
+        <TestimonialsCarousel testimonials={testimonials} />
+
+        <div className="mt-10 flex justify-center">
+          <Link
+            href="/testimonials"
+            className="inline-flex items-center justify-center rounded-full border border-teal-200 bg-white px-6 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50"
+          >
+            View All Testimonials
+          </Link>
         </div>
       </div>
     </section>
