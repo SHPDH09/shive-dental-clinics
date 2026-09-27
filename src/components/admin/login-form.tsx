@@ -48,13 +48,26 @@ export function LoginForm() {
 
   const onSubmit = async (data: FormValues) => {
     setError(null);
+    const loginId = data.loginId.trim();
+
+    const direct = await fetch("/api/admin/session-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginId, password: data.password }),
+    });
+    if (direct.ok) {
+      router.push(callbackUrl);
+      router.refresh();
+      return;
+    }
+
     const res = await signIn("credentials", {
-      loginId: data.loginId.trim(),
+      loginId,
       password: data.password,
       redirect: false,
     });
     if (res?.error) {
-      setError("Invalid email/Admin ID or password. Use your Supabase admin account.");
+      setError("Invalid email/Admin ID or password. Use rk331159@gmail.com and your Supabase password.");
       return;
     }
     router.push(callbackUrl);

@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { readWorkerEnv } from "@/lib/worker-env";
+import { getSupabaseProjectUrl, getSupabasePublishableKey } from "@/lib/supabase/env";
 
 const BUILD_PLACEHOLDER = "build-time-placeholder-set-auth-secret-in-cloudflare";
 
@@ -10,6 +12,16 @@ function readEnvSecret(): string | undefined {
   return undefined;
 }
 
+/** Stable JWT secret when dashboard secret is missing (still set AUTH_SECRET in production). */
+function productionFallbackSecret(): string | undefined {
+  const pub = getSupabasePublishableKey();
+  if (!pub) return undefined;
+  const digest = createHash("sha256")
+    .update(`${getSupabaseProjectUrl()}|${pub}|shiv-dental-admin-jwt`)
+    .digest("hex");
+  return digest;
+}
+
 /** Resolve AUTH_SECRET (Cloudflare Workers injects dashboard Variables into process.env). */
 export function resolveAuthSecret(): string {
   const fromEnv = readEnvSecret();
@@ -19,7 +31,7 @@ export function resolveAuthSecret(): string {
     return "dev-only-auth-secret-change-me";
   }
 
-  return "";
+  return productionFallbackSecret() ?? "";
 }
 
 export function isAuthConfigured(): boolean {

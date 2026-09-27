@@ -17,25 +17,23 @@ async function checkDatabaseOk(): Promise<boolean> {
 }
 
 export async function GET() {
-  const dbOk = await checkDatabaseOk();
   const supabaseConfigured = isSupabaseConfigured();
-  const canLogin =
-    supabaseConfigured && isAuthConfigured() && (dbOk || Boolean(getSupabaseSecretKey()));
+  const authSecretOk = isAuthConfigured();
+  const databaseOk = await checkDatabaseOk();
+  const canLogin = supabaseConfigured && authSecretOk;
 
   return NextResponse.json({
-    authSecretOk: isAuthConfigured(),
-    databaseOk: dbOk,
+    authSecretOk,
+    databaseOk,
     supabaseConfigured,
     loginVia: "supabase",
     canLogin,
     message: !supabaseConfigured
       ? "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY."
-      : !isAuthConfigured()
-        ? "Set AUTH_SECRET in Cloudflare (Encrypt) for admin session."
-        : !getSupabaseSecretKey()
-          ? "Set SUPABASE_SECRET_KEY in Cloudflare (Encrypt) for data save/delete."
-          : !dbOk
-            ? "Run db:push or seed Admin table in Supabase."
-            : "OK — Supabase login and database ready.",
+      : !authSecretOk
+        ? "Session signing unavailable — contact support."
+        : !databaseOk
+          ? "Login uses Supabase Auth; add SUPABASE_SECRET_KEY for full admin CRUD."
+          : "OK — sign in with rk331159@gmail.com and your Supabase password.",
   });
 }
