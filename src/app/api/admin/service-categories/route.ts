@@ -6,15 +6,10 @@ import { getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
 import { errorMessageFromUnknown, mapSupabaseErrorMessage } from "@/lib/supabase/errors";
 import { serviceCategorySchema } from "@/lib/validations";
+import { firstZodFieldError } from "@/lib/zod-api-error";
 import { NextResponse } from "next/server";
 
 const listHandlers = createCrudHandlers("serviceCategory", { searchFields: ["name", "slug"] });
-
-function formatZodError(error: { flatten: () => { fieldErrors: Record<string, string[]> } }) {
-  const flat = error.flatten().fieldErrors;
-  const first = Object.values(flat).flat()[0];
-  return first ?? "Invalid category data";
-}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -52,7 +47,7 @@ export async function POST(req: Request) {
 
   const parsed = serviceCategorySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
+    return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
   }
 
   const { name, slug, sortOrder } = parsed.data;

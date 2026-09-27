@@ -143,8 +143,8 @@ const dayScheduleSchemaBranch = z.object({
 });
 
 export const branchSchema = z.object({
-  name: z.string().min(2),
-  slug: z.string().min(2).optional(),
+  name: z.string().min(2, "Branch name must be at least 2 characters"),
+  slug: z.string().optional(),
   image: z.string().optional(),
   address: z.string().min(5),
   city: z.string().min(2),
