@@ -1,8 +1,17 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
 import { PrismaClient } from "@/generated/prisma/client";
 import { resolveDatabaseUrl } from "@/lib/database-url";
 import { createPgPool } from "@/lib/pg-pool";
 import type { Pool } from "pg";
+
+function shouldUseNeonDriver(connectionString: string): boolean {
+  return (
+    connectionString.includes("supabase.com") ||
+    connectionString.includes("pooler.supabase.com")
+  );
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -10,6 +19,15 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(connectionString: string) {
+  if (shouldUseNeonDriver(connectionString)) {
+    neonConfig.poolQueryViaFetch = true;
+    const adapter = new PrismaNeon({ connectionString });
+    return new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
+
   const pool = globalForPrisma.pool ?? createPgPool(connectionString);
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.pool = pool;

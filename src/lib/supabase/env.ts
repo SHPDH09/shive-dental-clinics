@@ -1,4 +1,4 @@
-import { readWorkerEnv } from "@/lib/worker-env";
+import { readWorkerEnv } from "../worker-env";
 
 const DEFAULT_PROJECT_URL = "https://ojfxtzwzpoosmzotzyxm.supabase.co";
 
