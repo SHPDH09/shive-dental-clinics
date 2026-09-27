@@ -7,7 +7,10 @@ export const metadata: Metadata = {
   description: "Schedule your dental appointment at Shiv Dental Clinic.",
 };
 
-export default async function AppointmentPage() {
+type PageProps = { searchParams: Promise<{ service?: string }> };
+
+export default async function AppointmentPage({ searchParams }: PageProps) {
+  const { service: serviceSlug } = await searchParams;
   const services = await getPublicServices();
 
   return (
@@ -17,7 +20,10 @@ export default async function AppointmentPage() {
         Choose your preferred date and treatment. Our team will call you to confirm.
       </p>
       <div className="mt-10">
-        <AppointmentForm services={services.map((s) => ({ id: s.id, name: s.name }))} />
+        <AppointmentForm
+          services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
+          initialServiceSlug={serviceSlug ?? null}
+        />
       </div>
     </div>
   );

@@ -50,7 +50,10 @@ export default async function HomePage() {
               <h2 className="text-2xl font-bold text-slate-900">Book an appointment in under a minute</h2>
               <p className="mt-2 text-slate-600">Tell us your preferred time — we will confirm shortly.</p>
             </div>
-            <AppointmentForm services={services.map((s) => ({ id: s.id, name: s.name }))} compact />
+            <AppointmentForm
+              services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
+              compact
+            />
           </div>
         </div>
       </section>

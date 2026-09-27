@@ -1,25 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getPublicServices() {
-  try {
-    return await prisma.service.findMany({
-      where: { enabled: true },
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return [];
-  }
-}
-
-export async function getServiceBySlug(slug: string) {
-  try {
-    return await prisma.service.findFirst({
-      where: { slug, enabled: true },
-    });
-  } catch {
-    return null;
-  }
-}
+export {
+  getPublicServicesList as getPublicServices,
+  getPublicServiceBySlug as getServiceBySlug,
+  getFeaturedPublicServices,
+} from "@/lib/public-services";
+export type { PublicService } from "@/lib/public-service-types";
 
 export async function getPublicDoctors() {
   try {

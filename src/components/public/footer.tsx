@@ -68,7 +68,7 @@ export function PublicFooter({
               </Link>
             </li>
             <li>
-              <Link href="/#services" className="hover:text-white">
+              <Link href="/services" className="hover:text-white">
                 Services
               </Link>
             </li>
