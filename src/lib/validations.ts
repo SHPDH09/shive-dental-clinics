@@ -56,3 +56,22 @@ export const serviceSchema = z.object({
   enabled: z.boolean().optional(),
   sortOrder: z.number().optional(),
 });
+
+export const adminCreateSchema = z.object({
+  loginId: z
+    .string()
+    .min(4, "Admin ID at least 4 characters")
+    .max(32)
+    .regex(/^[A-Za-z0-9]+$/, "Admin ID: letters and numbers only"),
+  name: z.string().min(2),
+  email: z.string().email().optional().or(z.literal("")),
+  password: z.string().min(8, "Password at least 8 characters"),
+  role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
+});
+
+export const adminUpdateSchema = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  password: z.string().min(8).optional(),
+  role: z.enum(["SUPER_ADMIN", "STAFF"]).optional(),
+});

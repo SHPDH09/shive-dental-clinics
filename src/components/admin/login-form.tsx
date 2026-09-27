@@ -93,8 +93,13 @@ export function LoginForm() {
       )}
 
       <div>
-        <Label>Admin ID</Label>
-        <Input type="text" autoComplete="username" placeholder="Your admin ID" {...register("loginId")} />
+        <Label>Admin ID or email</Label>
+        <Input
+          type="text"
+          autoComplete="username"
+          placeholder="Admin ID or email"
+          {...register("loginId")}
+        />
       </div>
       <div>
         <Label>Password</Label>

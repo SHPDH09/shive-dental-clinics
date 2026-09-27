@@ -12,6 +12,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:setup": "tsx scripts/db-setup.ts",
     "admin:reset": "tsx scripts/reset-admin.ts",
+    "secrets:cloudflare": "node scripts/sync-cloudflare-secrets.mjs",
     "preview": "npm run cf:build && opennextjs-cloudflare preview",
     "deploy": "npm run cf:build && wrangler deploy",
     "cf:build": "node scripts/with-build-env.mjs opennextjs-cloudflare build"

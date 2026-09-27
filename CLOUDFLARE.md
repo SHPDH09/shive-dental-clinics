@@ -54,7 +54,15 @@ Set in **Workers & Pages → your project → Settings → Variables** for **Pro
 | `NEXTAUTH_URL` | Yes | same as `AUTH_URL` |
 | `NEXT_PUBLIC_APP_URL` | Yes | same as `AUTH_URL` |
 | `ADMIN_LOGIN_ID` | Yes (or wrangler var) | `1A74N3077` |
-| `ADMIN_PASSWORD` | Yes **Encrypt** | your admin password (e.g. `Rishikesh@2028`) — needed when RDS is not connected yet |
+| `ADMIN_PASSWORD` | Yes **Encrypt** | e.g. `Raunak@12583` — emergency login when RDS is down (with `ADMIN_LOGIN_ID` / `ADMIN_EMAIL`) |
+| `ADMIN_EMAIL` | Optional (wrangler var) | `rk331159@gmail.com` — can sign in with email when env fallback is active |
+
+From repo root (after `wrangler login` or `CLOUDFLARE_API_TOKEN`):
+
+```bash
+npm run secrets:cloudflare
+npm run deploy
+```
 
 Until RDS works, login uses **ADMIN_LOGIN_ID** + **ADMIN_PASSWORD** from Cloudflare secrets. After RDS works, run `npm run admin:reset` and DB login takes over.
 

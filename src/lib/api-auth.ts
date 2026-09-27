@@ -8,3 +8,17 @@ export async function requireAdminSession() {
   }
   return { session, error: null };
 }
+
+export async function requireSuperAdminSession() {
+  const { session, error } = await requireAdminSession();
+  if (error) return { session: null, error };
+
+  const role = (session!.user as { role?: string }).role;
+  if (role !== "SUPER_ADMIN") {
+    return {
+      session: null,
+      error: NextResponse.json({ error: "Forbidden — super admin only" }, { status: 403 }),
+    };
+  }
+  return { session, error: null };
+}
