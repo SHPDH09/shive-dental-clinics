@@ -1,21 +1,13 @@
 import { authenticateAdmin } from "@/lib/supabase/admin-login";
-import { resolveAuthSecret } from "@/lib/auth-env";
+import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
 import { loginSchema } from "@/lib/validations";
 import { encode } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-function sessionCookieName(secure: boolean) {
-  return secure ? "__Secure-authjs.session-token" : "authjs.session-token";
-}
-
 export async function POST(req: Request) {
   const secret = resolveAuthSecret();
-  if (!secret) {
-    return NextResponse.json({ error: "Server session not configured" }, { status: 503 });
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -34,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   const secure = process.env.NODE_ENV === "production";
-  const name = sessionCookieName(secure);
+  const name = sessionCookieName();
   const token = await encode({
     token: {
       sub: user.id,
