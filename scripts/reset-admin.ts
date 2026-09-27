@@ -5,9 +5,9 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { resolveDatabaseUrl } from "../src/lib/database-url";
 import { createPgPool } from "../src/lib/pg-pool";
 
-const loginId = process.env.ADMIN_LOGIN_ID ?? "1A74N3077";
+const loginId = process.env.ADMIN_LOGIN_ID ?? "rk331159@gmail.com";
 const password = process.env.ADMIN_PASSWORD ?? "Raunak@12583";
-const email = process.env.ADMIN_EMAIL?.trim() || "rk331159@gmail.com";
+const email = process.env.ADMIN_EMAIL?.trim() || loginId;
 const name = process.env.ADMIN_NAME ?? "Shiv Dental Admin";
 
 async function main() {
