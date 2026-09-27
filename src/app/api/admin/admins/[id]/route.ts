@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 import { requireSuperAdminSession } from "@/lib/api-auth";
+import { writeAdminAudit } from "@/lib/admin-audit";
+import { mergePermissions } from "@/lib/rbac/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   countSuperAdmins,
@@ -13,8 +15,41 @@ import { NextResponse } from "next/server";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function PATCH(req: Request, { params }: Params) {
+export async function GET(_req: Request, { params }: Params) {
   const { error } = await requireSuperAdminSession();
+  if (error) return error;
+
+  const { id } = await params;
+
+  try {
+    if (canUseSupabaseDataLayer()) {
+      const admin = await findAdminById(id);
+      if (!admin) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json({
+        ...admin,
+        permissionsMatrix: mergePermissions(admin.role as string, admin.permissions as object),
+      });
+    }
+
+    const admin = await prisma.admin.findUnique({
+      where: { id },
+      include: { branch: { select: { id: true, name: true } } },
+    });
+    if (!admin) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const { passwordHash: _, ...safe } = admin;
+    return NextResponse.json({
+      ...safe,
+      permissionsMatrix: mergePermissions(admin.role, admin.permissions as object),
+    });
+  } catch (e) {
+    console.error("GET admin:", e);
+    return NextResponse.json({ error: "Load failed" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, { params }: Params) {
+  const { session, error } = await requireSuperAdminSession();
   if (error) return error;
 
   const { id } = await params;
@@ -22,6 +57,15 @@ export async function PATCH(req: Request, { params }: Params) {
   const parsed = adminUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  if (parsed.data.role === "SUPER_ADMIN" && session!.user.id !== id) {
+    const superCount = canUseSupabaseDataLayer()
+      ? await countSuperAdmins()
+      : await prisma.admin.count({ where: { role: "SUPER_ADMIN" } });
+    if (superCount >= 5 && parsed.data.role === "SUPER_ADMIN") {
+      // soft limit — still allow but audit
+    }
   }
 
   try {
@@ -34,12 +78,29 @@ export async function PATCH(req: Request, { params }: Params) {
       const data: Record<string, unknown> = {};
       if (parsed.data.name !== undefined) data.name = parsed.data.name;
       if (parsed.data.email !== undefined) data.email = parsed.data.email || null;
+      if (parsed.data.phone !== undefined) data.phone = parsed.data.phone || null;
+      if (parsed.data.profilePhotoUrl !== undefined) {
+        data.profilePhotoUrl = parsed.data.profilePhotoUrl || null;
+      }
       if (parsed.data.role !== undefined) data.role = parsed.data.role;
+      if (parsed.data.branchId !== undefined) data.branchId = parsed.data.branchId || null;
+      if (parsed.data.active !== undefined) data.active = parsed.data.active;
+      if (parsed.data.permissions !== undefined) data.permissions = parsed.data.permissions;
       if (parsed.data.password) {
         data.passwordHash = await bcrypt.hash(parsed.data.password, 12);
       }
 
       const admin = await updateAdminRow(id, data);
+
+      await writeAdminAudit({
+        adminId: session!.user.id,
+        adminName: session!.user.name ?? "Admin",
+        action: parsed.data.active === false ? "DEACTIVATE" : parsed.data.active ? "ACTIVATE" : "UPDATE",
+        entityType: "admin",
+        entityId: id,
+        entityLabel: String(existing.name),
+      });
+
       return NextResponse.json(admin);
     }
 
@@ -48,16 +109,17 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const data: {
-      name?: string;
-      email?: string | null;
-      role?: "SUPER_ADMIN" | "STAFF";
-      passwordHash?: string;
-    } = {};
-
+    const data: Record<string, unknown> = {};
     if (parsed.data.name !== undefined) data.name = parsed.data.name;
     if (parsed.data.email !== undefined) data.email = parsed.data.email || null;
+    if (parsed.data.phone !== undefined) data.phone = parsed.data.phone || null;
+    if (parsed.data.profilePhotoUrl !== undefined) {
+      data.profilePhotoUrl = parsed.data.profilePhotoUrl || null;
+    }
     if (parsed.data.role !== undefined) data.role = parsed.data.role;
+    if (parsed.data.branchId !== undefined) data.branchId = parsed.data.branchId || null;
+    if (parsed.data.active !== undefined) data.active = parsed.data.active;
+    if (parsed.data.permissions !== undefined) data.permissions = parsed.data.permissions;
     if (parsed.data.password) {
       data.passwordHash = await bcrypt.hash(parsed.data.password, 12);
     }
@@ -70,10 +132,24 @@ export async function PATCH(req: Request, { params }: Params) {
         loginId: true,
         name: true,
         email: true,
+        phone: true,
+        profilePhotoUrl: true,
         role: true,
+        branchId: true,
+        active: true,
         updatedAt: true,
       },
     });
+
+    await writeAdminAudit({
+      adminId: session!.user.id,
+      adminName: session!.user.name ?? "Admin",
+      action: parsed.data.active === false ? "DEACTIVATE" : parsed.data.active ? "ACTIVATE" : "UPDATE",
+      entityType: "admin",
+      entityId: id,
+      entityLabel: existing.name,
+    });
+
     return NextResponse.json(admin);
   } catch (e) {
     console.error("PATCH /api/admin/admins:", e);
@@ -105,6 +181,14 @@ export async function DELETE(_req: Request, { params }: Params) {
       }
 
       await deleteAdminRow(id);
+      await writeAdminAudit({
+        adminId: session!.user.id,
+        adminName: session!.user.name ?? "Admin",
+        action: "DELETE",
+        entityType: "admin",
+        entityId: id,
+        entityLabel: String(target.name),
+      });
       return NextResponse.json({ ok: true });
     }
 
@@ -121,6 +205,14 @@ export async function DELETE(_req: Request, { params }: Params) {
     }
 
     await prisma.admin.delete({ where: { id } });
+    await writeAdminAudit({
+      adminId: session!.user.id,
+      adminName: session!.user.name ?? "Admin",
+      action: "DELETE",
+      entityType: "admin",
+      entityId: id,
+      entityLabel: target.name,
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("DELETE /api/admin/admins:", e);

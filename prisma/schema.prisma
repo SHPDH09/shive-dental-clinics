@@ -9,6 +9,8 @@ datasource db {
 
 enum AdminRole {
   SUPER_ADMIN
+  MANAGER
+  RECEPTIONIST
   STAFF
 }
 
@@ -82,14 +84,45 @@ enum BranchStatus {
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  loginId      String    @unique
-  name         String
-  email        String?   @unique
-  passwordHash String
-  role         AdminRole @default(STAFF)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  loginId         String    @unique
+  name            String
+  email           String?   @unique
+  phone           String?
+  profilePhotoUrl String?
+  passwordHash    String
+  role            AdminRole @default(RECEPTIONIST)
+  branchId        String?
+  branch          Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  active          Boolean   @default(true)
+  lastLoginAt     DateTime?
+  permissions     Json?
+  loginAttempts   Int       @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  activityLogs    AdminActivityLog[]
+
+  @@index([role])
+  @@index([branchId])
+  @@index([active])
+}
+
+model AdminActivityLog {
+  id          String   @id @default(cuid())
+  adminId     String?
+  admin       Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminName   String
+  action      String
+  entityType  String?
+  entityId    String?
+  entityLabel String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
 }
 
 model Patient {
@@ -351,6 +384,7 @@ model Branch {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   appointments   Appointment[]
+  admins         Admin[]
 }
 
 model ClinicSettings {

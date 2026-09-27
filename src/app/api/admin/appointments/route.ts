@@ -1,4 +1,5 @@
-import { requireAdminSession } from "@/lib/api-auth";
+import { branchScopeFilter } from "@/lib/admin-context";
+import { requireAdminContext } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { listAppointmentsAdmin } from "@/lib/supabase/appointments-admin";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
@@ -7,8 +8,10 @@ import { addDays, endOfDay, startOfDay } from "date-fns";
 import type { AppointmentStatus } from "@/generated/prisma/client";
 
 export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
+  const { admin, error } = await requireAdminContext();
   if (error) return error;
+
+  const scopedBranch = branchScopeFilter(admin ?? null);
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -38,10 +41,15 @@ export async function GET(req: Request) {
     }
 
     const where: {
+      branchId?: string;
       status?: AppointmentStatus;
       treatmentName?: { contains: string; mode: "insensitive" };
       appointmentDate?: { gte?: Date; lte?: Date };
     } = {};
+
+    if (scopedBranch) {
+      where.branchId = scopedBranch;
+    }
 
     if (status) {
       where.status = status as AppointmentStatus;

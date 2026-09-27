@@ -1,5 +1,11 @@
+import { loadAdminContext, type AdminContext } from "@/lib/admin-context";
 import { decode } from "next-auth/jwt";
 import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
+import {
+  can,
+  type PermissionAction,
+  type PermissionResource,
+} from "@/lib/rbac/permissions";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -68,3 +74,40 @@ export async function requireSuperAdminSession() {
   }
   return { session, error: null };
 }
+
+export async function requireAdminContext() {
+  const { session, error } = await requireAdminSession();
+  if (error) return { session: null, admin: null, error };
+
+  const admin = await loadAdminContext(session!.user.id);
+  if (admin && !admin.active) {
+    return {
+      session: null,
+      admin: null,
+      error: NextResponse.json({ error: "Account deactivated" }, { status: 403 }),
+    };
+  }
+
+  return { session, admin, error: null };
+}
+
+export async function requirePermission(
+  resource: PermissionResource,
+  action: PermissionAction = "view",
+) {
+  const { session, admin, error } = await requireAdminContext();
+  if (error) return { session: null, admin: null, error };
+
+  const matrix = admin?.permissions;
+  if (!matrix || !can(matrix, resource, action)) {
+    return {
+      session: null,
+      admin: null,
+      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+
+  return { session, admin, error: null };
+}
+
+export type { AdminContext };
