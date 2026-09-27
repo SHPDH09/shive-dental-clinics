@@ -16,20 +16,31 @@ const nav = [
   { href: "/contact", label: "Contact" },
 ];
 
+const DEFAULT_HEADER_BG = "/branding/clinic-header-bg.png";
+
 type HeaderProps = {
   clinicName: string;
   phone: string;
   logoUrl?: string | null;
+  backgroundImageUrl?: string | null;
 };
 
-export function PublicHeader({ clinicName, phone }: HeaderProps) {
+export function PublicHeader({ clinicName, phone, backgroundImageUrl }: HeaderProps) {
+  const bgUrl = backgroundImageUrl?.trim() || DEFAULT_HEADER_BG;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/20 bg-[var(--primary)] shadow-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+    <header className="relative sticky top-0 z-50 border-b border-white/20 shadow-md">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url("${bgUrl.replace(/"/g, "%22")}")` }}
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--primary)]/82" />
+
+      <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="font-bold text-white">
           <ClinicNameAlternate englishName={clinicName} className="text-white" />
         </Link>
@@ -74,7 +85,7 @@ export function PublicHeader({ clinicName, phone }: HeaderProps) {
 
       <div
         className={cn(
-          "border-t border-white/20 bg-[var(--primary)] px-4 py-4 lg:hidden",
+          "relative z-10 border-t border-white/20 px-4 py-4 lg:hidden",
           open ? "block" : "hidden",
         )}
       >
