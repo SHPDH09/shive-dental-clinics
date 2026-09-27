@@ -10,7 +10,8 @@
   "vars": {
     "AUTH_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev",
     "NEXTAUTH_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev",
-    "NEXT_PUBLIC_APP_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev"
+    "NEXT_PUBLIC_APP_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev",
+    "ADMIN_LOGIN_ID": "1A74N3077"
   },
   "assets": {
     "directory": ".open-next/assets",

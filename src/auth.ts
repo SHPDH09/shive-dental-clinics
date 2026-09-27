@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { loginSchema } from "@/lib/validations";
 import { authConfig } from "@/auth.config";
 import { resolveAuthSecret } from "@/lib/auth-env";
+import { verifyEnvAdmin } from "@/lib/env-admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -19,26 +20,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
+        const loginId = parsed.data.loginId.trim();
+        const password = parsed.data.password;
+
         try {
           const { prisma } = await import("@/lib/prisma");
           const admin = await prisma.admin.findUnique({
-            where: { loginId: parsed.data.loginId.trim() },
+            where: { loginId },
           });
-          if (!admin) return null;
-
-          const valid = await bcrypt.compare(parsed.data.password, admin.passwordHash);
-          if (!valid) return null;
-
-          return {
-            id: admin.id,
-            email: admin.email ?? admin.loginId,
-            name: admin.name,
-            role: admin.role,
-          };
+          if (admin) {
+            const valid = await bcrypt.compare(password, admin.passwordHash);
+            if (valid) {
+              return {
+                id: admin.id,
+                email: admin.email ?? admin.loginId,
+                name: admin.name,
+                role: admin.role,
+              };
+            }
+          }
         } catch (error) {
-          console.error("Admin login DB error:", error);
-          return null;
+          console.error("Admin login DB error (will try env admin if configured):", error);
         }
+
+        return verifyEnvAdmin(loginId, password);
       },
     }),
   ],

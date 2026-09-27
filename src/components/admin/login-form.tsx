@@ -8,9 +8,16 @@ import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type FormValues = z.infer<typeof loginSchema>;
+
+type LoginHints = {
+  authSecretOk: boolean;
+  databaseOk: boolean;
+  envAdminFallback: boolean;
+  message: string;
+};
 
 export function LoginForm() {
   const router = useRouter();
@@ -18,8 +25,16 @@ export function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin";
   const authError = searchParams.get("error");
   const [error, setError] = useState<string | null>(
-    authError ? "Sign-in failed. Check Admin ID, password, and server configuration (AUTH_SECRET)." : null,
+    authError ? "Sign-in failed. See the checklist below." : null,
   );
+  const [hints, setHints] = useState<LoginHints | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health/login-hints")
+      .then((r) => r.json())
+      .then(setHints)
+      .catch(() => null);
+  }, []);
 
   const {
     register,
@@ -37,7 +52,15 @@ export function LoginForm() {
       redirect: false,
     });
     if (res?.error) {
-      setError("Invalid Admin ID or password.");
+      if (hints && !hints.authSecretOk) {
+        setError("AUTH_SECRET is missing on the server. Add it in Cloudflare → Variables (Encrypt), then redeploy.");
+      } else if (hints && !hints.databaseOk && !hints.envAdminFallback) {
+        setError(
+          "Database is not connected and emergency admin env vars are not set. Add DATABASE_URL and ADMIN_PASSWORD (encrypted) in Cloudflare.",
+        );
+      } else {
+        setError("Invalid Admin ID or password.");
+      }
       return;
     }
     router.push(callbackUrl);
@@ -50,6 +73,25 @@ export function LoginForm() {
         <h1 className="text-2xl font-bold text-slate-900">Admin sign in</h1>
         <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — authorized staff only</p>
       </div>
+
+      {hints && (
+        <div
+          className={`rounded-xl border p-3 text-xs leading-relaxed ${
+            hints.authSecretOk && (hints.databaseOk || hints.envAdminFallback)
+              ? "border-teal-200 bg-teal-50 text-teal-900"
+              : "border-amber-200 bg-amber-50 text-amber-950"
+          }`}
+        >
+          <p className="font-semibold">Server checklist</p>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
+            <li>Database: {hints.databaseOk ? "Connected" : "Not connected"}</li>
+            <li>Emergency env login: {hints.envAdminFallback ? "Enabled" : "Not configured"}</li>
+          </ul>
+          <p className="mt-2">{hints.message}</p>
+        </div>
+      )}
+
       <div>
         <Label>Admin ID</Label>
         <Input type="text" autoComplete="username" placeholder="Your admin ID" {...register("loginId")} />

@@ -53,6 +53,10 @@ Set in **Workers & Pages → your project → Settings → Variables** for **Pro
 | `AUTH_URL` | Yes | `https://shive-dental-clinics.<account>.workers.dev` (your live site URL) |
 | `NEXTAUTH_URL` | Yes | same as `AUTH_URL` |
 | `NEXT_PUBLIC_APP_URL` | Yes | same as `AUTH_URL` |
+| `ADMIN_LOGIN_ID` | Yes (or wrangler var) | `1A74N3077` |
+| `ADMIN_PASSWORD` | Yes **Encrypt** | your admin password (e.g. `Rishikesh@2028`) — needed when RDS is not connected yet |
+
+Until RDS works, login uses **ADMIN_LOGIN_ID** + **ADMIN_PASSWORD** from Cloudflare secrets. After RDS works, run `npm run admin:reset` and DB login takes over.
 
 **Admin `/api/auth/session` 500 error** almost always means **`AUTH_SECRET` or `AUTH_URL` is missing** in Cloudflare Variables (Production).
 
