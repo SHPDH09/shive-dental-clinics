@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 const defaultSettings = {
   id: "default",
   clinicName: "Shiv Dental Clinic",
+  tagline: "Healthy Teeth. Confident Smiles.",
   logoUrl: null as string | null,
+  faviconUrl: null as string | null,
   phone: "+91 9973479904",
   whatsapp: "+91 9973479904",
   email: "info@shivdentalclinic.com",

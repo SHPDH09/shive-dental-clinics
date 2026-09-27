@@ -267,27 +267,52 @@ model Branch {
 }
 
 model ClinicSettings {
-  id              String   @id @default("default")
-  clinicName      String   @default("Shiv Dental Clinic")
-  logoUrl         String?
-  phone           String   @default("+91 98765 43210")
-  whatsapp        String   @default("+91 98765 43210")
-  email           String   @default("info@shivdentalclinic.com")
-  address         String   @default("123 Health Street, Medical District, Mumbai, India")
-  mapEmbedUrl     String?
-  mapLink         String?
-  openingHours    Json?
-  socialLinks     Json?
-  emergencyContact String?
-  footerText      String?
-  aboutIntro      String?
-  mission         String?
-  vision          String?
-  whyChooseUs     String?
-  aboutImages     Json?
-  seoTitle        String?
-  seoDescription  String?
-  showRevenueCard Boolean  @default(false)
-  monthlyRevenue  Decimal? @db.Decimal(12, 2)
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default("default")
+  clinicName         String   @default("Shiv Dental Clinic")
+  tagline            String?
+  logoUrl            String?
+  faviconUrl         String?
+  phone              String   @default("+91 98765 43210")
+  whatsapp           String   @default("+91 98765 43210")
+  email              String   @default("info@shivdentalclinic.com")
+  address            String   @default("123 Health Street, Medical District, Mumbai, India")
+  city               String?
+  state              String?
+  pinCode            String?
+  mapEmbedUrl        String?
+  mapLink            String?
+  googleBusinessUrl  String?
+  openingHours       Json?
+  socialLinks        Json?
+  emergencyContact   String?
+  footerText         String?
+  aboutIntro         String?
+  mission            String?
+  vision             String?
+  whyChooseUs        String?
+  aboutImages        Json?
+  seoTitle           String?
+  seoDescription     String?
+  defaultLanguage    String   @default("en")
+  timezone           String   @default("Asia/Kolkata")
+  currency           String   @default("INR")
+  extendedSettings   Json     @default("{}")
+  secrets            Json     @default("{}")
+  showRevenueCard    Boolean  @default(false)
+  monthlyRevenue     Decimal? @db.Decimal(12, 2)
+  updatedAt          DateTime @updatedAt
+}
+
+model AdminActivityLog {
+  id          String   @id @default(cuid())
+  adminId     String?
+  adminName   String
+  action      String
+  entityType  String?
+  entityId    String?
+  entityLabel String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
 }

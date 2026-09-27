@@ -148,3 +148,49 @@ export const adminUpdateSchema = z.object({
   password: z.string().min(8).optional(),
   role: z.enum(["SUPER_ADMIN", "STAFF"]).optional(),
 });
+
+export const clinicSettingsPatchSchema = z
+  .object({
+    clinicName: z.string().min(2).optional(),
+    tagline: z.string().max(200).optional().nullable(),
+    logoUrl: z.string().optional().nullable(),
+    faviconUrl: z.string().optional().nullable(),
+    phone: z.string().optional(),
+    whatsapp: z.string().optional(),
+    email: z.string().email().optional(),
+    address: z.string().optional(),
+    city: z.string().optional().nullable(),
+    state: z.string().optional().nullable(),
+    pinCode: z.string().optional().nullable(),
+    mapEmbedUrl: z.string().optional().nullable(),
+    mapLink: z.string().optional().nullable(),
+    googleBusinessUrl: z.string().optional().nullable(),
+    emergencyContact: z.string().optional().nullable(),
+    footerText: z.string().optional().nullable(),
+    aboutIntro: z.string().optional().nullable(),
+    mission: z.string().optional().nullable(),
+    vision: z.string().optional().nullable(),
+    whyChooseUs: z.string().optional().nullable(),
+    seoTitle: z.string().optional().nullable(),
+    seoDescription: z.string().optional().nullable(),
+    defaultLanguage: z.string().optional(),
+    timezone: z.string().optional(),
+    currency: z.string().optional(),
+    showRevenueCard: z.boolean().optional(),
+    monthlyRevenue: z.union([z.string(), z.number()]).optional().nullable(),
+    openingHours: z.unknown().optional(),
+    socialLinks: z.record(z.string(), z.string()).optional(),
+    extended: z.record(z.string(), z.unknown()).optional(),
+    secrets: z
+      .object({
+        smtpPassword: z.string().optional(),
+        paymentApiKey: z.string().optional(),
+        paymentApiSecret: z.string().optional(),
+        captchaSecret: z.string().optional(),
+        smsApiKey: z.string().optional(),
+        storageAccessKey: z.string().optional(),
+        storageSecretKey: z.string().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
