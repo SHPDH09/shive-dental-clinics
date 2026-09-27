@@ -1,7 +1,12 @@
 import type { NextAuthConfig } from "next-auth";
+import { getAuthSecret, getAuthUrl } from "@/lib/auth-env";
+
+const secret = getAuthSecret();
 
 export const authConfig = {
   trustHost: true,
+  secret: secret || undefined,
+  ...(getAuthUrl() ? { url: getAuthUrl() } : {}),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",

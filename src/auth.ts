@@ -17,21 +17,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const { prisma } = await import("@/lib/prisma");
-        const admin = await prisma.admin.findUnique({
-          where: { email: parsed.data.email.toLowerCase() },
-        });
-        if (!admin) return null;
+        try {
+          const { prisma } = await import("@/lib/prisma");
+          const admin = await prisma.admin.findUnique({
+            where: { email: parsed.data.email.toLowerCase() },
+          });
+          if (!admin) return null;
 
-        const valid = await bcrypt.compare(parsed.data.password, admin.passwordHash);
-        if (!valid) return null;
+          const valid = await bcrypt.compare(parsed.data.password, admin.passwordHash);
+          if (!valid) return null;
 
-        return {
-          id: admin.id,
-          email: admin.email,
-          name: admin.name,
-          role: admin.role,
-        };
+          return {
+            id: admin.id,
+            email: admin.email,
+            name: admin.name,
+            role: admin.role,
+          };
+        } catch (error) {
+          console.error("Admin login DB error:", error);
+          return null;
+        }
       },
     }),
   ],

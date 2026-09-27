@@ -46,13 +46,28 @@ npm run preview
 
 Set in **Workers & Pages → your project → Settings → Variables** for **Production** and **Build**:
 
-| Variable | Example |
-|----------|---------|
-| `DATABASE_URL` | `postgresql://admin:****@database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432/shiv-dental-clinic?schema=public&sslmode=require` |
-| `AUTH_SECRET` | long random string |
-| `NEXT_PUBLIC_APP_URL` | `https://your-domain.workers.dev` or custom domain |
+| Variable | Required | Example |
+|----------|----------|---------|
+| `DATABASE_URL` | Yes | `postgresql://admin:****@database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432/shiv-dental-clinic?schema=public&sslmode=require` |
+| `AUTH_SECRET` | Yes | `openssl rand -base64 32` output |
+| `AUTH_URL` | Yes | `https://shive-dental-clinics.<account>.workers.dev` (your live site URL) |
+| `NEXTAUTH_URL` | Yes | same as `AUTH_URL` |
+| `NEXT_PUBLIC_APP_URL` | Yes | same as `AUTH_URL` |
 
-Build also works without `DATABASE_URL` (placeholder at build time), but **Production must have real values** for the live site and admin.
+**Admin `/api/auth/session` 500 error** almost always means **`AUTH_SECRET` or `AUTH_URL` is missing** in Cloudflare Variables (Production).
+
+After deploy, check:
+
+- `https://YOUR-SITE/api/health/config` — auth + DATABASE_URL configured?
+- `https://YOUR-SITE/api/health/db` — RDS reachable?
+
+### AWS RDS from Cloudflare
+
+1. RDS must be **publicly accessible** (or use **Cloudflare Hyperdrive** to your RDS URL).
+2. Security group: allow **PostgreSQL 5432** from the internet (or Hyperdrive only).
+3. Use the writer endpoint and database name `shiv-dental-clinic`.
+
+Build works without real env vars; **Production must have all variables above**.
 
 ---
 

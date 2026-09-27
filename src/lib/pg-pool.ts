@@ -19,6 +19,7 @@ function iamAuthEnabled(): boolean {
 export function createPgPool(connectionString: string) {
   const isRds = connectionString.includes("rds.amazonaws.com");
   const ssl = isRds ? { rejectUnauthorized: false as const } : undefined;
+  const serverless = { max: 1, idleTimeoutMillis: 20_000, connectionTimeoutMillis: 15_000 };
 
   if (iamAuthEnabled()) {
     const { host, port, user, database } = parseDatabaseUrl(connectionString);
@@ -37,7 +38,7 @@ export function createPgPool(connectionString: string) {
       database,
       password: () => signer.getAuthToken(),
       ssl,
-      max: 10,
+      ...serverless,
     };
     return new Pool(config);
   }
@@ -45,6 +46,6 @@ export function createPgPool(connectionString: string) {
   return new Pool({
     connectionString,
     ssl,
-    max: 10,
+    ...serverless,
   });
 }
