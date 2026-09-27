@@ -25,10 +25,26 @@ export async function getPublicDoctors() {
   try {
     return await prisma.doctor.findMany({
       where: { enabled: true },
-      orderBy: { sortOrder: "asc" },
+      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }],
     });
   } catch {
     return [];
+  }
+}
+
+export async function getFeaturedDoctor() {
+  try {
+    const featured = await prisma.doctor.findFirst({
+      where: { enabled: true, featured: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (featured) return featured;
+    return await prisma.doctor.findFirst({
+      where: { enabled: true },
+      orderBy: { sortOrder: "asc" },
+    });
+  } catch {
+    return null;
   }
 }
 

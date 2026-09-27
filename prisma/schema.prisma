@@ -104,18 +104,22 @@ model Service {
 }
 
 model Doctor {
-  id              String        @id @default(cuid())
-  name            String
-  qualification   String
-  specialization  String
-  experienceYears Int
-  bio             String
-  image           String?
-  consultationHours String?
-  enabled         Boolean       @default(true)
-  sortOrder       Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                 String   @id @default(cuid())
+  name               String
+  qualification      String
+  specialization     String
+  experienceYears    Int
+  bio                String
+  summary            String?
+  registrationNumber String?
+  phone              String?
+  image              String?
+  consultationHours  String?
+  featured           Boolean  @default(false)
+  enabled            Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Appointment {

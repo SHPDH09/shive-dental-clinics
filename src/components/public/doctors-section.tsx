@@ -7,8 +7,12 @@ type Doctor = {
   specialization: string;
   experienceYears: number;
   bio: string;
+  summary?: string | null;
+  registrationNumber?: string | null;
+  phone?: string | null;
   consultationHours: string | null;
   image: string | null;
+  featured?: boolean;
 };
 
 export function DoctorsSection({ doctors }: { doctors: Doctor[] }) {
@@ -34,7 +38,10 @@ export function DoctorsSection({ doctors }: { doctors: Doctor[] }) {
                 <h3 className="text-lg font-bold text-slate-900">{doc.name}</h3>
                 <p className="text-sm font-medium text-[var(--primary)]">{doc.specialization}</p>
                 <p className="mt-1 text-xs text-slate-500">{doc.qualification}</p>
-                <p className="mt-3 text-sm text-slate-600 line-clamp-3">{doc.bio}</p>
+                <p className="mt-3 text-sm text-slate-600 line-clamp-3">{doc.summary?.trim() || doc.bio}</p>
+                {doc.registrationNumber && (
+                  <p className="mt-2 text-xs text-slate-500">Reg. {doc.registrationNumber}</p>
+                )}
                 <p className="mt-4 text-xs text-slate-500">
                   {doc.experienceYears}+ years · {doc.consultationHours ?? "By appointment"}
                 </p>

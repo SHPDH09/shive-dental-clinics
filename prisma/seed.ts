@@ -38,29 +38,35 @@ async function main() {
     },
   });
 
+  const clinicData = {
+    clinicName: "Shiv Dental Clinic",
+    phone: "+91 9973479904",
+    whatsapp: "+91 9973479904",
+    emergencyContact: "+91 9973479904",
+    email: "info@shivdentalclinic.com",
+    address: "Shiv Dental Clinic, SG R Annexe, India",
+    logoUrl: "/images/shiv-dental-branding.jpg",
+    aboutIntro:
+      "Shiv Dental Clinic (शिव डेंटल क्लिनिक) provides trusted oral and dental surgery care with a patient-first approach, modern equipment, and a hygienic environment.",
+    mission: "To deliver ethical, painless, and advanced dental treatment for every patient.",
+    vision: "Healthy smiles and lasting trust in our community.",
+    whyChooseUs:
+      "Experienced dental surgeon, registered practice, personalized treatment plans, and affordable care at SG R Annexe.",
+    openingHours: {
+      weekdays: "Mon – Sat: 9:00 AM – 8:00 PM",
+      sunday: "Sun: 10:00 AM – 2:00 PM (Emergency)",
+    },
+    socialLinks: {},
+    footerText: "© Shiv Dental Clinic. All rights reserved.",
+    seoTitle: "Shiv Dental Clinic | Oral & Dental Surgeon",
+    seoDescription:
+      "Shiv Dental Clinic — Dr. Rishikesh Prasad, Oral & Dental Surgeon. Call 9973479904 to book your appointment.",
+  };
+
   await prisma.clinicSettings.upsert({
     where: { id: "default" },
-    update: {},
-    create: {
-      id: "default",
-      aboutIntro:
-        "Shiv Dental Clinic is a modern dental care center dedicated to compassionate, high-quality treatment for patients of all ages.",
-      mission: "To deliver painless, ethical, and advanced dental care with a personal touch.",
-      vision: "To be the most trusted dental clinic in our community for healthy, confident smiles.",
-      whyChooseUs:
-        "We combine experienced specialists, modern technology, and a warm environment so every visit feels comfortable and clear.",
-      openingHours: {
-        weekdays: "Mon – Sat: 9:00 AM – 8:00 PM",
-        sunday: "Sun: 10:00 AM – 2:00 PM (Emergency)",
-      },
-      socialLinks: {
-        facebook: "https://facebook.com",
-        instagram: "https://instagram.com",
-      },
-      seoTitle: "Shiv Dental Clinic | Premium Dental Care",
-      seoDescription:
-        "Book appointments at Shiv Dental Clinic — expert dentists, modern treatments, and compassionate care for your whole family.",
-    },
+    update: clinicData,
+    create: { id: "default", ...clinicData },
   });
 
   const statCount = await prisma.heroStat.count();
@@ -96,13 +102,20 @@ async function main() {
   if (doctorCount === 0) {
     await prisma.doctor.create({
       data: {
-        name: "Dr. Shiv Patel",
-        qualification: "BDS, MDS (Prosthodontics)",
-        specialization: "Cosmetic & Restorative Dentistry",
-        experienceYears: 12,
-        bio: "Dr. Shiv Patel leads Shiv Dental Clinic with a patient-first approach and expertise in smile design and implants.",
-        consultationHours: "Mon – Sat: 10:00 AM – 6:00 PM",
+        name: "Dr. Rishikesh Prasad",
+        qualification: "B.D.S. (Hons), M.Sc (Microbiology), MIDA, C.C.C.M.",
+        specialization: "Oral & Dental Surgeon",
+        experienceYears: 10,
+        summary:
+          "Registered oral and dental surgeon offering comprehensive mouth and dental surgical care at Shiv Dental Clinic.",
+        registrationNumber: "XX84/A/2017",
+        phone: "9973479904",
+        bio: "Dr. Rishikesh Prasad (डॉ. ऋषिकेश प्रसाद) is an Oral & Dental Surgeon at Shiv Dental Clinic with qualifications including B.D.S. (Honours), M.Sc in Microbiology, MIDA, and C.C.C.M. Patients receive careful diagnosis, clear guidance, and comfortable treatment in a professional setting.",
+        image: "/images/shiv-dental-branding.jpg",
+        consultationHours: "Mon – Sat: By appointment",
+        featured: true,
         enabled: true,
+        sortOrder: 0,
       },
     });
   }

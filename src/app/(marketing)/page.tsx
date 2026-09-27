@@ -2,6 +2,7 @@ import { HeroSection } from "@/components/public/hero";
 import { ServicesSection } from "@/components/public/services-section";
 import { AboutSection } from "@/components/public/about-section";
 import { DoctorsSection } from "@/components/public/doctors-section";
+import { FeaturedDoctorSection } from "@/components/public/featured-doctor-section";
 import { TestimonialsSection } from "@/components/public/testimonials-section";
 import { GallerySection } from "@/components/public/gallery-section";
 import { BeforeAfterSection } from "@/components/public/before-after-section";
@@ -10,6 +11,7 @@ import { AppointmentForm } from "@/components/public/appointment-form";
 import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
   getPublicBeforeAfter,
+  getFeaturedDoctor,
   getPublicDoctors,
   getPublicGallery,
   getPublicServices,
@@ -17,10 +19,12 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, doctors, testimonials, gallery, beforeAfter] = await Promise.all([
+  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, beforeAfter] =
+    await Promise.all([
     getClinicSettings(),
     getHeroStats(),
     getPublicServices(),
+    getFeaturedDoctor(),
     getPublicDoctors(),
     getPublicTestimonials(),
     getPublicGallery(),
@@ -50,6 +54,7 @@ export default async function HomePage() {
         vision={settings.vision}
         whyChooseUs={settings.whyChooseUs}
       />
+      <FeaturedDoctorSection doctor={featuredDoctor} />
       <DoctorsSection doctors={doctors} />
       <TestimonialsSection testimonials={testimonials} />
       <GallerySection items={gallery} />
