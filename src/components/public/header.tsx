@@ -6,6 +6,7 @@ import { Menu, Phone, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ClinicNameAlternate } from "@/components/public/clinic-name-alternate";
+import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 
 const nav = [
   { href: "/services", label: "Services" },
@@ -15,8 +16,6 @@ const nav = [
   { href: "/branches", label: "Locations" },
   { href: "/contact", label: "Contact" },
 ];
-
-import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 
 type HeaderProps = {
   clinicName: string;
