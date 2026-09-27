@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fbff;
+  --foreground: #0f172a;
+  --primary: #0369a1;
+  --primary-light: #0ea5e9;
+  --accent: #06b6d4;
+  --cta: #0d9488;
+  --card: #ffffff;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 20px 50px -20px rgb(3 105 161 / 0.25);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-cta: var(--cta);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-sans);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease forwards;
+}
+
+.card-premium {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-full bg-[var(--cta)] px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cta)];
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-full border border-[var(--primary)] bg-white px-6 py-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-sky-50;
+}
+
+.section-title {
+  @apply text-3xl font-bold tracking-tight text-slate-900 md:text-4xl;
+}
+
+.section-subtitle {
+  @apply mt-3 max-w-2xl text-lg text-slate-600;
+}

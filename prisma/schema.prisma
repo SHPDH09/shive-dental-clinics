@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  STAFF
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  CONVERTED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  GOOGLE
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  REFERRAL
+  WALK_IN
+  OTHER
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum EnquiryStatus {
+  UNREAD
+  READ
+}
+
+enum NotificationType {
+  NEW_APPOINTMENT
+  NEW_LEAD
+  NEW_ENQUIRY
+  APPOINTMENT_CANCELLED
+  NEW_PATIENT
+}
+
+model Admin {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(STAFF)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Patient {
+  id             String        @id @default(cuid())
+  patientCode    String        @unique
+  name           String
+  phone          String
+  email          String?
+  gender         String?
+  dateOfBirth    DateTime?
+  address        String?
+  medicalNotes   String?
+  treatmentHistory String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  appointments   Appointment[]
+}
+
+model Service {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String
+  shortDesc   String?
+  image       String?
+  price       Decimal?      @db.Decimal(10, 2)
+  enabled     Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  appointments Appointment[]
+}
+
+model Doctor {
+  id              String        @id @default(cuid())
+  name            String
+  qualification   String
+  specialization  String
+  experienceYears Int
+  bio             String
+  image           String?
+  consultationHours String?
+  enabled         Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  appointmentCode String            @unique
+  patientId       String?
+  patient         Patient?          @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  patientName     String
+  phone           String
+  email           String?
+  serviceId       String?
+  service         Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  treatmentName   String
+  appointmentDate DateTime
+  appointmentTime String
+  message         String?
+  notes           String?
+  status          AppointmentStatus @default(PENDING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  name            String
+  phone           String
+  email           String?
+  source          LeadSource @default(WEBSITE)
+  interestedService String?
+  status          LeadStatus @default(NEW)
+  followUpDate    DateTime?
+  notes           String?
+  assignedStaff   String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Testimonial {
+  id           String        @id @default(cuid())
+  patientName  String
+  patientImage String?
+  rating       Int           @default(5)
+  testimonial  String
+  treatment    String?
+  testimonialDate DateTime   @default(now())
+  status       PublishStatus @default(PUBLISHED)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Media {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  mediaType   MediaType
+  mediaUrl    String
+  category    String        @default("clinic")
+  isPublic    Boolean       @default(true)
+  status      PublishStatus @default(PUBLISHED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model BeforeAfter {
+  id           String        @id @default(cuid())
+  treatment    String
+  beforeImage  String
+  afterImage   String
+  description  String?
+  status       PublishStatus @default(PUBLISHED)
+  sortOrder    Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Enquiry {
+  id        String        @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  message   String
+  status    EnquiryStatus @default(UNREAD)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([read, createdAt])
+}
+
+model HeroStat {
+  id        String   @id @default(cuid())
+  label     String
+  value     String
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model ClinicSettings {
+  id              String   @id @default("default")
+  clinicName      String   @default("Shiv Dental Clinic")
+  logoUrl         String?
+  phone           String   @default("+91 98765 43210")
+  whatsapp        String   @default("+91 98765 43210")
+  email           String   @default("info@shivdentalclinic.com")
+  address         String   @default("123 Health Street, Medical District, Mumbai, India")
+  mapEmbedUrl     String?
+  mapLink         String?
+  openingHours    Json?
+  socialLinks     Json?
+  emergencyContact String?
+  footerText      String?
+  aboutIntro      String?
+  mission         String?
+  vision          String?
+  whyChooseUs     String?
+  aboutImages     Json?
+  seoTitle        String?
+  seoDescription  String?
+  showRevenueCard Boolean  @default(false)
+  monthlyRevenue  Decimal? @db.Decimal(12, 2)
+  updatedAt       DateTime @updatedAt
+}
