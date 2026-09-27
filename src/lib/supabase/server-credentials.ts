@@ -24,5 +24,5 @@ export function resolveSupabaseSecretKey(): string | undefined {
 }
 
 export function resolveSupabaseDbPassword(): string | undefined {
-  return readWorkerEnv("SUPABASE_DB_PASSWORD") || decodeBase64Env("SUPABASE_DB_PW_B64");
+  return decodeBase64Env("SUPABASE_DB_PW_B64") || readWorkerEnv("SUPABASE_DB_PASSWORD");
 }

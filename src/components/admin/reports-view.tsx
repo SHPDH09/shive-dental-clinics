@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { LoadingState } from "@/components/admin/loading-state";
 import { StatCard } from "@/components/admin/stat-card";
 import { Button } from "@/components/ui/button";
@@ -126,8 +126,8 @@ export function ReportsView() {
     try {
       const res = await adminFetch<ReportsPayload>(`/api/admin/reports?${queryString}`);
       setData(res);
-    } catch {
-      setError("Failed to load reports");
+    } catch (e) {
+      setError(e instanceof AdminApiError ? e.message : "Failed to load reports");
     } finally {
       setLoading(false);
     }

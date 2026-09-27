@@ -39,8 +39,10 @@ async function main() {
   });
   await client.connect();
 
+  await runFile(client, "supabase/migration-doctors-premium.sql");
   await runFile(client, "supabase/migration-branches-premium.sql");
   await runFile(client, "supabase/migration-services-premium.sql");
+  await runFile(client, "supabase/migration-settings-premium.sql");
   await runFile(client, "supabase/rls-authenticated-admin.sql");
   await client.query(`NOTIFY pgrst, 'reload schema';`);
 

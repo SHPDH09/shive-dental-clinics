@@ -55,7 +55,7 @@ function leadWhere(filters: ReportFilters): Prisma.LeadWhereInput {
   };
 }
 
-function emptyPayload(
+export function emptyReportsPayload(
   clinicName: string,
   filters: ReportFilters,
   access: ReportsAccess,
@@ -142,14 +142,16 @@ export async function buildReportsData(
   filters: ReportFilters,
   access: ReportsAccess,
 ): Promise<ReportsPayload> {
-  const settings = await prisma.clinicSettings.findUnique({ where: { id: "default" } });
-  const clinicName = settings?.clinicName ?? "Shiv Dental Clinic";
-  const revenueEnabled = Boolean(settings?.showRevenueCard && access.revenue);
-
+  const defaultClinicName = "Shiv Dental Clinic";
   const apptWhere = appointmentWhere(filters);
   const leadWhereClause = leadWhere(filters);
 
   try {
+    const settings = await prisma.clinicSettings
+      .findUnique({ where: { id: "default" } })
+      .catch(() => null);
+    const clinicName = settings?.clinicName ?? defaultClinicName;
+    const revenueEnabled = Boolean(settings?.showRevenueCard && access.revenue);
     const [
       statusGroups,
       appointmentsInRange,
@@ -725,6 +727,6 @@ export async function buildReportsData(
     };
   } catch (e) {
     console.error("Reports aggregation error:", e);
-    return emptyPayload(clinicName, filters, access, revenueEnabled);
+    return emptyReportsPayload(defaultClinicName, filters, access, false);
   }
 }
