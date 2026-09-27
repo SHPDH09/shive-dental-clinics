@@ -33,7 +33,7 @@ export async function GET() {
       : !authSecretOk
         ? "Session signing unavailable — contact support."
         : !databaseOk
-          ? "Login uses Supabase Auth; add SUPABASE_SECRET_KEY for full admin CRUD."
-          : "OK — sign in with rk331159@gmail.com and your Supabase password.",
+          ? "Admin database is not reachable from this environment."
+          : "Configuration OK — use your assigned admin email and password.",
   });
 }

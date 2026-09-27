@@ -8,18 +8,9 @@ import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type FormValues = z.infer<typeof loginSchema>;
-
-type LoginHints = {
-  authSecretOk: boolean;
-  databaseOk: boolean;
-  supabaseConfigured?: boolean;
-  loginVia?: string;
-  canLogin?: boolean;
-  message: string;
-};
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,14 +20,6 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(
     authError ? "Sign-in failed. Check email and password." : null,
   );
-  const [hints, setHints] = useState<LoginHints | null>(null);
-
-  useEffect(() => {
-    fetch("/api/health/login-hints")
-      .then((r) => r.json())
-      .then(setHints)
-      .catch(() => null);
-  }, []);
 
   const {
     register,
@@ -67,46 +50,26 @@ export function LoginForm() {
       redirect: false,
     });
     if (res?.error) {
-      setError("Invalid email/Admin ID or password. Use rk331159@gmail.com and your Supabase password.");
+      setError("Invalid email or Admin ID, or password. Please try again.");
       return;
     }
     router.push(callbackUrl);
     router.refresh();
   };
 
-  const checklistOk = hints?.canLogin ?? (hints?.supabaseConfigured && hints?.databaseOk && hints?.authSecretOk);
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="card-premium mx-auto w-full max-w-md space-y-5 p-8">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-slate-900">Admin sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — Supabase admin</p>
+        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — admin portal</p>
       </div>
-
-      {hints && (
-        <div
-          className={`rounded-xl border p-3 text-xs leading-relaxed ${
-            checklistOk
-              ? "border-teal-200 bg-teal-50 text-teal-900"
-              : "border-amber-200 bg-amber-50 text-amber-950"
-          }`}
-        >
-          <p className="font-semibold">Supabase login</p>
-          <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>Supabase project: {hints.supabaseConfigured ? "OK" : "Missing public keys"}</li>
-            <li>Admin table (DB): {hints.databaseOk ? "OK" : "Not ready"}</li>
-            <li>Session (AUTH_SECRET): {hints.authSecretOk ? "OK" : "Missing on server"}</li>
-          </ul>
-          <p className="mt-2">{hints.message}</p>
-        </div>
-      )}
 
       <div>
         <Label>Email or Admin ID</Label>
         <Input
           type="text"
           autoComplete="username"
-          placeholder="rk331159@gmail.com"
+          placeholder="admin@example.com"
           {...register("loginId")}
         />
       </div>
