@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { findAdminById, updateAdminRow } from "@/lib/supabase/admins-data";
 import { canUseSupabaseDataLayer } from "@/lib/supabase/data-client";
 import { adminChangePasswordSchema, adminProfileUpdateSchema } from "@/lib/validations";
+import { firstZodFieldError } from "@/lib/zod-api-error";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -41,7 +42,7 @@ export async function PATCH(req: Request) {
   if (body.currentPassword != null) {
     const parsed = adminChangePasswordSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
     }
 
     let hash: string | null = null;
@@ -83,7 +84,7 @@ export async function PATCH(req: Request) {
 
   const parsed = adminProfileUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
   }
 
   const data: Record<string, unknown> = {};
@@ -93,30 +94,63 @@ export async function PATCH(req: Request) {
     data.profilePhotoUrl = parsed.data.profilePhotoUrl || null;
   }
 
-  if (canUseSupabaseDataLayer()) {
-    const updated = await updateAdminRow(session!.user.id, data);
+  try {
+    if (canUseSupabaseDataLayer()) {
+      const updated = await updateAdminRow(session!.user.id, data);
+      await writeAdminAudit({
+        adminId: session!.user.id,
+        adminName: session!.user.name ?? "Admin",
+        action: "UPDATE",
+        entityType: "profile",
+        entityId: session!.user.id,
+      });
+      return NextResponse.json(updated);
+    }
+
+    const updated = await prisma.admin.update({
+      where: { id: session!.user.id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        profilePhotoUrl: true,
+      },
+    });
+
+    await writeAdminAudit({
+      adminId: session!.user.id,
+      adminName: session!.user.name ?? "Admin",
+      action: "UPDATE",
+      entityType: "profile",
+      entityId: session!.user.id,
+    });
+
     return NextResponse.json(updated);
+  } catch (e) {
+    console.error("PATCH /api/admin/me profile:", e);
+    const msg =
+      e instanceof Error
+        ? e.message
+        : typeof e === "object" && e && "message" in e
+          ? String((e as { message: string }).message)
+          : "Could not update profile";
+    if (/column.*profilePhotoUrl|does not exist/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Admin profilePhotoUrl column missing — run supabase/migration-admins-premium.sql in Supabase.",
+        },
+        { status: 400 },
+      );
+    }
+    if (/0 rows|PGRST116|not found/i.test(msg)) {
+      return NextResponse.json(
+        { error: "Admin account not found in database. Ask a super admin to add your user." },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
-
-  const updated = await prisma.admin.update({
-    where: { id: session!.user.id },
-    data,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      profilePhotoUrl: true,
-    },
-  });
-
-  await writeAdminAudit({
-    adminId: session!.user.id,
-    adminName: session!.user.name ?? "Admin",
-    action: "UPDATE",
-    entityType: "profile",
-    entityId: session!.user.id,
-  });
-
-  return NextResponse.json(updated);
 }

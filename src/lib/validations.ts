@@ -371,10 +371,17 @@ export const clinicSettingsPatchSchema = z
   })
   .passthrough();
 
+const profilePhotoUrlSchema = z.preprocess(
+  (val) => (val === "" ? null : val),
+  z
+    .union([z.string().url(), z.string().regex(/^\//), z.null()])
+    .optional(),
+);
+
 export const adminProfileUpdateSchema = z.object({
   name: z.string().min(2).optional(),
-  phone: adminPhoneSchema,
-  profilePhotoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  phone: adminPhoneSchema.optional(),
+  profilePhotoUrl: profilePhotoUrlSchema,
 });
 
 export const adminChangePasswordSchema = z
