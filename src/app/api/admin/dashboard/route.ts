@@ -12,6 +12,7 @@ export async function GET() {
   const monthStart = startOfMonth(new Date());
   const monthEnd = endOfMonth(new Date());
 
+  try {
   const [
     todayAppointments,
     pendingAppointments,
@@ -81,4 +82,24 @@ export async function GET() {
       })),
     },
   });
+  } catch (e) {
+    console.error("Dashboard DB error:", e);
+    return NextResponse.json({
+      cards: {
+        todayAppointments: 0,
+        pendingAppointments: 0,
+        totalPatients: 0,
+        newLeads: 0,
+        conversionRate: 0,
+        monthlyRevenue: null,
+      },
+      charts: {
+        appointmentsByDay: [],
+        leadFunnel: [],
+        popularServices: [],
+        patientGrowth: [],
+      },
+      dbUnavailable: true,
+    });
+  }
 }
