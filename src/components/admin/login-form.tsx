@@ -15,8 +15,8 @@ type FormValues = z.infer<typeof loginSchema>;
 type LoginHints = {
   authSecretOk: boolean;
   databaseOk: boolean;
-  envFallbackOk?: boolean;
   supabaseConfigured?: boolean;
+  loginVia?: string;
   message: string;
 };
 
@@ -26,7 +26,7 @@ export function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin";
   const authError = searchParams.get("error");
   const [error, setError] = useState<string | null>(
-    authError ? "Sign-in failed. See the checklist below." : null,
+    authError ? "Sign-in failed. Check email and password." : null,
   );
   const [hints, setHints] = useState<LoginHints | null>(null);
 
@@ -53,56 +53,47 @@ export function LoginForm() {
       redirect: false,
     });
     if (res?.error) {
-      if (hints && !hints.authSecretOk) {
-        setError("AUTH_SECRET is missing on the server. Add it in Cloudflare → Variables (Encrypt), then redeploy.");
-      } else if (hints && !hints.databaseOk && !hints.envFallbackOk) {
-        setError(
-          "Database is not connected and no emergency admin is configured. Fix DATABASE_URL or set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare.",
-        );
-      } else {
-        setError("Invalid Admin ID or password.");
-      }
+      setError("Invalid email/Admin ID or password. Use your Supabase admin account.");
       return;
     }
     router.push(callbackUrl);
     router.refresh();
   };
 
+  const checklistOk =
+    hints?.supabaseConfigured && hints?.databaseOk && hints?.authSecretOk;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="card-premium mx-auto w-full max-w-md space-y-5 p-8">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-slate-900">Admin sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — authorized staff only</p>
+        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — Supabase admin</p>
       </div>
 
       {hints && (
         <div
           className={`rounded-xl border p-3 text-xs leading-relaxed ${
-            hints.authSecretOk && (hints.databaseOk || hints.envFallbackOk)
+            checklistOk
               ? "border-teal-200 bg-teal-50 text-teal-900"
               : "border-amber-200 bg-amber-50 text-amber-950"
           }`}
         >
-          <p className="font-semibold">Server checklist</p>
+          <p className="font-semibold">Supabase login</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
-            <li>Database: {hints.databaseOk ? "Connected" : "Not connected"}</li>
-            <li>Supabase: {hints.supabaseConfigured ? "Configured" : "Not configured"}</li>
-            <li>
-              Emergency login:{" "}
-              {hints.envFallbackOk ? "Configured (Cloudflare secrets)" : "Not configured"}
-            </li>
+            <li>Supabase project: {hints.supabaseConfigured ? "OK" : "Missing public keys"}</li>
+            <li>Admin table (DB): {hints.databaseOk ? "OK" : "Not ready"}</li>
+            <li>Session secret: {hints.authSecretOk ? "OK" : "Set AUTH_SECRET on server"}</li>
           </ul>
           <p className="mt-2">{hints.message}</p>
         </div>
       )}
 
       <div>
-        <Label>Admin ID or email</Label>
+        <Label>Email or Admin ID</Label>
         <Input
           type="text"
           autoComplete="username"
-          placeholder="Admin ID or email"
+          placeholder="rk331159@gmail.com"
           {...register("loginId")}
         />
       </div>

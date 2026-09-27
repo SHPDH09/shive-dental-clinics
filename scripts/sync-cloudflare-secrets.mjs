@@ -17,12 +17,7 @@ const SECRETS = [
   "DATABASE_URL",
 ];
 
-const REQUIRED = [
-  "AUTH_SECRET",
-  "ADMIN_PASSWORD",
-  "SUPABASE_SECRET_KEY",
-  "SUPABASE_DB_PASSWORD",
-];
+const REQUIRED = ["AUTH_SECRET", "SUPABASE_SECRET_KEY", "SUPABASE_DB_PASSWORD"];
 
 for (const name of SECRETS) {
   const value = process.env[name]?.trim();
