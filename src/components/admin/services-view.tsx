@@ -113,6 +113,9 @@ export function ServicesView() {
   const [form, setForm] = useState<ServiceForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [categoryMessage, setCategoryMessage] = useState<{ text: string; tone: "ok" | "err" } | null>(
+    null,
+  );
 
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -249,36 +252,39 @@ export function ServicesView() {
   const saveCategory = async () => {
     const name = catName.trim();
     if (!name) {
-      setMessage("Enter a category name (at least 2 characters).");
+      setCategoryMessage({ text: "Enter a category name (at least 2 characters).", tone: "err" });
       return;
     }
     if (name.length < 2) {
-      setMessage("Category name must be at least 2 characters.");
+      setCategoryMessage({ text: "Category name must be at least 2 characters.", tone: "err" });
       return;
     }
     const slug = catSlug.trim() || slugify(name);
     setSaving(true);
-    setMessage(null);
+    setCategoryMessage(null);
     try {
       if (editingCatId) {
         await adminFetch(`/api/admin/service-categories/${editingCatId}`, {
           method: "PATCH",
           body: JSON.stringify({ name, slug: slug || undefined }),
         });
-        setMessage("Category updated.");
+        setCategoryMessage({ text: "Category updated.", tone: "ok" });
       } else {
         await adminFetch("/api/admin/service-categories", {
           method: "POST",
           body: JSON.stringify({ name, slug: slug || undefined }),
         });
-        setMessage("Category added.");
+        setCategoryMessage({ text: "Category added.", tone: "ok" });
       }
       setCatName("");
       setCatSlug("");
       setEditingCatId(null);
       await loadCategories();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Could not save category.");
+      setCategoryMessage({
+        text: e instanceof Error ? e.message : "Could not save category.",
+        tone: "err",
+      });
     } finally {
       setSaving(false);
     }
@@ -316,8 +322,12 @@ export function ServicesView() {
         </Button>
       </div>
 
-      {message && tab === "categories" && (
-        <p className="text-sm text-teal-700">{message}</p>
+      {categoryMessage && tab === "categories" && (
+        <p
+          className={`text-sm ${categoryMessage.tone === "err" ? "text-red-600" : "text-teal-700"}`}
+        >
+          {categoryMessage.text}
+        </p>
       )}
 
       {tab === "categories" && (
