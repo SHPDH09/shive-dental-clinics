@@ -1,12 +1,14 @@
 import { requireAdminSession } from "@/lib/api-auth";
 import { branchPayloadFromInput, listAdminBranches } from "@/lib/admin-branches";
+import { ensureBranchSlug } from "@/lib/branch-slug";
 import { prisma } from "@/lib/prisma";
+import { getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
+import { errorMessageFromUnknown, mapSupabaseErrorMessage } from "@/lib/supabase/errors";
 import { formatConsultationSummary, parseWeeklySchedule } from "@/lib/doctor-schedule";
-import { slugify } from "@/lib/utils";
 import { branchSchema } from "@/lib/validations";
+import { firstZodFieldError } from "@/lib/zod-api-error";
 import { NextResponse } from "next/server";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export async function GET(req: Request) {
   const { error } = await requireAdminSession();
@@ -27,8 +29,9 @@ export async function GET(req: Request) {
     const { items, total } = await listAdminBranches({ page, limit, q, city, published, sort });
     return NextResponse.json({ items, total, page, limit });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Database error" }, { status: 503 });
+    const msg = mapSupabaseErrorMessage(errorMessageFromUnknown(e));
+    console.error("GET branches:", e);
+    return NextResponse.json({ error: msg }, { status: 503 });
   }
 }
 
@@ -36,15 +39,21 @@ export async function POST(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
   const parsed = branchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
   }
 
   const data = parsed.data;
   const schedule = data.weeklySchedule ?? parseWeeklySchedule(null);
-  const baseSlug = data.slug?.trim() || slugify(data.name);
+  const baseSlug = ensureBranchSlug(data.name, data.slug);
   let slug = baseSlug;
   let suffix = 0;
 
@@ -56,30 +65,42 @@ export async function POST(req: Request) {
   });
 
   if (useSupabaseCrud()) {
-    const sb = createSupabaseServiceClient();
-    while (true) {
-      const { data: existing } = await sb.from("Branch").select("id").eq("slug", slug).maybeSingle();
-      if (!existing) break;
+    try {
+      const sb = await getAdminWriteSupabaseClient();
+      while (true) {
+        const { data: existing } = await sb.from("Branch").select("id").eq("slug", slug).maybeSingle();
+        if (!existing) break;
+        suffix += 1;
+        slug = `${baseSlug}-${suffix}`;
+      }
+      const item = await supabaseCreate("branch", { ...payload, slug });
+      return NextResponse.json(item, { status: 201 });
+    } catch (e) {
+      const msg = mapSupabaseErrorMessage(errorMessageFromUnknown(e));
+      console.error("POST branch (Supabase):", e);
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+  }
+
+  try {
+    while (await prisma.branch.findUnique({ where: { slug } })) {
       suffix += 1;
       slug = `${baseSlug}-${suffix}`;
     }
-    const item = await supabaseCreate("branch", { ...payload, slug });
-    return NextResponse.json(item);
-  }
 
-  while (await prisma.branch.findUnique({ where: { slug } })) {
-    suffix += 1;
-    slug = `${baseSlug}-${suffix}`;
+    const item = await prisma.branch.create({
+      data: {
+        ...payload,
+        slug,
+        doctorIds: payload.doctorIds,
+        serviceIds: payload.serviceIds,
+        weeklySchedule: schedule,
+      },
+    });
+    return NextResponse.json(item, { status: 201 });
+  } catch (e) {
+    const msg = mapSupabaseErrorMessage(errorMessageFromUnknown(e));
+    console.error("POST branch (Prisma):", e);
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
-
-  const item = await prisma.branch.create({
-    data: {
-      ...payload,
-      slug,
-      doctorIds: payload.doctorIds,
-      serviceIds: payload.serviceIds,
-      weeklySchedule: schedule,
-    },
-  });
-  return NextResponse.json(item);
 }

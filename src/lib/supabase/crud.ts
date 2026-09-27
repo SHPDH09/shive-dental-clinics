@@ -4,7 +4,14 @@ import {
   getAdminSupabaseClient,
   getAdminWriteSupabaseClient,
 } from "@/lib/supabase/data-client";
+import { errorMessageFromUnknown, mapSupabaseErrorMessage } from "@/lib/supabase/errors";
 import { NextResponse } from "next/server";
+
+function supabaseHttpStatus(message: string): number {
+  if (/permission denied|row-level security|RLS|42501/i.test(message)) return 403;
+  if (/Could not find the table|does not exist|PGRST205/i.test(message)) return 503;
+  return 400;
+}
 
 export type SupabaseModelName =
   | "Patient"
@@ -175,8 +182,9 @@ export function supabaseCrudHandlers(
         });
         return NextResponse.json({ items, total, page, limit });
       } catch (e) {
+        const msg = mapSupabaseErrorMessage(errorMessageFromUnknown(e));
         console.error("Supabase list error:", e);
-        return NextResponse.json({ error: "Database error" }, { status: 503 });
+        return NextResponse.json({ error: msg }, { status: supabaseHttpStatus(msg) });
       }
     },
 
@@ -186,8 +194,9 @@ export function supabaseCrudHandlers(
         const item = await supabaseCreate(model, data);
         return NextResponse.json(item);
       } catch (e) {
+        const msg = mapSupabaseErrorMessage(errorMessageFromUnknown(e));
         console.error("Supabase create error:", e);
-        return NextResponse.json({ error: "Database error" }, { status: 503 });
+        return NextResponse.json({ error: msg }, { status: supabaseHttpStatus(msg) });
       }
     },
   };

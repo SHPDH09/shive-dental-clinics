@@ -12,8 +12,14 @@ export function errorMessageFromUnknown(err: unknown): string {
 }
 
 export function mapSupabaseErrorMessage(message: string): string {
+  if (/Could not find the 'address' column.*Branch/i.test(message)) {
+    return 'Branch table is outdated — run supabase/migration-branches-premium.sql in Supabase SQL Editor.';
+  }
   if (/relation.*does not exist|Could not find the table/i.test(message)) {
-    return 'ServiceCategory table missing — run supabase/migration-services-premium.sql in Supabase SQL Editor.';
+    if (/ServiceCategory/i.test(message)) {
+      return 'ServiceCategory table missing — run supabase/migration-services-premium.sql in Supabase SQL Editor.';
+    }
+    return 'Database table missing — run the latest supabase/migration-*.sql files in Supabase SQL Editor.';
   }
   if (/permission denied|row-level security|RLS|42501/i.test(message)) {
     return 'Database permission denied — run supabase/rls-authenticated-admin.sql (adds ServiceCategory policy).';

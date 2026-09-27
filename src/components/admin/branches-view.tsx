@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
 import { LoadingState } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
@@ -203,8 +203,10 @@ export function BranchesView() {
       }
       setFormOpen(false);
       await load();
-    } catch {
-      setMessage("Save failed. Check required fields.");
+    } catch (e) {
+      setMessage(
+        e instanceof AdminApiError ? e.message : "Save failed. Check required fields.",
+      );
     } finally {
       setSaving(false);
     }
