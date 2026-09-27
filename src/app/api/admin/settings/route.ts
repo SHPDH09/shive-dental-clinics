@@ -1,16 +1,12 @@
-import { requireAdminSession, requireSuperAdminSession } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
 import { writeAdminAudit } from "@/lib/admin-audit";
 import { getAdminSettings, saveAdminSettings } from "@/lib/clinic-settings/service";
 import { clinicSettingsPatchSchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const { session, error } = await requireAdminSession();
+  const { error } = await requirePermission("settings", "view");
   if (error) return error;
-
-  if (session!.user.role !== "SUPER_ADMIN") {
-    return NextResponse.json({ error: "Forbidden — super admin only" }, { status: 403 });
-  }
 
   try {
     const settings = await getAdminSettings();
@@ -22,7 +18,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const { session, error } = await requireSuperAdminSession();
+  const { session, error } = await requirePermission("settings", "edit");
   if (error) return error;
 
   const body = await req.json();

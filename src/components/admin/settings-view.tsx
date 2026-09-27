@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import type { AdminSettingsResponse } from "@/lib/clinic-settings/types";
 import {
   SETTINGS_SECTIONS,
@@ -61,8 +61,14 @@ export function SettingsView() {
       const res = await adminFetch<AdminSettingsResponse>("/api/admin/settings");
       setData(res);
       setBaseline(structuredClone(res));
-    } catch {
-      setError("Super admin access required to manage settings.");
+    } catch (e) {
+      setError(
+        e instanceof AdminApiError && e.status === 403
+          ? "You do not have permission to view settings. Ask a super admin to enable Settings access for your role."
+          : e instanceof AdminApiError
+            ? e.message
+            : "Could not load settings.",
+      );
     } finally {
       setLoading(false);
     }
