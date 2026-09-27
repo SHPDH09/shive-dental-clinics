@@ -9,7 +9,7 @@ export default async function HeroSlidesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/admin/login");
 
-  const admin = await loadAdminContext(session.user.id);
+  const admin = await loadAdminContext(session.user.id, session.user.email);
   const permissions = admin?.permissions ?? roleDefaultPermissions(session.user.role ?? undefined);
   if (!can(permissions, "settings", "view")) redirect("/admin");
 

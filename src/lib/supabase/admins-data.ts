@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
+import { getAdminSupabaseClient, getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
 
 export const adminPublicSelect =
   "id, loginId, name, email, phone, profilePhotoUrl, role, branchId, active, lastLoginAt, permissions, createdAt, updatedAt";
@@ -92,7 +92,7 @@ export async function findAdminByLogin(loginId: string) {
 }
 
 export async function updateAdminRow(id: string, data: Record<string, unknown>) {
-  const sb = await getAdminSupabaseClient();
+  const sb = await getAdminWriteSupabaseClient();
   const { data: updated, error } = await sb
     .from("Admin")
     .update({ ...data, updatedAt: new Date().toISOString() })

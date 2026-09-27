@@ -11,7 +11,7 @@ export default async function AdminSettingsPage() {
     redirect("/admin/login");
   }
 
-  const admin = await loadAdminContext(session.user.id);
+  const admin = await loadAdminContext(session.user.id, session.user.email);
   const permissions =
     admin?.permissions ?? roleDefaultPermissions(session.user.role ?? undefined);
   if (!can(permissions, "settings", "view")) {

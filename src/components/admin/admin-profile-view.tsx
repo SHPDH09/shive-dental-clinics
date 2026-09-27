@@ -52,14 +52,32 @@ export function AdminProfileView() {
   const saveProfile = async () => {
     setMessage(null);
     try {
-      await adminFetch("/api/admin/me", {
+      const updated = await adminFetch<{
+        name?: string;
+        phone?: string | null;
+        profilePhotoUrl?: string | null;
+      }>("/api/admin/me", {
         method: "PATCH",
         body: JSON.stringify({
           name,
-          phone,
+          phone: phone.trim() || null,
           profilePhotoUrl: photo || null,
         }),
       });
+      if (updated.name) setName(updated.name);
+      if (updated.phone !== undefined) setPhone(updated.phone ?? "");
+      if (updated.profilePhotoUrl !== undefined) setPhoto(updated.profilePhotoUrl ?? "");
+      setMe((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updated.name ?? prev.name,
+              phone: updated.phone !== undefined ? updated.phone : prev.phone,
+              profilePhotoUrl:
+                updated.profilePhotoUrl !== undefined ? updated.profilePhotoUrl : prev.profilePhotoUrl,
+            }
+          : prev,
+      );
       setMessage("Profile updated.");
       await load();
     } catch (e) {

@@ -378,9 +378,22 @@ const profilePhotoUrlSchema = z.preprocess(
     .optional(),
 );
 
+const profilePhoneSchema = z.preprocess(
+  (val) => {
+    if (val == null || val === "") return null;
+    return String(val).replace(/[\s-]/g, "");
+  },
+  z
+    .union([
+      z.null(),
+      z.string().regex(/^(\+91)?[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
+    ])
+    .optional(),
+);
+
 export const adminProfileUpdateSchema = z.object({
   name: z.string().min(2).optional(),
-  phone: adminPhoneSchema.optional(),
+  phone: profilePhoneSchema,
   profilePhotoUrl: profilePhotoUrlSchema,
 });
 

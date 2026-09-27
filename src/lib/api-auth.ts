@@ -80,7 +80,7 @@ export async function requireAdminContext() {
   const { session, error } = await requireAdminSession();
   if (error) return { session: null, admin: null, error };
 
-  const admin = await loadAdminContext(session!.user.id);
+  const admin = await loadAdminContext(session!.user.id, session!.user.email);
   if (admin && !admin.active) {
     return {
       session: null,

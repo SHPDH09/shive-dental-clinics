@@ -1,3 +1,4 @@
+import { resolveAdminDbId } from "@/lib/admin-resolve-id";
 import { prisma } from "@/lib/prisma";
 import { findAdminById } from "@/lib/supabase/admins-data";
 import { canUseSupabaseDataLayer } from "@/lib/supabase/data-client";
@@ -60,8 +61,13 @@ function mapRow(row: AdminRow): AdminContext {
   };
 }
 
-export async function loadAdminContext(adminId: string): Promise<AdminContext | null> {
+export async function loadAdminContext(
+  sessionAdminId: string,
+  sessionEmail?: string | null,
+): Promise<AdminContext | null> {
   try {
+    const adminId = (await resolveAdminDbId(sessionAdminId, sessionEmail)) ?? sessionAdminId;
+
     if (canUseSupabaseDataLayer()) {
       const row = await findAdminById(adminId);
       if (!row) return null;

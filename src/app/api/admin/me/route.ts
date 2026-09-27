@@ -17,7 +17,7 @@ export async function GET() {
   const matrix = admin?.permissions ?? mergePermissions(session!.user.role, null);
 
   return NextResponse.json({
-    id: session!.user.id,
+    id: admin?.id ?? session!.user.id,
     name: admin?.name ?? session!.user.name,
     email: admin?.email ?? session!.user.email,
     phone: admin?.phone ?? null,

@@ -8,11 +8,13 @@ export async function resolveAdminDbId(
   sessionId: string,
   email?: string | null,
 ): Promise<string | null> {
-  const loginCandidates = [
-    email?.trim(),
-    readWorkerEnv("ADMIN_EMAIL")?.trim(),
-    readWorkerEnv("ADMIN_LOGIN_ID")?.trim(),
-  ].filter(Boolean) as string[];
+  const loginCandidates: string[] = [];
+  if (email?.trim()) loginCandidates.push(email.trim());
+  // Emergency env login uses a synthetic session id — map via configured admin email.
+  if (sessionId === "env-bootstrap-admin") {
+    const envEmail = readWorkerEnv("ADMIN_EMAIL")?.trim() || readWorkerEnv("ADMIN_LOGIN_ID")?.trim();
+    if (envEmail) loginCandidates.push(envEmail);
+  }
 
   if (canUseSupabaseDataLayer()) {
     const byId = await findAdminById(sessionId);
