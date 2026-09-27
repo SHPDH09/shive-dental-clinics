@@ -1,4 +1,5 @@
 import { readWorkerEnv } from "../worker-env";
+import { resolveSupabaseSecretKey } from "./server-credentials";
 
 const DEFAULT_PROJECT_URL = "https://ojfxtzwzpoosmzotzyxm.supabase.co";
 
@@ -18,9 +19,9 @@ export function getSupabasePublishableKey(): string | undefined {
   );
 }
 
-/** Server-only — bypasses RLS. Set in Cloudflare secrets, never expose to client. */
+/** Server-only — bypasses RLS. */
 export function getSupabaseSecretKey(): string | undefined {
-  return readWorkerEnv("SUPABASE_SECRET_KEY") || readWorkerEnv("SUPABASE_SERVICE_ROLE_KEY");
+  return resolveSupabaseSecretKey();
 }
 
 export function isSupabaseConfigured(): boolean {

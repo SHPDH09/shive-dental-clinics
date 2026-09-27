@@ -1,5 +1,11 @@
 import { requireAdminSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import {
+  deleteAppointmentAdmin,
+  getAppointmentAdmin,
+  updateAppointmentAdmin,
+} from "@/lib/supabase/appointments-admin";
+import { useSupabaseCrud } from "@/lib/supabase/crud";
 import { NextResponse } from "next/server";
 import type { AppointmentStatus } from "@/generated/prisma/client";
 
@@ -10,16 +16,28 @@ export async function GET(_req: Request, context: RouteContext) {
   if (error) return error;
 
   const { id } = await context.params;
-  const item = await prisma.appointment.findUnique({
-    where: { id },
-    include: { patient: true, service: true },
-  });
 
-  if (!item) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    if (useSupabaseCrud()) {
+      const item = await getAppointmentAdmin(id);
+      if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(item);
+    }
+
+    const item = await prisma.appointment.findUnique({
+      where: { id },
+      include: { patient: true, service: true },
+    });
+
+    if (!item) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(item);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Database error" }, { status: 503 });
   }
-
-  return NextResponse.json(item);
 }
 
 export async function PATCH(req: Request, context: RouteContext) {
@@ -35,12 +53,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     reschedule?: { appointmentDate?: string; appointmentTime?: string };
   };
 
-  const data: {
-    status?: AppointmentStatus;
-    notes?: string | null;
-    appointmentDate?: Date;
-    appointmentTime?: string;
-  } = {};
+  const data: Record<string, unknown> = {};
 
   if (body.status !== undefined) {
     data.status = body.status;
@@ -49,14 +62,14 @@ export async function PATCH(req: Request, context: RouteContext) {
     data.notes = body.notes;
   }
   if (body.appointmentDate !== undefined) {
-    data.appointmentDate = new Date(body.appointmentDate);
+    data.appointmentDate = new Date(body.appointmentDate).toISOString();
   }
   if (body.appointmentTime !== undefined) {
     data.appointmentTime = body.appointmentTime;
   }
   if (body.reschedule) {
     if (body.reschedule.appointmentDate !== undefined) {
-      data.appointmentDate = new Date(body.reschedule.appointmentDate);
+      data.appointmentDate = new Date(body.reschedule.appointmentDate).toISOString();
     }
     if (body.reschedule.appointmentTime !== undefined) {
       data.appointmentTime = body.reschedule.appointmentTime;
@@ -68,9 +81,25 @@ export async function PATCH(req: Request, context: RouteContext) {
   }
 
   try {
+    if (useSupabaseCrud()) {
+      const item = await updateAppointmentAdmin(id, data);
+      return NextResponse.json(item);
+    }
+
+    const prismaData: {
+      status?: AppointmentStatus;
+      notes?: string | null;
+      appointmentDate?: Date;
+      appointmentTime?: string;
+    } = {};
+    if (body.status !== undefined) prismaData.status = body.status;
+    if (body.notes !== undefined) prismaData.notes = body.notes;
+    if (data.appointmentDate) prismaData.appointmentDate = new Date(data.appointmentDate as string);
+    if (data.appointmentTime) prismaData.appointmentTime = data.appointmentTime as string;
+
     const item = await prisma.appointment.update({
       where: { id },
-      data,
+      data: prismaData,
       include: { patient: true, service: true },
     });
     return NextResponse.json(item);
@@ -86,6 +115,11 @@ export async function DELETE(_req: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
+    if (useSupabaseCrud()) {
+      await deleteAppointmentAdmin(id);
+      return NextResponse.json({ success: true });
+    }
+
     await prisma.appointment.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

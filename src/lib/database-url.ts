@@ -1,4 +1,5 @@
 import { getSupabaseProjectRef, isSupabaseConfigured } from "./supabase/env";
+import { resolveSupabaseDbPassword } from "./supabase/server-credentials";
 import { readWorkerEnv } from "./worker-env";
 
 function isLegacyAwsRdsUrl(url: string): boolean {
@@ -7,7 +8,7 @@ function isLegacyAwsRdsUrl(url: string): boolean {
 
 /** Prisma / pg connection string (Supabase Postgres preferred over stale AWS URLs). */
 export function resolveDatabaseUrl(): string | undefined {
-  const password = readWorkerEnv("SUPABASE_DB_PASSWORD");
+  const password = resolveSupabaseDbPassword();
   if (password) {
     const ref = getSupabaseProjectRef();
     const encoded = encodeURIComponent(password);
