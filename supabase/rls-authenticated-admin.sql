@@ -8,6 +8,7 @@ ALTER TABLE IF EXISTS "Appointment" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Patient" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Lead" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Service" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "ServiceCategory" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Doctor" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Testimonial" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Media" ENABLE ROW LEVEL SECURITY;
@@ -23,7 +24,7 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'Admin','Appointment','Patient','Lead','Service','Doctor','Testimonial',
+    'Admin','Appointment','Patient','Lead','Service','ServiceCategory','Doctor','Testimonial',
     'Media','BeforeAfter','Enquiry','HeroStat','Notification','Branch','ClinicSettings'
   ]
   LOOP

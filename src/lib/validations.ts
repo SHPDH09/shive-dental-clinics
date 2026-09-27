@@ -1,3 +1,4 @@
+import { ensureServiceCategorySlug } from "@/lib/service-category-slug";
 import { z } from "zod";
 
 export const appointmentPublicSchema = z.object({
@@ -177,11 +178,17 @@ export const branchSchema = z.object({
   sortOrder: z.number().optional(),
 });
 
-export const serviceCategorySchema = z.object({
-  name: z.string().min(2),
-  slug: z.string().min(2).optional(),
-  sortOrder: z.number().optional(),
-});
+export const serviceCategorySchema = z
+  .object({
+    name: z.string().min(2, "Category name must be at least 2 characters"),
+    slug: z.string().optional().nullable(),
+    sortOrder: z.coerce.number().optional(),
+  })
+  .transform((data) => ({
+    name: data.name.trim(),
+    slug: ensureServiceCategorySlug(data.name, data.slug),
+    sortOrder: data.sortOrder ?? 0,
+  }));
 
 const adminPasswordSchema = z
   .string()

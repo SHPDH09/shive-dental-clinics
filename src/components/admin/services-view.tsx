@@ -248,23 +248,40 @@ export function ServicesView() {
 
   const saveCategory = async () => {
     const name = catName.trim();
-    if (!name) return;
-    const slug = catSlug.trim() || slugify(name);
-    if (editingCatId) {
-      await adminFetch(`/api/admin/service-categories/${editingCatId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name, slug }),
-      });
-    } else {
-      await adminFetch("/api/admin/service-categories", {
-        method: "POST",
-        body: JSON.stringify({ name, slug }),
-      });
+    if (!name) {
+      setMessage("Enter a category name (at least 2 characters).");
+      return;
     }
-    setCatName("");
-    setCatSlug("");
-    setEditingCatId(null);
-    await loadCategories();
+    if (name.length < 2) {
+      setMessage("Category name must be at least 2 characters.");
+      return;
+    }
+    const slug = catSlug.trim() || slugify(name);
+    setSaving(true);
+    setMessage(null);
+    try {
+      if (editingCatId) {
+        await adminFetch(`/api/admin/service-categories/${editingCatId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ name, slug: slug || undefined }),
+        });
+        setMessage("Category updated.");
+      } else {
+        await adminFetch("/api/admin/service-categories", {
+          method: "POST",
+          body: JSON.stringify({ name, slug: slug || undefined }),
+        });
+        setMessage("Category added.");
+      }
+      setCatName("");
+      setCatSlug("");
+      setEditingCatId(null);
+      await loadCategories();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not save category.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deleteCategory = async (id: string) => {
@@ -299,6 +316,10 @@ export function ServicesView() {
         </Button>
       </div>
 
+      {message && tab === "categories" && (
+        <p className="text-sm text-teal-700">{message}</p>
+      )}
+
       {tab === "categories" && (
         <div className="card-premium space-y-4 p-6">
           <h3 className="font-semibold text-slate-900">Service categories</h3>
@@ -312,8 +333,8 @@ export function ServicesView() {
               }}
             />
             <Input placeholder="Slug" value={catSlug} onChange={(e) => setCatSlug(e.target.value)} />
-            <Button type="button" onClick={() => void saveCategory()}>
-              {editingCatId ? "Update" : "Add category"}
+            <Button type="button" disabled={saving} onClick={() => void saveCategory()}>
+              {saving ? "Saving…" : editingCatId ? "Update" : "Add category"}
             </Button>
           </div>
           <ul className="divide-y divide-slate-100">

@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS "ServiceCategory" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+GRANT ALL ON TABLE "ServiceCategory" TO authenticated;
+GRANT ALL ON TABLE "ServiceCategory" TO service_role;
+
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "whatIsTreatment" TEXT;
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "icon" TEXT;
 ALTER TABLE "Service" ADD COLUMN IF NOT EXISTS "categoryId" TEXT REFERENCES "ServiceCategory"("id") ON DELETE SET NULL;

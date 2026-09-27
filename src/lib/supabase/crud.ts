@@ -72,8 +72,12 @@ export async function supabaseList(
     query = query.or(parts.join(","));
   }
 
-  const orderCol = table === "HeroStat" ? "updatedAt" : "createdAt";
-  query = query.order(orderCol, { ascending: false }).range(from, to);
+  if (table === "ServiceCategory") {
+    query = query.order("sortOrder", { ascending: true }).order("name", { ascending: true }).range(from, to);
+  } else {
+    const orderCol = table === "HeroStat" ? "updatedAt" : "createdAt";
+    query = query.order(orderCol, { ascending: false }).range(from, to);
+  }
 
   const { data, error, count } = await query;
   if (error) throw error;

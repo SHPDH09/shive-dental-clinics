@@ -1,7 +1,8 @@
 import { crudById } from "@/lib/crud-route";
 import { prisma } from "@/lib/prisma";
 import { supabaseUpdate, useSupabaseCrud } from "@/lib/supabase/crud";
-import { serviceCategorySchema } from "@/lib/validations";
+import { ensureServiceCategorySlug } from "@/lib/service-category-slug";
+import { z } from "zod";
 import { requireAdminSession } from "@/lib/api-auth";
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -21,15 +22,29 @@ export async function PATCH(req: Request, context: RouteContext) {
 
   const { id } = await context.params;
   const body = await req.json();
-  const parsed = serviceCategorySchema.partial().safeParse(body);
+  const partialSchema = z
+    .object({
+      name: z.string().min(2).optional(),
+      slug: z.string().optional().nullable(),
+      sortOrder: z.coerce.number().optional(),
+    })
+    .strict();
+
+  const parsed = partialSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Invalid category data" }, { status: 400 });
   }
 
   const updateData: Record<string, unknown> = {};
-  if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
-  if (parsed.data.slug !== undefined) updateData.slug = parsed.data.slug.trim();
+  if (parsed.data.name !== undefined) updateData.name = parsed.data.name.trim();
   if (parsed.data.sortOrder !== undefined) updateData.sortOrder = parsed.data.sortOrder;
+  if (parsed.data.slug !== undefined || parsed.data.name !== undefined) {
+    const baseName = parsed.data.name ?? "";
+    updateData.slug = ensureServiceCategorySlug(
+      baseName || "category",
+      parsed.data.slug ?? undefined,
+    );
+  }
 
   if (useSupabaseCrud()) {
     try {
@@ -42,7 +57,7 @@ export async function PATCH(req: Request, context: RouteContext) {
   }
 
   try {
-    const item = await prisma.serviceCategory.update({ where: { id }, data: parsed.data });
+    const item = await prisma.serviceCategory.update({ where: { id }, data: updateData });
     return NextResponse.json(item);
   } catch {
     return NextResponse.json({ error: "Update failed" }, { status: 400 });

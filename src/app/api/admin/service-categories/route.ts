@@ -2,12 +2,17 @@ import { requireAdminSession } from "@/lib/api-auth";
 import { createCrudHandlers } from "@/lib/crud-route";
 import { prisma } from "@/lib/prisma";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
-import { slugify } from "@/lib/utils";
 import { serviceCategorySchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const listHandlers = createCrudHandlers("serviceCategory", { searchFields: ["name", "slug"] });
+
+function formatZodError(error: { flatten: () => { fieldErrors: Record<string, string[]> } }) {
+  const flat = error.flatten().fieldErrors;
+  const first = Object.values(flat).flat()[0];
+  return first ?? "Invalid category data";
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -36,35 +41,59 @@ export async function POST(req: Request) {
   const { error } = await requireAdminSession();
   if (error) return error;
 
-  const body = await req.json();
-  const parsed = serviceCategorySchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const data = parsed.data;
-  const slug = data.slug?.trim() || slugify(data.name);
+  const parsed = serviceCategorySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
+  }
+
+  const { name, slug, sortOrder } = parsed.data;
 
   if (useSupabaseCrud()) {
-    const sb = createSupabaseServiceClient();
-    const { data: existing } = await sb.from("ServiceCategory").select("id").eq("slug", slug).maybeSingle();
-    if (existing) {
-      return NextResponse.json({ error: "Category slug already exists" }, { status: 400 });
+    try {
+      const sb = createSupabaseServiceClient();
+      const { data: existing } = await sb.from("ServiceCategory").select("id").eq("slug", slug).maybeSingle();
+      if (existing) {
+        return NextResponse.json({ error: "Category slug already exists — try another name." }, { status: 409 });
+      }
+      const item = await supabaseCreate("serviceCategory", {
+        name,
+        slug,
+        sortOrder,
+      });
+      return NextResponse.json(item, { status: 201 });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not create category";
+      console.error("POST service-category (Supabase):", e);
+      if (/relation|does not exist/i.test(msg)) {
+        return NextResponse.json(
+          { error: "ServiceCategory table missing — run supabase/migration-services-premium.sql" },
+          { status: 503 },
+        );
+      }
+      if (/permission|policy|RLS/i.test(msg)) {
+        return NextResponse.json(
+          { error: "Database permission denied — run supabase/rls-authenticated-admin.sql (includes ServiceCategory)" },
+          { status: 403 },
+        );
+      }
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
-    const item = await supabaseCreate("serviceCategory", {
-      name: data.name,
-      slug,
-      sortOrder: data.sortOrder ?? 0,
-    });
-    return NextResponse.json(item);
   }
 
   try {
     const item = await prisma.serviceCategory.create({
-      data: { name: data.name, slug, sortOrder: data.sortOrder ?? 0 },
+      data: { name, slug, sortOrder },
     });
-    return NextResponse.json(item);
-  } catch {
-    return NextResponse.json({ error: "Could not create category" }, { status: 400 });
+    return NextResponse.json(item, { status: 201 });
+  } catch (e) {
+    console.error("POST service-category (Prisma):", e);
+    return NextResponse.json({ error: "Could not create category (duplicate slug?)" }, { status: 400 });
   }
 }
