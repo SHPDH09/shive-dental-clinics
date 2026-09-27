@@ -4,10 +4,11 @@ import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
 import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
 import { DentalClinicJsonLd } from "@/components/public/json-ld";
+import { getPublicBranches } from "@/lib/public-data";
 import { getClinicSettings } from "@/lib/settings";
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getClinicSettings();
+  const [settings, branches] = await Promise.all([getClinicSettings(), getPublicBranches()]);
   const social = (settings.socialLinks ?? {}) as Record<string, string>;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://shivdentalclinic.com";
 
@@ -34,6 +35,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
         address={settings.address}
         footerText={settings.footerText}
         socialLinks={social}
+        branches={branches}
       />
       <MobileStickyActions phone={settings.phone} whatsapp={settings.whatsapp} />
     </>

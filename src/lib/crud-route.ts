@@ -13,7 +13,8 @@ type ModelName =
   | "beforeAfter"
   | "enquiry"
   | "heroStat"
-  | "notification";
+  | "notification"
+  | "branch";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getDelegate(model: ModelName): any {

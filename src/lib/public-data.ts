@@ -84,6 +84,16 @@ export async function getPublicVideos() {
   }
 }
 
+export async function getPublicBranches() {
+  try {
+    return await prisma.branch.findMany({
+      orderBy: { sortOrder: "asc" },
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getPublicBeforeAfter() {
   try {
     return await prisma.beforeAfter.findMany({

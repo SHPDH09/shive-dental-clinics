@@ -62,6 +62,11 @@ enum NotificationType {
   NEW_PATIENT
 }
 
+enum BranchStatus {
+  ACTIVE
+  CLOSED
+}
+
 model Admin {
   id           String    @id @default(cuid())
   name         String
@@ -232,6 +237,20 @@ model HeroStat {
   value     String
   sortOrder Int      @default(0)
   updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id        String       @id @default(cuid())
+  name      String
+  location  String
+  phone     String?
+  openTime  String
+  closeTime String
+  offDays   String?
+  status    BranchStatus @default(ACTIVE)
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model ClinicSettings {

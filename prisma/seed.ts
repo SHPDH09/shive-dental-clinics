@@ -120,6 +120,22 @@ async function main() {
     });
   }
 
+  const branchCount = await prisma.branch.count();
+  if (branchCount === 0) {
+    await prisma.branch.create({
+      data: {
+        name: "Shiv Dental Clinic — SG R Annexe",
+        location: "SG R Annexe, Shiv Dental Clinic",
+        phone: "9973479904",
+        openTime: "9:00 AM",
+        closeTime: "8:00 PM",
+        offDays: "Sunday",
+        status: "ACTIVE",
+        sortOrder: 0,
+      },
+    });
+  }
+
   const testimonialCount = await prisma.testimonial.count();
   if (testimonialCount === 0) {
     await prisma.testimonial.create({

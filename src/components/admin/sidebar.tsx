@@ -16,6 +16,7 @@ import {
   Wand2,
   ClipboardList,
   Star,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ const links = [
   { href: "/admin/before-after", label: "Before / After", icon: Wand2 },
   { href: "/admin/services", label: "Services", icon: Stethoscope },
   { href: "/admin/doctors", label: "Doctor profiles", icon: UserCircle },
+  { href: "/admin/branches", label: "Branches", icon: MapPin },
   { href: "/admin/messages", label: "Messages", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
