@@ -5,7 +5,7 @@ Production-style dental clinic software: premium patient website, online booking
 ## Stack
 
 - **Next.js 16** (App Router) + TypeScript + Tailwind CSS
-- **PostgreSQL** via Prisma 7 (`@prisma/adapter-pg`) — any host (local, Neon, Supabase, etc.)
+- **Supabase** (Postgres + JS client) via Prisma 7 (`@prisma/adapter-pg`)
 - **NextAuth** (admin credentials + optional env fallback when DB is offline)
 - Media uploads to **`public/uploads`** (local dev; use Cloudflare R2 or similar on Workers if needed)
 
@@ -48,6 +48,10 @@ curl http://localhost:3000/api/health/db
 | `npm run db:push` | Apply Prisma schema |
 | `npm run db:seed` | Seed demo content |
 | `npm run admin:reset` | Create/update super admin in DB |
+
+## Supabase
+
+See `SUPABASE.md` for keys, `db:push`, and Cloudflare secrets.
 
 ## Cloudflare
 

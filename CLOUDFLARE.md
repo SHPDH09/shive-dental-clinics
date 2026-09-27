@@ -24,7 +24,10 @@ Set in **Workers & Pages → Settings → Variables** (Production):
 
 | Variable | Required | Notes |
 |----------|----------|--------|
-| `DATABASE_URL` | Yes* | Any PostgreSQL URL reachable from Workers (e.g. Neon, Supabase). Add `?sslmode=require` if the host requires SSL. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | In `wrangler.jsonc` (already set) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | In `wrangler.jsonc` (already set) |
+| `SUPABASE_SECRET_KEY` | Yes **Encrypt** | `sb_secret_…` from Supabase → API keys |
+| `DATABASE_URL` or `SUPABASE_DB_PASSWORD` | Yes* | Supabase Postgres for Prisma — see `SUPABASE.md` |
 | `AUTH_SECRET` | Yes | `openssl rand -base64 32` |
 | `AUTH_URL` / `NEXTAUTH_URL` / `NEXT_PUBLIC_APP_URL` | Yes | Your live Worker URL |
 | `ADMIN_LOGIN_ID` | Yes (var) | e.g. `1A74N3077` |

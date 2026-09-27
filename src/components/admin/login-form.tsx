@@ -16,6 +16,7 @@ type LoginHints = {
   authSecretOk: boolean;
   databaseOk: boolean;
   envFallbackOk?: boolean;
+  supabaseConfigured?: boolean;
   message: string;
 };
 
@@ -86,6 +87,7 @@ export function LoginForm() {
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
             <li>Database: {hints.databaseOk ? "Connected" : "Not connected"}</li>
+            <li>Supabase: {hints.supabaseConfigured ? "Configured" : "Not configured"}</li>
             <li>
               Emergency login:{" "}
               {hints.envFallbackOk ? "Configured (Cloudflare secrets)" : "Not configured"}

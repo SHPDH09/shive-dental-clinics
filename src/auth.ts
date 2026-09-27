@@ -5,6 +5,7 @@ import { loginSchema } from "@/lib/validations";
 import { authConfig } from "@/auth.config";
 import { resolveAuthSecret } from "@/lib/auth-env";
 import { verifyEnvAdmin } from "@/lib/env-admin";
+import { verifyAdminViaSupabase } from "@/lib/supabase/admin-auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -44,6 +45,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (error) {
           console.error("Admin login DB error:", error);
         }
+
+        const supabaseUser = await verifyAdminViaSupabase(loginId, password);
+        if (supabaseUser) return supabaseUser;
 
         const envUser = verifyEnvAdmin(loginId, password);
         if (envUser) return envUser;

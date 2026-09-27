@@ -29,13 +29,25 @@ function loadEnvFile(path) {
 
 loadEnvFile(resolve(process.cwd(), ".env"));
 
-const SECRETS = ["DATABASE_URL", "AUTH_SECRET", "ADMIN_PASSWORD"];
+const SECRETS = [
+  "AUTH_SECRET",
+  "ADMIN_PASSWORD",
+  "SUPABASE_SECRET_KEY",
+  "DATABASE_URL",
+  "SUPABASE_DB_PASSWORD",
+];
+
+const REQUIRED = ["AUTH_SECRET", "ADMIN_PASSWORD"];
 
 for (const name of SECRETS) {
   const value = process.env[name]?.trim();
   if (!value) {
-    console.error(`Missing ${name} in environment or .env`);
-    process.exit(1);
+    if (REQUIRED.includes(name)) {
+      console.error(`Missing ${name} in environment or .env`);
+      process.exit(1);
+    }
+    console.log(`Skipping ${name} (not set)`);
+    continue;
   }
   console.log(`Setting wrangler secret: ${name}…`);
   const r = spawnSync("npx", ["wrangler", "secret", "put", name], {

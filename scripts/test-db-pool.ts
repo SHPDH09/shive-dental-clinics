@@ -1,10 +1,11 @@
 import "dotenv/config";
+import { resolveDatabaseUrl } from "../src/lib/database-url";
 import { createPgPool } from "../src/lib/pg-pool";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const url = resolveDatabaseUrl();
   if (!url) {
-    console.error("DATABASE_URL not set");
+    console.error("DATABASE_URL or SUPABASE_DB_PASSWORD not set");
     process.exit(1);
   }
 

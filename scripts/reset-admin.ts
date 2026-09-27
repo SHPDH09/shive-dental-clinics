@@ -2,6 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { resolveDatabaseUrl } from "../src/lib/database-url";
 import { createPgPool } from "../src/lib/pg-pool";
 
 const loginId = process.env.ADMIN_LOGIN_ID ?? "1A74N3077";
@@ -10,12 +11,13 @@ const email = process.env.ADMIN_EMAIL?.trim() || "rk331159@gmail.com";
 const name = process.env.ADMIN_NAME ?? "Shiv Dental Admin";
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is required");
+  const connectionString = resolveDatabaseUrl();
+  if (!connectionString) {
+    console.error("DATABASE_URL or SUPABASE_DB_PASSWORD is required");
     process.exit(1);
   }
 
-  const pool = createPgPool(process.env.DATABASE_URL);
+  const pool = createPgPool(connectionString);
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   const deleted = await prisma.admin.deleteMany({});

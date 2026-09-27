@@ -1,5 +1,6 @@
 import { isAuthConfigured } from "@/lib/auth-env";
 import { isEnvAdminConfigured } from "@/lib/env-admin";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -15,10 +16,12 @@ export async function GET() {
   }
 
   const envFallbackOk = isEnvAdminConfigured();
+  const supabaseConfigured = isSupabaseConfigured();
 
   return NextResponse.json({
     authSecretOk: isAuthConfigured(),
     databaseOk: dbOk,
+    supabaseConfigured,
     envFallbackOk,
     message: !isAuthConfigured()
       ? "Set AUTH_SECRET in Cloudflare Variables (Encrypt)."

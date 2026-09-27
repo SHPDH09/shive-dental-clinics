@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { resolveDatabaseUrl } from "@/lib/database-url";
 import { createPgPool } from "@/lib/pg-pool";
 import type { Pool } from "pg";
 
@@ -27,9 +28,9 @@ export function getPrismaClient(): PrismaClient {
     return globalForPrisma.prisma;
   }
 
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = resolveDatabaseUrl();
   if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
+    throw new Error("DATABASE_URL or SUPABASE_DB_PASSWORD is not set");
   }
 
   globalForPrisma.prisma = createPrismaClient(connectionString);
