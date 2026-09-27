@@ -17,12 +17,20 @@ type AdminRecord = {
   createdAt: string;
 };
 
-const emptyForm = {
+type AdminRole = "SUPER_ADMIN" | "STAFF";
+
+const emptyForm: {
+  loginId: string;
+  name: string;
+  email: string;
+  password: string;
+  role: AdminRole;
+} = {
   loginId: "",
   name: "",
   email: "",
   password: "",
-  role: "STAFF" as const,
+  role: "STAFF",
 };
 
 export function AdminsView() {
@@ -141,9 +149,7 @@ export function AdminsView() {
               <select
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
                 value={form.role}
-                onChange={(e) =>
-                  setForm({ ...form, role: e.target.value as "SUPER_ADMIN" | "STAFF" })
-                }
+                onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole })}
               >
                 <option value="STAFF">Staff</option>
                 <option value="SUPER_ADMIN">Super admin</option>
@@ -154,7 +160,7 @@ export function AdminsView() {
             <Button type="button" disabled={saving} onClick={() => void onCreate()}>
               {saving ? "Saving…" : "Create"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>
               Cancel
             </Button>
           </div>
