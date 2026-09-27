@@ -94,19 +94,39 @@ model Patient {
   appointments   Appointment[]
 }
 
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  services  Service[]
+}
+
 model Service {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  description String
-  shortDesc   String?
-  image       String?
-  price       Decimal?      @db.Decimal(10, 2)
-  enabled     Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  appointments Appointment[]
+  id                String           @id @default(cuid())
+  name              String
+  slug              String           @unique
+  description       String
+  shortDesc         String?
+  whatIsTreatment   String?
+  image             String?
+  icon              String?
+  categoryId        String?
+  category          ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  treatmentDuration String?
+  price             Decimal?         @db.Decimal(10, 2)
+  hidePrice         Boolean          @default(false)
+  benefits          Json             @default("[]")
+  treatmentSteps    Json             @default("[]")
+  faqs              Json             @default("[]")
+  featured          Boolean          @default(false)
+  enabled           Boolean          @default(true)
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  appointments      Appointment[]
 }
 
 model Doctor {

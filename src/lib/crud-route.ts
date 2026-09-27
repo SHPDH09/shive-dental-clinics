@@ -12,6 +12,7 @@ type ModelName =
   | "appointment"
   | "lead"
   | "service"
+  | "serviceCategory"
   | "doctor"
   | "testimonial"
   | "media"

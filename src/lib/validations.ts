@@ -46,14 +46,34 @@ export const leadSchema = z.object({
   assignedStaff: z.string().optional(),
 });
 
+const serviceFaqSchema = z.object({
+  question: z.string().min(2),
+  answer: z.string().min(2),
+});
+
 export const serviceSchema = z.object({
   name: z.string().min(2),
-  slug: z.string().optional(),
+  slug: z.string().min(2).optional(),
   description: z.string().min(10),
-  shortDesc: z.string().optional(),
-  image: z.string().optional(),
+  shortDesc: z.string().min(5),
+  whatIsTreatment: z.string().optional(),
+  image: z.string().min(1, "Service image is required"),
+  icon: z.string().optional(),
+  categoryId: z.string().min(1, "Category is required"),
+  treatmentDuration: z.string().optional(),
   price: z.string().optional(),
+  hidePrice: z.boolean().optional(),
+  benefits: z.array(z.string().min(1)).optional(),
+  treatmentSteps: z.array(z.string().min(1)).optional(),
+  faqs: z.array(serviceFaqSchema).optional(),
+  featured: z.boolean().optional(),
   enabled: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
+
+export const serviceCategorySchema = z.object({
+  name: z.string().min(2),
+  slug: z.string().min(2).optional(),
   sortOrder: z.number().optional(),
 });
 

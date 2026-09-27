@@ -1,5 +1,5 @@
 import { requireAdminSession } from "@/lib/api-auth";
-import { createCrudHandlers } from "@/lib/crud-route";
+import { listAdminServices, servicePayloadFromInput } from "@/lib/admin-services";
 import { prisma } from "@/lib/prisma";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { slugify } from "@/lib/utils";
@@ -8,10 +8,34 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
-const listHandlers = createCrudHandlers("service", { searchFields: ["name", "slug"] });
-
 export async function GET(req: Request) {
-  return listHandlers.GET(req);
+  const { error } = await requireAdminSession();
+  if (error) return error;
+
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const limit = Math.min(100, parseInt(searchParams.get("limit") || "20", 10));
+  const q = searchParams.get("q")?.trim();
+  const categoryId = searchParams.get("categoryId")?.trim() || undefined;
+  const enabledParam = searchParams.get("enabled");
+  const sort = searchParams.get("sort") === "oldest" ? "oldest" : "newest";
+  const enabled =
+    enabledParam === "true" ? true : enabledParam === "false" ? false : undefined;
+
+  try {
+    const { items, total } = await listAdminServices({
+      page,
+      limit,
+      q,
+      categoryId,
+      enabled,
+      sort,
+    });
+    return NextResponse.json({ items, total, page, limit });
+  } catch (e) {
+    console.error("List services error:", e);
+    return NextResponse.json({ error: "Database error" }, { status: 503 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -28,6 +52,7 @@ export async function POST(req: Request) {
   const baseSlug = data.slug?.trim() || slugify(data.name);
   let slug = baseSlug;
   let suffix = 0;
+  const payload = servicePayloadFromInput(data);
 
   if (useSupabaseCrud()) {
     const sb = createSupabaseServiceClient();
@@ -37,16 +62,7 @@ export async function POST(req: Request) {
       suffix += 1;
       slug = `${baseSlug}-${suffix}`;
     }
-    const item = await supabaseCreate("service", {
-      name: data.name,
-      slug,
-      description: data.description,
-      shortDesc: data.shortDesc || null,
-      image: data.image || null,
-      price: data.price ?? null,
-      enabled: data.enabled ?? true,
-      sortOrder: data.sortOrder ?? 0,
-    });
+    const item = await supabaseCreate("service", { ...payload, slug });
     return NextResponse.json(item);
   }
 
@@ -57,14 +73,12 @@ export async function POST(req: Request) {
 
   const item = await prisma.service.create({
     data: {
-      name: data.name,
+      ...payload,
       slug,
-      description: data.description,
-      shortDesc: data.shortDesc || null,
-      image: data.image || null,
-      price: data.price ? new Prisma.Decimal(data.price) : null,
-      enabled: data.enabled ?? true,
-      sortOrder: data.sortOrder ?? 0,
+      price: payload.price ? new Prisma.Decimal(payload.price) : null,
+      benefits: payload.benefits,
+      treatmentSteps: payload.treatmentSteps,
+      faqs: payload.faqs,
     },
   });
 
