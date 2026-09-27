@@ -1,5 +1,3 @@
-import { prisma } from "@/lib/prisma";
-
 export {
   getPublicServicesList as getPublicServices,
   getPublicServiceBySlug as getServiceBySlug,
@@ -21,15 +19,16 @@ export { getPublicGalleryItems as getPublicGallery } from "@/lib/public-gallery"
 
 export { getPublicVideos } from "@/lib/public-videos";
 
-export async function getPublicBranches() {
-  try {
-    return await prisma.branch.findMany({
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return [];
-  }
-}
+export {
+  getPublicBranchesList as getPublicBranches,
+  getPublicBranchBySlug,
+} from "@/lib/public-branches";
+export {
+  searchPublicBranches,
+  branchDirectionsUrl,
+  branchOpeningLines,
+} from "@/lib/public-branch-utils";
+export type { PublicBranch } from "@/lib/public-branch-types";
 
 import { getPublicTransformations } from "@/lib/public-transformations";
 

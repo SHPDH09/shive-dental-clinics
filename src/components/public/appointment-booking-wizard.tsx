@@ -5,24 +5,41 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Check, Loader2 } from "lucide-react";
 
+type BranchOption = {
+  id: string;
+  name: string;
+  slug: string;
+  city: string;
+  doctorIds: string[];
+  serviceIds: string[];
+};
+
 type DoctorOption = { id: string; name: string; slug: string; specialization: string };
 type ServiceOption = { id: string; name: string; slug?: string };
 
 type Props = {
+  branches: BranchOption[];
   doctors: DoctorOption[];
   services: ServiceOption[];
+  initialBranchSlug?: string | null;
   initialDoctorSlug?: string | null;
   initialServiceSlug?: string | null;
 };
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 export function AppointmentBookingWizard({
+  branches,
   doctors,
   services,
+  initialBranchSlug,
   initialDoctorSlug,
   initialServiceSlug,
 }: Props) {
+  const preBranch = useMemo(
+    () => (initialBranchSlug ? branches.find((b) => b.slug === initialBranchSlug) : null),
+    [branches, initialBranchSlug],
+  );
   const preDoctor = useMemo(
     () => (initialDoctorSlug ? doctors.find((d) => d.slug === initialDoctorSlug) : null),
     [doctors, initialDoctorSlug],
@@ -33,8 +50,9 @@ export function AppointmentBookingWizard({
   );
 
   const [step, setStep] = useState<Step>(1);
-  const [doctorId, setDoctorId] = useState(preDoctor?.id ?? doctors[0]?.id ?? "");
-  const [serviceId, setServiceId] = useState(preService?.id ?? services[0]?.id ?? "");
+  const [branchId, setBranchId] = useState(preBranch?.id ?? branches[0]?.id ?? "");
+  const [doctorId, setDoctorId] = useState(preDoctor?.id ?? "");
+  const [serviceId, setServiceId] = useState(preService?.id ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [slots, setSlots] = useState<string[]>([]);
@@ -48,20 +66,53 @@ export function AppointmentBookingWizard({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const selectedDoctor = doctors.find((d) => d.id === doctorId);
-  const selectedService = services.find((s) => s.id === serviceId);
+  const selectedBranch = branches.find((b) => b.id === branchId);
+  const branchDoctors = useMemo(() => {
+    if (!selectedBranch) return doctors;
+    if (selectedBranch.doctorIds.length === 0) return doctors;
+    return doctors.filter((d) => selectedBranch.doctorIds.includes(d.id));
+  }, [doctors, selectedBranch]);
+
+  const branchServices = useMemo(() => {
+    if (!selectedBranch) return services;
+    if (selectedBranch.serviceIds.length === 0) return services;
+    return services.filter((s) => selectedBranch.serviceIds.includes(s.id));
+  }, [services, selectedBranch]);
+
+  const selectedDoctor = branchDoctors.find((d) => d.id === doctorId) ?? doctors.find((d) => d.id === doctorId);
+  const selectedService = branchServices.find((s) => s.id === serviceId) ?? services.find((s) => s.id === serviceId);
   const treatmentName = selectedService?.name ?? "";
 
   useEffect(() => {
-    if (preDoctor) setDoctorId(preDoctor.id);
-  }, [preDoctor]);
+    if (preBranch) setBranchId(preBranch.id);
+  }, [preBranch]);
 
   useEffect(() => {
-    if (preService) setServiceId(preService.id);
-  }, [preService]);
+    if (!branchId) return;
+    const allowed = branchDoctors.map((d) => d.id);
+    if (doctorId && !allowed.includes(doctorId)) {
+      setDoctorId(branchDoctors[0]?.id ?? "");
+    } else if (!doctorId && branchDoctors[0]) {
+      setDoctorId(branchDoctors[0].id);
+    }
+    const svcAllowed = branchServices.map((s) => s.id);
+    if (serviceId && !svcAllowed.includes(serviceId)) {
+      setServiceId(branchServices[0]?.id ?? "");
+    } else if (!serviceId && branchServices[0]) {
+      setServiceId(branchServices[0].id);
+    }
+  }, [branchId, branchDoctors, branchServices, doctorId, serviceId]);
 
   useEffect(() => {
-    if (step !== 4 || !doctorId || !date) return;
+    if (preDoctor && branchDoctors.some((d) => d.id === preDoctor.id)) setDoctorId(preDoctor.id);
+  }, [preDoctor, branchDoctors]);
+
+  useEffect(() => {
+    if (preService && branchServices.some((s) => s.id === preService.id)) setServiceId(preService.id);
+  }, [preService, branchServices]);
+
+  useEffect(() => {
+    if (step !== 5 || !doctorId || !date) return;
     setSlotsLoading(true);
     setTime("");
     void fetch(`/api/public/appointments/slots?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(date)}`)
@@ -78,11 +129,12 @@ export function AppointmentBookingWizard({
   }, [step, doctorId, date]);
 
   const canNext = () => {
-    if (step === 1) return Boolean(doctorId);
-    if (step === 2) return Boolean(serviceId);
-    if (step === 3) return Boolean(date);
-    if (step === 4) return Boolean(time);
-    if (step === 5) return patientName.trim().length >= 2 && phone.trim().length >= 10;
+    if (step === 1) return Boolean(branchId);
+    if (step === 2) return Boolean(doctorId);
+    if (step === 3) return Boolean(serviceId);
+    if (step === 4) return Boolean(date);
+    if (step === 5) return Boolean(time);
+    if (step === 6) return patientName.trim().length >= 2 && phone.trim().length >= 10;
     return false;
   };
 
@@ -97,6 +149,7 @@ export function AppointmentBookingWizard({
           patientName,
           phone,
           email,
+          branchId,
           doctorId,
           serviceId,
           treatmentName,
@@ -107,7 +160,7 @@ export function AppointmentBookingWizard({
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Could not book. Please try another time.");
+        setError(typeof json.error === "string" ? json.error : "Could not book. Please try another time.");
         return;
       }
       setSuccess(`Thank you! Your reference is ${json.appointmentId}. We will confirm shortly.`);
@@ -128,6 +181,7 @@ export function AppointmentBookingWizard({
   }
 
   const steps = [
+    "Select Branch",
     "Select Doctor",
     "Select Treatment",
     "Select Date",
@@ -157,19 +211,19 @@ export function AppointmentBookingWizard({
 
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Doctor</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select Branch</h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            {doctors.map((d) => (
+            {branches.map((b) => (
               <button
-                key={d.id}
+                key={b.id}
                 type="button"
-                onClick={() => setDoctorId(d.id)}
+                onClick={() => setBranchId(b.id)}
                 className={`rounded-xl border p-4 text-left transition ${
-                  doctorId === d.id ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200" : "border-slate-200 hover:border-sky-200"
+                  branchId === b.id ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200" : "border-slate-200 hover:border-sky-200"
                 }`}
               >
-                <p className="font-semibold text-slate-900">{d.name}</p>
-                <p className="text-sm text-slate-600">{d.specialization}</p>
+                <p className="font-semibold text-slate-900">{b.name}</p>
+                <p className="text-sm text-slate-600">{b.city}</p>
               </button>
             ))}
           </div>
@@ -178,15 +232,34 @@ export function AppointmentBookingWizard({
 
       {step === 2 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Treatment</h3>
-          {preService && selectedService && (
-            <p className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-3 text-sm text-teal-900">
-              <Check className="h-4 w-4" />
-              Selected: <strong>{selectedService.name}</strong>
-            </p>
+          <h3 className="text-lg font-bold text-slate-900">Select Doctor</h3>
+          {branchDoctors.length === 0 ? (
+            <p className="text-sm text-slate-600">No doctors listed for this branch. Please call the clinic.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {branchDoctors.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDoctorId(d.id)}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    doctorId === d.id ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200" : "border-slate-200 hover:border-sky-200"
+                  }`}
+                >
+                  <p className="font-semibold text-slate-900">{d.name}</p>
+                  <p className="text-sm text-slate-600">{d.specialization}</p>
+                </button>
+              ))}
+            </div>
           )}
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900">Select Treatment</h3>
           <Select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-            {services.map((s) => (
+            {branchServices.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -195,7 +268,7 @@ export function AppointmentBookingWizard({
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900">Select Date</h3>
           <Input
@@ -207,7 +280,7 @@ export function AppointmentBookingWizard({
         </div>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900">Select Available Time</h3>
           {slotsLoading ? (
@@ -235,10 +308,13 @@ export function AppointmentBookingWizard({
         </div>
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900">Confirm Appointment</h3>
           <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700 space-y-1">
+            <p>
+              <strong>Branch:</strong> {selectedBranch?.name}
+            </p>
             <p>
               <strong>Doctor:</strong> {selectedDoctor?.name}
             </p>
@@ -278,12 +354,12 @@ export function AppointmentBookingWizard({
             Back
           </Button>
         )}
-        {step < 5 && (
+        {step < 6 && (
           <Button type="button" disabled={!canNext()} onClick={() => setStep((s) => (s + 1) as Step)}>
             Continue
           </Button>
         )}
-        {step === 5 && (
+        {step === 6 && (
           <Button type="button" disabled={!canNext() || submitting} onClick={() => void submit()}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Confirm Appointment

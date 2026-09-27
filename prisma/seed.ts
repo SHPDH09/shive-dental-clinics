@@ -329,21 +329,46 @@ async function main() {
     });
   }
 
-  const branchCount = await prisma.branch.count();
-  if (branchCount === 0) {
-    await prisma.branch.create({
-      data: {
-        name: "Shiv Dental Clinic — SG R Annexe",
-        location: "SG R Annexe, Shiv Dental Clinic",
-        phone: "9973479904",
-        openTime: "9:00 AM",
-        closeTime: "8:00 PM",
-        offDays: "Sunday",
-        status: "ACTIVE",
-        sortOrder: 0,
+  const allDoctors = await prisma.doctor.findMany({ select: { id: true } });
+  const allServices = await prisma.service.findMany({ select: { id: true }, take: 8 });
+  const branchSlug = "shiv-dental-sg-r-annexe";
+  await prisma.branch.upsert({
+    where: { slug: branchSlug },
+    update: {
+      doctorIds: allDoctors.map((d) => d.id),
+      serviceIds: allServices.map((s) => s.id),
+      published: true,
+      featured: true,
+    },
+    create: {
+      name: "Shiv Dental Clinic — SG R Annexe",
+      slug: branchSlug,
+      address: "SG R Annexe, Shiv Dental Clinic",
+      city: "Mumbai",
+      state: "Maharashtra",
+      location: "SG R Annexe, Shiv Dental Clinic",
+      phone: "9973479904",
+      whatsapp: "9973479904",
+      openTime: "10:00 AM",
+      closeTime: "7:00 PM",
+      offDays: "Sunday",
+      weeklySchedule: {
+        monday: { enabled: true, start: "10:00", end: "19:00" },
+        tuesday: { enabled: true, start: "10:00", end: "19:00" },
+        wednesday: { enabled: true, start: "10:00", end: "19:00" },
+        thursday: { enabled: true, start: "10:00", end: "19:00" },
+        friday: { enabled: true, start: "10:00", end: "19:00" },
+        saturday: { enabled: true, start: "10:00", end: "19:00" },
+        sunday: { enabled: false, start: "10:00", end: "14:00" },
       },
-    });
-  }
+      doctorIds: allDoctors.map((d) => d.id),
+      serviceIds: allServices.map((s) => s.id),
+      featured: true,
+      published: true,
+      status: "ACTIVE",
+      sortOrder: 0,
+    },
+  });
 
   const testimonialCount = await prisma.testimonial.count();
   if (testimonialCount === 0) {
