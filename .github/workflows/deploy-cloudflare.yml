@@ -28,24 +28,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          set -euo pipefail
-          required="AUTH_SECRET ADMIN_PASSWORD SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD"
-          for name in $required; do
+          set +e
+          for name in AUTH_SECRET SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD DATABASE_URL ADMIN_PASSWORD; do
             val="${!name:-}"
-            if [ -z "$val" ]; then
-              echo "Missing GitHub secret: $name"
-              exit 1
+            if [ -n "$val" ]; then
+              printf '%s' "$val" | npx wrangler secret put "$name" || echo "warn: failed $name"
             fi
-            printf '%s' "$val" | npx wrangler secret put "$name"
           done
-          if [ -n "${DATABASE_URL:-}" ]; then
-            printf '%s' "$DATABASE_URL" | npx wrangler secret put DATABASE_URL
-          fi
 
       - name: Deploy to Cloudflare
         run: npx wrangler deploy

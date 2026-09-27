@@ -1,5 +1,10 @@
 import { requireAdminSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import {
+  supabaseCrudById,
+  supabaseCrudHandlers,
+  useSupabaseCrud,
+} from "@/lib/supabase/crud";
 import { NextResponse } from "next/server";
 
 type ModelName =
@@ -22,6 +27,22 @@ function getDelegate(model: ModelName): any {
 }
 
 export function createCrudHandlers(model: ModelName, options?: { searchFields?: string[] }) {
+  if (useSupabaseCrud()) {
+    const sb = supabaseCrudHandlers(model, options);
+    return {
+      async GET(req: Request) {
+        const { error } = await requireAdminSession();
+        if (error) return error;
+        return sb.GET(req);
+      },
+      async POST(req: Request) {
+        const { error } = await requireAdminSession();
+        if (error) return error;
+        return sb.POST(req);
+      },
+    };
+  }
+
   return {
     async GET(req: Request) {
       const { error } = await requireAdminSession();
@@ -66,6 +87,10 @@ export function createCrudHandlers(model: ModelName, options?: { searchFields?: 
 export async function crudById(model: ModelName, req: Request, id: string) {
   const { error } = await requireAdminSession();
   if (error) return { error };
+
+  if (useSupabaseCrud()) {
+    return supabaseCrudById(model, req, id);
+  }
 
   const delegate = getDelegate(model);
 

@@ -20,6 +20,7 @@
     "cf:build": "node scripts/with-build-env.mjs opennextjs-cloudflare build"
   },
   "dependencies": {
+    "@paralleldrive/cuid2": "^3.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.10.0",

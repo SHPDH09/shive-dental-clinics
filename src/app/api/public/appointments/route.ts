@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { appointmentPublicSchema } from "@/lib/validations";
 import { generateCode } from "@/lib/utils";
 import { createNotification } from "@/lib/notifications";
@@ -13,20 +14,41 @@ export async function POST(req: Request) {
     }
 
     const data = parsed.data;
-    const appointment = await prisma.appointment.create({
-      data: {
-        appointmentCode: generateCode("APT"),
+    const appointmentCode = generateCode("APT");
+    const appointmentDate = new Date(data.appointmentDate);
+
+    let appointment: { id: string; appointmentCode: string; patientName: string; treatmentName: string };
+
+    if (useSupabaseCrud()) {
+      const row = (await supabaseCreate("appointment", {
+        appointmentCode,
         patientName: data.patientName,
         phone: data.phone,
         email: data.email || null,
         serviceId: data.serviceId || null,
         treatmentName: data.treatmentName,
-        appointmentDate: new Date(data.appointmentDate),
+        appointmentDate: appointmentDate.toISOString(),
         appointmentTime: data.appointmentTime,
         message: data.message || null,
         status: "PENDING",
-      },
-    });
+      })) as { id: string; appointmentCode: string; patientName: string; treatmentName: string };
+      appointment = row;
+    } else {
+      appointment = await prisma.appointment.create({
+        data: {
+          appointmentCode,
+          patientName: data.patientName,
+          phone: data.phone,
+          email: data.email || null,
+          serviceId: data.serviceId || null,
+          treatmentName: data.treatmentName,
+          appointmentDate,
+          appointmentTime: data.appointmentTime,
+          message: data.message || null,
+          status: "PENDING",
+        },
+      });
+    }
 
     await createNotification({
       type: "NEW_APPOINTMENT",

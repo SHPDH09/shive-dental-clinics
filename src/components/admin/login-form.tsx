@@ -17,6 +17,7 @@ type LoginHints = {
   databaseOk: boolean;
   supabaseConfigured?: boolean;
   loginVia?: string;
+  canLogin?: boolean;
   message: string;
 };
 

@@ -13,6 +13,7 @@ async function main() {
     const { error } = await supabase.auth.admin.updateUserById(existing.id, {
       password,
       email_confirm: true,
+      user_metadata: { role: "SUPER_ADMIN", name: "Shiv Dental Admin" },
     });
     if (error) throw error;
     console.log("Updated Supabase Auth user:", email);
@@ -23,6 +24,7 @@ async function main() {
     email,
     password,
     email_confirm: true,
+    user_metadata: { role: "SUPER_ADMIN", name: "Shiv Dental Admin" },
   });
   if (error) throw error;
   console.log("Created Supabase Auth user:", data.user?.email);

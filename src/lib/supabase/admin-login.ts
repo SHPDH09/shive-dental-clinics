@@ -18,51 +18,62 @@ type AdminRow = {
 
 async function findAdminRow(loginId: string): Promise<AdminRow | null> {
   if (!getSupabaseSecretKey()) return null;
-  const supabase = createSupabaseServiceClient();
-  const { data, error } = await supabase
-    .from("Admin")
-    .select("id, loginId, name, email, passwordHash, role")
-    .or(`loginId.eq.${loginId},email.eq.${loginId}`)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data as AdminRow;
+  try {
+    const supabase = createSupabaseServiceClient();
+    const { data, error } = await supabase
+      .from("Admin")
+      .select("id, loginId, name, email, passwordHash, role")
+      .or(`loginId.eq.${loginId},email.eq.${loginId}`)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as AdminRow;
+  } catch {
+    return null;
+  }
 }
 
-/** Supabase Auth + Admin table (no Cloudflare env password). */
+function resolveEmail(loginId: string, admin: AdminRow | null): string | null {
+  if (admin?.email) return admin.email;
+  if (loginId.includes("@")) return loginId;
+  return null;
+}
+
+/** Supabase Auth + Admin table password (no Cloudflare login secrets). */
 export async function authenticateAdmin(loginId: string, password: string) {
   const admin = await findAdminRow(loginId);
-  if (!admin) return null;
+  const email = resolveEmail(loginId, admin);
 
-  const email = admin.email ?? (loginId.includes("@") ? loginId : null);
-
-  if (email) {
-    const publishable = getSupabasePublishableKey();
-    if (publishable) {
-      const authClient = createClient(getSupabaseProjectUrl(), publishable, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-      const { data: authData, error } = await authClient.auth.signInWithPassword({
+  const publishable = getSupabasePublishableKey();
+  if (email && publishable) {
+    const authClient = createClient(getSupabaseProjectUrl(), publishable, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: authData, error } = await authClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (!error && authData.user) {
+      const meta = authData.user.user_metadata as { role?: string; name?: string };
+      return {
+        id: admin?.id ?? authData.user.id,
         email,
-        password,
-      });
-      if (!error && authData.user) {
-        return {
-          id: admin.id,
-          email: admin.email ?? email,
-          name: admin.name,
-          role: admin.role,
-        };
-      }
+        name: admin?.name ?? meta.name ?? "Shiv Dental Admin",
+        role: admin?.role ?? meta.role ?? "SUPER_ADMIN",
+      };
     }
   }
 
-  const valid = await bcrypt.compare(password, admin.passwordHash);
-  if (!valid) return null;
+  if (admin) {
+    const valid = await bcrypt.compare(password, admin.passwordHash);
+    if (valid) {
+      return {
+        id: admin.id,
+        email: admin.email ?? admin.loginId,
+        name: admin.name,
+        role: admin.role,
+      };
+    }
+  }
 
-  return {
-    id: admin.id,
-    email: admin.email ?? admin.loginId,
-    name: admin.name,
-    role: admin.role,
-  };
+  return null;
 }
