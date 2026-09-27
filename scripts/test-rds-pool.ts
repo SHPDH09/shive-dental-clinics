@@ -1,32 +1,21 @@
-import { Pool } from "pg";
-
-const host = "database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com";
-const port = 5432;
-
-const pool = new Pool({
-  host,
-  port,
-  user: "test",
-  password: "test",
-  database: "postgres",
-  connectionTimeoutMillis: 15000,
-  ssl: { rejectUnauthorized: false },
-});
+import "dotenv/config";
+import { createPgPool } from "../src/lib/pg-pool";
 
 async function main() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error("DATABASE_URL not set");
+    process.exit(1);
+  }
+
+  const pool = createPgPool(url);
   try {
-    const client = await pool.connect();
-    await client.query("SELECT 1");
-    client.release();
-    console.log("SUCCESS: connected");
+    const result = await pool.query("SELECT 1 AS ok");
+    console.log("DB_OK", result.rows[0]);
   } catch (error) {
     if (error instanceof Error) {
-      console.error(error.message);
-      if ("code" in error) {
-        console.error("code:", (error as NodeJS.ErrnoException).code);
-      }
-    } else {
-      console.error(String(error));
+      console.error("DB_FAIL", error.message);
+      if ("code" in error) console.error("code:", (error as NodeJS.ErrnoException).code);
     }
     process.exitCode = 1;
   } finally {

@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-import { Pool } from "pg";
+import { createPgPool } from "@/lib/pg-pool";
+import type { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -13,7 +14,7 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const pool = globalForPrisma.pool ?? new Pool({ connectionString });
+  const pool = globalForPrisma.pool ?? createPgPool(connectionString);
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.pool = pool;
   }
