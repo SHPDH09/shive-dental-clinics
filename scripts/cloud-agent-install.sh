@@ -5,6 +5,14 @@ cd "$(dirname "$0")/.."
 
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 
+# Cursor Runtime Secrets inject env vars; local dev / this VM may use gitignored `.env`.
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 npm ci
 
 if [[ -n "${DATABASE_URL:-}" ]]; then
