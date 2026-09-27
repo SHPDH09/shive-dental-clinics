@@ -109,10 +109,15 @@ export function ContactSection({
 
           <form onSubmit={handleSubmit(onSubmit)} className="card-premium space-y-4 p-6 md:p-8">
             <h3 className="text-lg font-bold text-slate-900">Send a message</h3>
+            <input type="text" className="hidden" tabIndex={-1} autoComplete="off" {...register("website")} />
             <div>
               <Label>Name</Label>
               <Input {...register("name")} />
               {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Input {...register("subject")} placeholder="e.g. Teeth cleaning appointment" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

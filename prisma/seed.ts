@@ -370,6 +370,35 @@ async function main() {
     },
   });
 
+  const templateSlugs = [
+    {
+      slug: "appointment-confirmation",
+      name: "Appointment Confirmation",
+      subject: "Your appointment request — Shiv Dental Clinic",
+      body: "Thank you for contacting Shiv Dental Clinic. Your appointment request has been received. Our team will call you shortly to confirm your date and time. If you need urgent help, please call the clinic directly.",
+    },
+    {
+      slug: "appointment-reminder",
+      name: "Appointment Reminder",
+      subject: "Reminder — upcoming visit at Shiv Dental Clinic",
+      body: "This is a friendly reminder from Shiv Dental Clinic about your upcoming dental appointment. Please arrive a few minutes early. Reply to this message or call us if you need to reschedule.",
+    },
+    {
+      slug: "general-enquiry",
+      name: "General Enquiry",
+      subject: "Thank you for contacting Shiv Dental Clinic",
+      body: "Thank you for reaching out to Shiv Dental Clinic. We have received your message and a member of our team will get back to you shortly. We appreciate your trust in our care.",
+    },
+  ];
+  for (let i = 0; i < templateSlugs.length; i++) {
+    const t = templateSlugs[i];
+    await prisma.messageTemplate.upsert({
+      where: { slug: t.slug },
+      update: { name: t.name, subject: t.subject, body: t.body, sortOrder: i },
+      create: { ...t, sortOrder: i },
+    });
+  }
+
   const testimonialCount = await prisma.testimonial.count();
   if (testimonialCount === 0) {
     await prisma.testimonial.create({

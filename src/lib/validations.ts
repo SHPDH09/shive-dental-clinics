@@ -53,7 +53,33 @@ export const enquirySchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
   email: z.string().email().optional().or(z.literal("")),
-  message: z.string().min(10, "Please enter your message"),
+  subject: z.string().min(2).max(200).optional(),
+  message: z.string().min(10, "Please enter your message").max(5000),
+  website: z.string().max(0).optional(),
+});
+
+export const enquiryAdminPatchSchema = z.object({
+  status: z.enum(["NEW", "IN_PROGRESS", "REPLIED", "CLOSED"]).optional(),
+  important: z.boolean().optional(),
+  assignedStaff: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  source: z
+    .enum(["WEBSITE", "APPOINTMENT", "WHATSAPP", "PHONE", "GOOGLE", "INSTAGRAM", "FACEBOOK", "REFERRAL", "OTHER"])
+    .optional(),
+});
+
+export const enquiryReplySchema = z.object({
+  subject: z.string().min(2),
+  message: z.string().min(2),
+  sentBy: z.string().optional(),
+});
+
+export const messageTemplateSchema = z.object({
+  name: z.string().min(2),
+  slug: z.string().min(2).optional(),
+  subject: z.string().min(2),
+  body: z.string().min(10),
+  sortOrder: z.number().optional(),
 });
 
 export const loginSchema = z.object({

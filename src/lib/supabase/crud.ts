@@ -13,6 +13,7 @@ export type SupabaseModelName =
   | "Media"
   | "BeforeAfter"
   | "Enquiry"
+  | "MessageTemplate"
   | "HeroStat"
   | "Notification"
   | "Branch"
@@ -29,6 +30,7 @@ const modelToTable: Record<string, SupabaseModelName> = {
   media: "Media",
   beforeAfter: "BeforeAfter",
   enquiry: "Enquiry",
+  messageTemplate: "MessageTemplate",
   heroStat: "HeroStat",
   notification: "Notification",
   branch: "Branch",

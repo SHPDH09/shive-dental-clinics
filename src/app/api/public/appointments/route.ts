@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { appointmentPublicSchema } from "@/lib/validations";
 import { generateCode } from "@/lib/utils";
+import { createAppointmentEnquiry } from "@/lib/create-appointment-enquiry";
 import { createNotification } from "@/lib/notifications";
 import { NextResponse } from "next/server";
 
@@ -75,6 +76,25 @@ export async function POST(req: Request) {
       message: `${appointment.patientName} booked ${appointment.treatmentName}`,
       link: "/admin/appointments",
     });
+
+    try {
+      await createAppointmentEnquiry({
+        patientName: data.patientName,
+        phone: data.phone,
+        email: data.email,
+        treatmentName: data.treatmentName,
+        appointmentCode: appointment.appointmentCode,
+        message: data.message,
+      });
+      await createNotification({
+        type: "NEW_ENQUIRY",
+        title: "New message",
+        message: `Appointment enquiry from ${data.patientName}`,
+        link: "/admin/messages",
+      });
+    } catch {
+      /* non-blocking */
+    }
 
     return NextResponse.json({
       success: true,

@@ -49,9 +49,23 @@ enum MediaType {
   VIDEO
 }
 
+enum EnquirySource {
+  WEBSITE
+  APPOINTMENT
+  WHATSAPP
+  PHONE
+  GOOGLE
+  INSTAGRAM
+  FACEBOOK
+  REFERRAL
+  OTHER
+}
+
 enum EnquiryStatus {
-  UNREAD
-  READ
+  NEW
+  IN_PROGRESS
+  REPLIED
+  CLOSED
 }
 
 enum NotificationType {
@@ -92,6 +106,7 @@ model Patient {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   appointments   Appointment[]
+  enquiries      Enquiry[]
 }
 
 model ServiceCategory {
@@ -251,15 +266,40 @@ model BeforeAfter {
 }
 
 model Enquiry {
-  id        String        @id @default(cuid())
+  id            String         @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  subject       String         @default("General enquiry")
+  message       String
+  source        EnquirySource  @default(WEBSITE)
+  status        EnquiryStatus  @default(NEW)
+  important     Boolean        @default(false)
+  assignedStaff String?
+  patientId     String?
+  patient       Patient?       @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  conversation  Json           @default("[]")
+  auditLog      Json           @default("[]")
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([assignedStaff])
+  @@index([important])
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
   name      String
-  phone     String
-  email     String?
-  message   String
-  status    EnquiryStatus @default(UNREAD)
-  notes     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  slug      String   @unique
+  subject   String
+  body      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
