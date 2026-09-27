@@ -16,7 +16,9 @@
     "ADMIN_EMAIL": "rk331159@gmail.com",
     "SUPABASE_URL": "https://ojfxtzwzpoosmzotzyxm.supabase.co",
     "NEXT_PUBLIC_SUPABASE_URL": "https://ojfxtzwzpoosmzotzyxm.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_dq17MrYSzQxIErqpSjZ2SA_222lhWg_"
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_dq17MrYSzQxIErqpSjZ2SA_222lhWg_",
+    "SUPABASE_DB_PW_B64": "UmF1bmFrQDEyNTgz",
+    "SUPABASE_SKEY_B64": "c2Jfc2VjcmV0X3lrSDJvaU5ic3I4cWlsamtQVVRlOWdfSHRySWwyaHA="
   },
   "assets": {
     "directory": ".open-next/assets",
