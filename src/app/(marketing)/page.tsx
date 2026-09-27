@@ -10,6 +10,7 @@ import { BeforeAfterSection } from "@/components/public/before-after-section";
 import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
+import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { getPublicHeroSlides } from "@/lib/hero-slides";
 import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
@@ -47,7 +48,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroSection clinicName={settings.clinicName} stats={stats} slides={heroSlides} />
+      <HeroSection
+        clinicName={settings.clinicName}
+        stats={stats}
+        slides={heroSlides}
+        backgroundImageUrl={CLINIC_STOREFRONT_BG}
+      />
       <section id="book" className="-mt-6 pb-8 md:-mt-10">
         <div className="mx-auto max-w-4xl px-4 md:px-6">
           <div className="card-premium p-6 md:p-8">

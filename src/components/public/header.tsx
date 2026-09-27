@@ -6,6 +6,7 @@ import { Menu, Phone, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ClinicNameAlternate } from "@/components/public/clinic-name-alternate";
+import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 
 const nav = [
   { href: "/services", label: "Services" },
@@ -16,8 +17,6 @@ const nav = [
   { href: "/contact", label: "Contact" },
 ];
 
-const DEFAULT_HEADER_BG = "/branding/clinic-header-bg.png";
-
 type HeaderProps = {
   clinicName: string;
   phone: string;
@@ -26,7 +25,7 @@ type HeaderProps = {
 };
 
 export function PublicHeader({ clinicName, phone, backgroundImageUrl }: HeaderProps) {
-  const bgUrl = backgroundImageUrl?.trim() || DEFAULT_HEADER_BG;
+  const bgUrl = backgroundImageUrl?.trim() || CLINIC_STOREFRONT_BG;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
