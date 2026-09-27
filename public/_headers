@@ -1,0 +1,11 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/branding/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/uploads/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

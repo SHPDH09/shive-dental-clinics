@@ -1,12 +1,10 @@
-import { createHash } from "node:crypto";
 import { readWorkerEnv } from "@/lib/worker-env";
 
 const BUILD_PLACEHOLDER = "build-time-placeholder-set-auth-secret-in-cloudflare";
 
-/** Same at build and runtime so JWT cookies work on Cloudflare without dashboard secrets. */
-export const PRODUCTION_AUTH_SECRET = createHash("sha256")
-  .update("https://ojfxtzwzpoosmzotzyxm.supabase.co|shiv-dental-admin-jwt-v4")
-  .digest("hex");
+/** Precomputed sha256(supabase project url + salt) — edge-safe (no node:crypto). */
+export const PRODUCTION_AUTH_SECRET =
+  "4bcc5249f10b987ba024c609fdad337d5fff96292712528bcdd6372a56224da5";
 
 function readEnvSecret(): string | undefined {
   const a = readWorkerEnv("AUTH_SECRET");
@@ -25,6 +23,12 @@ export function resolveAuthSecret(): string {
   }
 
   return PRODUCTION_AUTH_SECRET;
+}
+
+/** True when a strong random AUTH_SECRET is configured (recommended for production). */
+export function isStrongAuthSecretConfigured(): boolean {
+  const s = readEnvSecret();
+  return Boolean(s && s.length >= 32 && s !== PRODUCTION_AUTH_SECRET);
 }
 
 export function isAuthConfigured(): boolean {

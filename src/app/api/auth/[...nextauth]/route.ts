@@ -1,3 +1,4 @@
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { handlers } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,6 +16,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = enforceRateLimit(req, "nextauth", 15, 15 * 60 * 1000);
+  if (limited) return limited;
+
   try {
     return await authPOST(req);
   } catch (error) {

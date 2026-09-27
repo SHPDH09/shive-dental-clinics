@@ -3,14 +3,14 @@
  * Provide safe placeholders so module analysis and SSG never crash on missing env.
  * AUTH_SECRET must match runtime resolveAuthSecret() on Workers (see auth-env.ts).
  */
-import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 
-const PRODUCTION_AUTH_SECRET = createHash("sha256")
-  .update("https://ojfxtzwzpoosmzotzyxm.supabase.co|shiv-dental-admin-jwt-v4")
-  .digest("hex");
+const PRODUCTION_AUTH_SECRET =
+  "4bcc5249f10b987ba024c609fdad337d5fff96292712528bcdd6372a56224da5";
 
-if (!process.env.DATABASE_URL?.trim()) {
+const onVercel = process.env.VERCEL === "1";
+
+if (!process.env.DATABASE_URL?.trim() && !onVercel) {
   process.env.DATABASE_URL =
     "postgresql://build:build@127.0.0.1:5432/build?schema=public&sslmode=disable";
 }

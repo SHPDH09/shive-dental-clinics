@@ -1,3 +1,4 @@
+import { healthGuard } from "@/lib/health-guard";
 import { isAuthConfigured } from "@/lib/auth-env";
 import { resolveDatabaseUrl } from "@/lib/database-url";
 import { getAuthUrl } from "@/lib/auth-env";
@@ -5,7 +6,10 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const blocked = healthGuard(req);
+  if (blocked) return blocked;
+
   const hasDatabase = Boolean(resolveDatabaseUrl());
   const hasAuth = isAuthConfigured();
   const hasAuthUrl = Boolean(getAuthUrl());

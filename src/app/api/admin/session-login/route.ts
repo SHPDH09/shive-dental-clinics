@@ -1,3 +1,4 @@
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { authenticateAdmin } from "@/lib/supabase/admin-login";
 import { SUPABASE_ACCESS_COOKIE } from "@/lib/supabase/data-client";
 import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
@@ -8,6 +9,9 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "admin-login", 15, 15 * 60 * 1000);
+  if (limited) return limited;
+
   const secret = resolveAuthSecret();
   let body: unknown;
   try {

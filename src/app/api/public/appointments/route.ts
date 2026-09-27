@@ -1,3 +1,4 @@
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { isAppointmentSlotAvailable } from "@/lib/appointment-slots";
 import { prisma } from "@/lib/prisma";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
@@ -9,6 +10,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    const limited = enforceRateLimit(req, "appointment", 12, 60 * 60 * 1000);
+    if (limited) return limited;
+
     const body = await req.json();
     const parsed = appointmentPublicSchema.safeParse(body);
     if (!parsed.success) {

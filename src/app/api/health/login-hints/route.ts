@@ -1,3 +1,4 @@
+import { healthGuard } from "@/lib/health-guard";
 import { isAuthConfigured } from "@/lib/auth-env";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getSupabaseSecretKey, isSupabaseConfigured } from "@/lib/supabase/env";
@@ -16,7 +17,10 @@ async function checkDatabaseOk(): Promise<boolean> {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const blocked = healthGuard(req);
+  if (blocked) return blocked;
+
   const supabaseConfigured = isSupabaseConfigured();
   const authSecretOk = isAuthConfigured();
   const databaseOk = await checkDatabaseOk();

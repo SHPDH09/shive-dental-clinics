@@ -14,8 +14,15 @@ function safeEqualString(a: string, b: string): boolean {
   return result === 0;
 }
 
-/** Fallback login when the database is down — set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare (encrypted). */
+/**
+ * Break-glass login when the database is down.
+ * Production requires ENABLE_ENV_ADMIN_LOGIN=1 plus ADMIN_LOGIN_ID + ADMIN_PASSWORD (encrypted secrets).
+ */
 export function verifyEnvAdmin(loginId: string, password: string) {
+  if (process.env.NODE_ENV === "production" && readWorkerEnv("ENABLE_ENV_ADMIN_LOGIN") !== "1") {
+    return null;
+  }
+
   const envId = readWorkerEnv("ADMIN_LOGIN_ID");
   const envEmail = readWorkerEnv("ADMIN_EMAIL");
   const envPass = readWorkerEnv("ADMIN_PASSWORD");

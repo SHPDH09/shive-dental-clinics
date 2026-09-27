@@ -1,7 +1,11 @@
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { getAvailableAppointmentSlots } from "@/lib/appointment-slots";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
+  const limited = enforceRateLimit(req, "appointment-slots", 90, 60 * 1000);
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const doctorId = searchParams.get("doctorId")?.trim();
   const date = searchParams.get("date")?.trim();

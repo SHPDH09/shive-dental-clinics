@@ -1,3 +1,4 @@
+import { healthGuard } from "@/lib/health-guard";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getSupabaseSecretKey } from "@/lib/supabase/env";
 import { prisma } from "@/lib/prisma";
@@ -6,7 +7,10 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const blocked = healthGuard(req);
+  if (blocked) return blocked;
+
   try {
     await prisma.$queryRaw`SELECT 1`;
     const host = resolveDatabaseUrl()?.replace(/:[^:@/]+@/, ":****@") ?? "configured";
@@ -38,7 +42,7 @@ export async function GET() {
       {
         connected: false,
         message: "Database connection failed",
-        error: message,
+        ...(process.env.NODE_ENV === "development" ? { error: message } : {}),
       },
       { status: 503 },
     );

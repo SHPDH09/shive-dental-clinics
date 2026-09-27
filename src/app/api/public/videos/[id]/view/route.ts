@@ -1,3 +1,4 @@
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseSecretKey } from "@/lib/supabase/env";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -5,7 +6,10 @@ import { NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_req: Request, context: RouteContext) {
+export async function POST(req: Request, context: RouteContext) {
+  const limited = enforceRateLimit(req, "video-view", 40, 60 * 1000);
+  if (limited) return limited;
+
   const { id } = await context.params;
 
   try {

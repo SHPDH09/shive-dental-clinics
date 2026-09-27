@@ -1,3 +1,4 @@
+import { healthGuard } from "@/lib/health-guard";
 import { createClient } from "@supabase/supabase-js";
 import {
   getSupabaseProjectUrl,
@@ -8,7 +9,10 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const blocked = healthGuard(req);
+  if (blocked) return blocked;
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({
       configured: false,

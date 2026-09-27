@@ -31,14 +31,12 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_LOGIN_ID: ${{ secrets.ADMIN_LOGIN_ID }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          HEALTHCHECK_TOKEN: ${{ secrets.HEALTHCHECK_TOKEN }}
         run: |
-          set +e
-          # Prefer GitHub secret; otherwise decode wrangler SUPABASE_SKEY_B64 so Worker matches this repo's project.
-          if [ -z "${SUPABASE_SECRET_KEY:-}" ]; then
-            SUPABASE_SECRET_KEY="$(node -e "const fs=require('fs');const j=fs.readFileSync('wrangler.jsonc','utf8').replace(/\\/\\/.*$/gm,'');const m=j.match(/\"SUPABASE_SKEY_B64\"\\s*:\\s*\"([^\"]+)\"/);if(m)process.stdout.write(Buffer.from(m[1],'base64').toString('utf8'));")"
-          fi
-          for name in AUTH_SECRET SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD DATABASE_URL ADMIN_PASSWORD; do
+          for name in AUTH_SECRET SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD DATABASE_URL ADMIN_PASSWORD ADMIN_LOGIN_ID ADMIN_EMAIL HEALTHCHECK_TOKEN; do
             val="${!name:-}"
             if [ -n "$val" ]; then
               printf '%s' "$val" | npx wrangler secret put "$name" || echo "warn: failed $name"

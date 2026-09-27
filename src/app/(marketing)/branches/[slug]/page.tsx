@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, MapPin, Navigation, Phone } from "lucide-react";
+import { shouldSkipStaticParamsAtBuild } from "@/lib/build-env";
 import {
   branchDirectionsUrl,
   branchOpeningLines,
@@ -15,6 +16,7 @@ import { whatsappLink } from "@/lib/utils";
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
+  if (shouldSkipStaticParamsAtBuild()) return [];
   const branches = await getPublicBranches();
   return branches.map((b) => ({ slug: b.slug }));
 }

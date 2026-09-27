@@ -3,17 +3,30 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
 
-const password = process.env.SUPABASE_DB_PASSWORD ?? "Raunak@12583";
-const ref = "ojfxtzwzpoosmzotzyxm";
-const connectionString = `postgresql://postgres.${ref}:${encodeURIComponent(password)}@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require&uselibpqcompat=true`;
+const password = process.env.SUPABASE_DB_PASSWORD?.trim();
+if (!password) {
+  console.error("Set SUPABASE_DB_PASSWORD before running supabase:apply-rls");
+  process.exit(1);
+}
+
+const ref = process.env.SUPABASE_PROJECT_REF?.trim() || "ojfxtzwzpoosmzotzyxm";
+const poolerHost =
+  process.env.SUPABASE_POOLER_HOST?.trim() || "aws-0-ap-south-1.pooler.supabase.com";
+const connectionString = `postgresql://postgres.${ref}:${encodeURIComponent(password)}@${poolerHost}:5432/postgres?sslmode=require&uselibpqcompat=true`;
+
+async function applyFile(client: pg.Client, filename: string) {
+  const sql = readFileSync(join(__dirname, "../supabase", filename), "utf8");
+  await client.query(sql);
+  console.log(`Applied ${filename}`);
+}
 
 async function main() {
-  const sql = readFileSync(join(__dirname, "../supabase/rls-authenticated-admin.sql"), "utf8");
   const client = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
   await client.connect();
-  await client.query(sql);
+  await applyFile(client, "rls-authenticated-admin.sql");
+  await applyFile(client, "rls-anon-deny-sensitive.sql");
   await client.end();
-  console.log("RLS policies applied for authenticated admin users.");
+  console.log("RLS policies applied (authenticated + anon deny on sensitive tables).");
 }
 
 void main().catch((e) => {

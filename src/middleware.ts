@@ -1,7 +1,13 @@
 import { decode } from "next-auth/jwt";
 import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
+function withSecurityHeaders(res: NextResponse): NextResponse {
+  applySecurityHeaders(res.headers);
+  return res;
+}
 
 async function isLoggedIn(req: NextRequest): Promise<boolean> {
   const name = sessionCookieName();
@@ -28,11 +34,11 @@ export async function middleware(req: NextRequest) {
   if (isAdminArea && !isLogin && !loggedIn) {
     const loginUrl = new URL("/admin/login", req.nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   if (isLogin && loggedIn) {
-    return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
+    return withSecurityHeaders(NextResponse.redirect(new URL("/admin", req.nextUrl.origin)));
   }
 
   const isStatic =
@@ -50,7 +56,7 @@ export async function middleware(req: NextRequest) {
         if (json.maintenance && pathname !== "/maintenance") {
           const url = req.nextUrl.clone();
           url.pathname = "/maintenance";
-          return NextResponse.rewrite(url);
+          return withSecurityHeaders(NextResponse.rewrite(url));
         }
       }
     } catch {
@@ -58,7 +64,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return withSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

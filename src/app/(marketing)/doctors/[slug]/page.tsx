@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Phone } from "lucide-react";
+import { shouldSkipStaticParamsAtBuild } from "@/lib/build-env";
 import { getPublicDoctorBySlug, getPublicDoctors } from "@/lib/public-data";
 import { formatWeeklyScheduleLines } from "@/lib/doctor-schedule";
 import { getClinicSettings } from "@/lib/settings";
@@ -11,6 +12,7 @@ import { whatsappLink } from "@/lib/utils";
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
+  if (shouldSkipStaticParamsAtBuild()) return [];
   const doctors = await getPublicDoctors();
   return doctors.map((d) => ({ slug: d.slug }));
 }
