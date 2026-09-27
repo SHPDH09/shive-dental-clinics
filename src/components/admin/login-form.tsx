@@ -16,7 +16,10 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin";
-  const [error, setError] = useState<string | null>(null);
+  const authError = searchParams.get("error");
+  const [error, setError] = useState<string | null>(
+    authError ? "Sign-in failed. Check Admin ID, password, and server configuration (AUTH_SECRET)." : null,
+  );
 
   const {
     register,

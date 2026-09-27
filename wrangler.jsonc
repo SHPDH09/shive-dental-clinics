@@ -7,6 +7,11 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "AUTH_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev",
+    "NEXTAUTH_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev",
+    "NEXT_PUBLIC_APP_URL": "https://shive-dental-clinics.shivedentalclinic-com.workers.dev"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

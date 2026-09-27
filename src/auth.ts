@@ -3,9 +3,11 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { loginSchema } from "@/lib/validations";
 import { authConfig } from "@/auth.config";
+import { resolveAuthSecret } from "@/lib/auth-env";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  secret: resolveAuthSecret() || undefined,
   providers: [
     Credentials({
       name: "credentials",

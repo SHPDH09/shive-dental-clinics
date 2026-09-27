@@ -1,15 +1,14 @@
 import type { NextAuthConfig } from "next-auth";
-import { getAuthSecret, getAuthUrl } from "@/lib/auth-env";
-
-const secret = getAuthSecret();
+import { getAuthUrl, resolveAuthSecret } from "@/lib/auth-env";
 
 export const authConfig = {
   trustHost: true,
-  secret: secret || undefined,
+  secret: resolveAuthSecret() || undefined,
   ...(getAuthUrl() ? { url: getAuthUrl() } : {}),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",
+    error: "/admin/login",
   },
   providers: [],
   callbacks: {
