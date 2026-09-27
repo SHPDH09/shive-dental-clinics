@@ -11,7 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Cloud Agent (main + AWS RDS)
 
 - Default branch: **main**. Environment config: `.cursor/environment.json` → `scripts/cloud-agent-install.sh`.
-- **Secrets** (Cursor environment panel, never commit): `DATABASE_URL` (RDS writer, `sslmode=require`), `AUTH_SECRET`, `ADMIN_PASSWORD` (matches production admin; used with `ADMIN_LOGIN_ID` in wrangler for fallback login).
+- **Secrets** (Cursor environment panel, never commit): `DATABASE_URL` (RDS writer, `sslmode=require`), `AUTH_SECRET`. Admin login is **database-only** (`Admin` table); no env-file password fallback.
 - RDS writer host: `database-1.cluster-c5mm0sc887f3.ap-south-1.rds.amazonaws.com:5432`, database `shiv-dental-clinic`, user `admin`.
 - Verify DB: `npx tsx scripts/test-rds-pool.ts` or `npm run db:setup` (push + seed). Health: `/api/health/db`, `/api/health/config`.
 - Dev: `npm run dev` (terminal). Production build: `NODE_OPTIONS=--max-old-space-size=8192 npm run build`. Cloudflare: `npm run cf:build` / `npm run deploy` (see `CLOUDFLARE.md`).

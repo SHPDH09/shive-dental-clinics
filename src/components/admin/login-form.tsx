@@ -15,7 +15,7 @@ type FormValues = z.infer<typeof loginSchema>;
 type LoginHints = {
   authSecretOk: boolean;
   databaseOk: boolean;
-  envAdminFallback: boolean;
+  dbOnlyLogin?: boolean;
   message: string;
 };
 
@@ -54,9 +54,9 @@ export function LoginForm() {
     if (res?.error) {
       if (hints && !hints.authSecretOk) {
         setError("AUTH_SECRET is missing on the server. Add it in Cloudflare → Variables (Encrypt), then redeploy.");
-      } else if (hints && !hints.databaseOk && !hints.envAdminFallback) {
+      } else if (hints && !hints.databaseOk) {
         setError(
-          "Database is not connected and emergency admin env vars are not set. Add DATABASE_URL and ADMIN_PASSWORD (encrypted) in Cloudflare.",
+          "Database is not connected. Admin login only works against AWS RDS — fix DATABASE_URL on the server.",
         );
       } else {
         setError("Invalid Admin ID or password.");
@@ -77,7 +77,7 @@ export function LoginForm() {
       {hints && (
         <div
           className={`rounded-xl border p-3 text-xs leading-relaxed ${
-            hints.authSecretOk && (hints.databaseOk || hints.envAdminFallback)
+            hints.authSecretOk && hints.databaseOk
               ? "border-teal-200 bg-teal-50 text-teal-900"
               : "border-amber-200 bg-amber-50 text-amber-950"
           }`}
@@ -85,8 +85,8 @@ export function LoginForm() {
           <p className="font-semibold">Server checklist</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
-            <li>Database: {hints.databaseOk ? "Connected" : "Not connected"}</li>
-            <li>Emergency env login: {hints.envAdminFallback ? "Enabled" : "Not configured"}</li>
+            <li>Database (required for login): {hints.databaseOk ? "Connected" : "Not connected"}</li>
+            <li>Login source: RDS Admin table only</li>
           </ul>
           <p className="mt-2">{hints.message}</p>
         </div>
