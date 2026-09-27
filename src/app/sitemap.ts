@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
-import { getPublicDoctors, getPublicServices } from "@/lib/public-data";
+import { getPublicBranches, getPublicDoctors, getPublicServices } from "@/lib/public-data";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shivdentalclinic.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, doctors] = await Promise.all([getPublicServices(), getPublicDoctors()]);
+  const [services, doctors, branches] = await Promise.all([
+    getPublicServices(),
+    getPublicDoctors(),
+    getPublicBranches(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
@@ -28,5 +32,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...serviceRoutes, ...doctorRoutes];
+  const branchRoutes: MetadataRoute.Sitemap = branches.map((b) => ({
+    url: `${siteUrl}/branches/${b.slug}`,
+    lastModified: b.updatedAt,
+    changeFrequency: "monthly",
+    priority: 0.75,
+  }));
+
+  return [...staticRoutes, ...serviceRoutes, ...doctorRoutes, ...branchRoutes];
 }

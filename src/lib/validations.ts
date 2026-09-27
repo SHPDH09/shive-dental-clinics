@@ -5,6 +5,7 @@ export const appointmentPublicSchema = z.object({
   phone: z.string().min(10, "Valid phone number required"),
   email: z.string().email("Valid email required").optional().or(z.literal("")),
   doctorId: z.string().optional(),
+  branchId: z.string().optional(),
   treatmentName: z.string().min(1, "Select a treatment"),
   serviceId: z.string().optional(),
   appointmentDate: z.string().min(1, "Date is required"),
@@ -105,6 +106,48 @@ export const serviceSchema = z.object({
   faqs: z.array(serviceFaqSchema).optional(),
   featured: z.boolean().optional(),
   enabled: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
+
+const dayScheduleSchemaBranch = z.object({
+  enabled: z.boolean(),
+  start: z.string().min(1),
+  end: z.string().min(1),
+});
+
+export const branchSchema = z.object({
+  name: z.string().min(2),
+  slug: z.string().min(2).optional(),
+  image: z.string().optional(),
+  address: z.string().min(5),
+  city: z.string().min(2),
+  state: z.string().optional(),
+  pinCode: z.string().optional(),
+  phone: z.string().min(8),
+  whatsapp: z.string().optional(),
+  mapUrl: z.string().optional(),
+  mapEmbedUrl: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  weeklySchedule: z
+    .object({
+      monday: dayScheduleSchemaBranch,
+      tuesday: dayScheduleSchemaBranch,
+      wednesday: dayScheduleSchemaBranch,
+      thursday: dayScheduleSchemaBranch,
+      friday: dayScheduleSchemaBranch,
+      saturday: dayScheduleSchemaBranch,
+      sunday: dayScheduleSchemaBranch,
+    })
+    .optional(),
+  openTime: z.string().optional(),
+  closeTime: z.string().optional(),
+  offDays: z.string().optional(),
+  doctorIds: z.array(z.string()).optional(),
+  serviceIds: z.array(z.string()).optional(),
+  featured: z.boolean().optional(),
+  published: z.boolean().optional(),
+  status: z.enum(["ACTIVE", "CLOSED"]).optional(),
   sortOrder: z.number().optional(),
 });
 

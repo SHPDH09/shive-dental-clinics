@@ -3,7 +3,10 @@ import { BranchesView } from "@/components/admin/branches-view";
 
 export default function AdminBranchesPage() {
   return (
-    <AdminPageShell title="Branches" description="Clinic locations, timings, and open/closed status — shown in the website footer">
+    <AdminPageShell
+      title="Branches"
+      description="Manage clinic locations, hours, doctors, services, and publishing for the public website"
+    >
       <BranchesView />
     </AdminPageShell>
   );

@@ -7,11 +7,13 @@ import { TestimonialsSection } from "@/components/public/testimonials-section";
 import { GallerySection } from "@/components/public/gallery-section";
 import { WatchLearnSection } from "@/components/public/watch-learn-section";
 import { BeforeAfterSection } from "@/components/public/before-after-section";
+import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
 import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
   getPublicBeforeAfter,
+  getPublicBranches,
   getFeaturedDoctor,
   getFeaturedPublicDoctors,
   getPublicGallery,
@@ -21,11 +23,12 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
+  const [settings, stats, services, branches, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
     getPublicServices(),
+    getPublicBranches(),
     getFeaturedDoctor(),
     getFeaturedPublicDoctors(6),
     getPublicTestimonials(),
@@ -70,6 +73,7 @@ export default async function HomePage() {
       <GallerySection items={gallery} />
       <WatchLearnSection videos={videos} />
       <BeforeAfterSection cases={beforeAfter} />
+      <BranchesSection branches={branches} />
       <ContactSection
         phone={settings.phone}
         email={settings.email}
