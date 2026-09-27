@@ -220,8 +220,12 @@ export function ServicesView() {
       }
       setFormOpen(false);
       await loadServices();
-    } catch {
-      setMessage("Could not save. Check required fields (name, image, category, descriptions).");
+    } catch (e) {
+      setMessage(
+        e instanceof AdminApiError
+          ? e.message
+          : "Could not save. Check required fields (name, image, category, descriptions).",
+      );
     } finally {
       setSaving(false);
     }
