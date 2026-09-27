@@ -69,6 +69,31 @@ export const adminCreateSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
 });
 
+export const beforeAfterSchema = z.object({
+  caseName: z.string().min(2, "Case name is required"),
+  beforeImage: z.string().min(1, "Before image is required"),
+  afterImage: z.string().min(1, "After image is required"),
+  treatment: z.string().min(2, "Treatment is required"),
+  category: z.enum([
+    "teeth-whitening",
+    "smile-makeover",
+    "root-canal",
+    "dental-implants",
+    "orthodontic",
+    "dental-restoration",
+    "cosmetic-dentistry",
+  ]),
+  treatmentDuration: z.string().max(120).optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  caseDate: z.string().optional(),
+  verifiedCase: z.boolean().default(true),
+  consentConfirmed: z.boolean().default(false),
+  isPublic: z.boolean().default(false),
+  featured: z.boolean().default(false),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
+  sortOrder: z.coerce.number().int().optional(),
+});
+
 export const videoMediaSchema = z.object({
   title: z.string().min(2, "Video title is required"),
   description: z.string().max(4000).optional().or(z.literal("")),

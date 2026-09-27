@@ -21,7 +21,7 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, videos, beforeAfter] =
+  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, videos, featuredCases, allCases] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
@@ -31,8 +31,12 @@ export default async function HomePage() {
     getPublicTestimonials(),
     getPublicGallery(),
     getPublicVideos(6),
-    getPublicBeforeAfter(),
+    getPublicBeforeAfter(6, { featuredOnly: true }),
+    getPublicBeforeAfter(6, { featuredOnly: false }),
   ]);
+
+  const beforeAfter =
+    featuredCases.length >= 3 ? featuredCases : allCases.slice(0, 6);
 
   const openingHours = settings.openingHours as { weekdays?: string; sunday?: string } | null;
 

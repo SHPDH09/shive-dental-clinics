@@ -3,7 +3,10 @@ import { BeforeAfterView } from "@/components/admin/before-after-view";
 
 export default function AdminBeforeAfterPage() {
   return (
-    <AdminPageShell title="Before & after" description="Treatment result showcases">
+    <AdminPageShell
+      title="Before & After"
+      description="Smile transformations with consent-controlled public display"
+    >
       <BeforeAfterView />
     </AdminPageShell>
   );

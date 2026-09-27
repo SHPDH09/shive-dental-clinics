@@ -64,14 +64,11 @@ export async function getPublicBranches() {
   }
 }
 
-export async function getPublicBeforeAfter() {
-  try {
-    return await prisma.beforeAfter.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: { sortOrder: "asc" },
-      take: 12,
-    });
-  } catch {
-    return [];
-  }
+import { getPublicTransformations } from "@/lib/public-transformations";
+
+export async function getPublicBeforeAfter(
+  take = 12,
+  options?: { featuredOnly?: boolean },
+) {
+  return getPublicTransformations(take, options);
 }
