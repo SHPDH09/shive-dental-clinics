@@ -5,8 +5,16 @@ import { NextResponse } from "next/server";
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const isLogin = req.nextUrl.pathname === "/admin/login";
-  const isLoggedIn = !!req.auth;
+  const { pathname } = req.nextUrl;
+  const isLogin = pathname === "/admin/login";
+  const isAdminArea = pathname.startsWith("/admin");
+  const isLoggedIn = !!req.auth?.user;
+
+  if (isAdminArea && !isLogin && !isLoggedIn) {
+    const loginUrl = new URL("/admin/login", req.nextUrl.origin);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   if (isLogin && isLoggedIn) {
     return NextResponse.redirect(new URL("/admin", req.nextUrl.origin));
@@ -16,5 +24,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin", "/admin/:path*"],
 };

@@ -19,7 +19,7 @@ export const enquirySchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  loginId: z.string().min(3, "Admin ID is required"),
   password: z.string().min(6),
 });
 

@@ -23,16 +23,16 @@ const defaultServices = [
 ];
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL ?? "admin@shivdentalclinic.com";
-  const password = process.env.ADMIN_PASSWORD ?? "Admin@123";
+  const loginId = process.env.ADMIN_LOGIN_ID ?? "1A74N3077";
+  const password = process.env.ADMIN_PASSWORD ?? "Rishikesh@2028";
   const hash = await bcrypt.hash(password, 12);
 
-  await prisma.admin.upsert({
-    where: { email },
-    update: {},
-    create: {
-      name: "Clinic Admin",
-      email,
+  await prisma.admin.deleteMany({});
+  await prisma.admin.create({
+    data: {
+      loginId,
+      name: "Shiv Dental Admin",
+      email: null,
       passwordHash: hash,
       role: "SUPER_ADMIN",
     },

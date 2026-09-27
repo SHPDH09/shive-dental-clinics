@@ -69,8 +69,9 @@ enum BranchStatus {
 
 model Admin {
   id           String    @id @default(cuid())
+  loginId      String    @unique
   name         String
-  email        String    @unique
+  email        String?   @unique
   passwordHash String
   role         AdminRole @default(STAFF)
   createdAt    DateTime  @default(now())

@@ -2,8 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminSidebar } from "@/components/admin/sidebar";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminPanelLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/admin/login?callbackUrl=/admin");
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <AdminSidebar />

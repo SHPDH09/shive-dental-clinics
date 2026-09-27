@@ -29,12 +29,12 @@ export function LoginForm() {
   const onSubmit = async (data: FormValues) => {
     setError(null);
     const res = await signIn("credentials", {
-      email: data.email,
+      loginId: data.loginId.trim(),
       password: data.password,
       redirect: false,
     });
     if (res?.error) {
-      setError("Invalid email or password.");
+      setError("Invalid Admin ID or password.");
       return;
     }
     router.push(callbackUrl);
@@ -45,11 +45,11 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="card-premium mx-auto w-full max-w-md space-y-5 p-8">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-slate-900">Admin sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic dashboard</p>
+        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — authorized staff only</p>
       </div>
       <div>
-        <Label>Email</Label>
-        <Input type="email" autoComplete="email" {...register("email")} />
+        <Label>Admin ID</Label>
+        <Input type="text" autoComplete="username" placeholder="Your admin ID" {...register("loginId")} />
       </div>
       <div>
         <Label>Password</Label>
