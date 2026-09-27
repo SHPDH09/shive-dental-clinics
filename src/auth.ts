@@ -25,8 +25,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           const { prisma } = await import("@/lib/prisma");
-          const admin = await prisma.admin.findUnique({
-            where: { loginId },
+          const admin = await prisma.admin.findFirst({
+            where: {
+              OR: [{ loginId }, { email: loginId }],
+            },
           });
           if (admin) {
             const valid = await bcrypt.compare(password, admin.passwordHash);

@@ -24,7 +24,8 @@ const defaultServices = [
 
 async function main() {
   const loginId = process.env.ADMIN_LOGIN_ID ?? "1A74N3077";
-  const password = process.env.ADMIN_PASSWORD ?? "Rishikesh@2028";
+  const password = process.env.ADMIN_PASSWORD ?? "Raunak@12583";
+  const email = process.env.ADMIN_EMAIL?.trim() || "rk331159@gmail.com";
   const hash = await bcrypt.hash(password, 12);
 
   await prisma.admin.deleteMany({});
@@ -32,7 +33,7 @@ async function main() {
     data: {
       loginId,
       name: "Shiv Dental Admin",
-      email: null,
+      email,
       passwordHash: hash,
       role: "SUPER_ADMIN",
     },

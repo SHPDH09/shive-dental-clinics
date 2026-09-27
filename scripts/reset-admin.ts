@@ -5,7 +5,8 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { createPgPool } from "../src/lib/pg-pool";
 
 const loginId = process.env.ADMIN_LOGIN_ID ?? "1A74N3077";
-const password = process.env.ADMIN_PASSWORD ?? "Rishikesh@2028";
+const password = process.env.ADMIN_PASSWORD ?? "Raunak@12583";
+const email = process.env.ADMIN_EMAIL?.trim() || "rk331159@gmail.com";
 const name = process.env.ADMIN_NAME ?? "Shiv Dental Admin";
 
 async function main() {
@@ -25,13 +26,13 @@ async function main() {
     data: {
       loginId,
       name,
-      email: null,
+      email,
       passwordHash,
       role: "SUPER_ADMIN",
     },
   });
 
-  console.log("Created admin:", admin.loginId, "(id:", admin.id, ")");
+  console.log("Created admin:", admin.loginId, admin.email ?? "", "(id:", admin.id, ")");
   await prisma.$disconnect();
   await pool.end();
 }
