@@ -1,7 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
+import { readWorkerEnv } from "@/lib/worker-env";
 
 export function isEnvAdminConfigured(): boolean {
-  return Boolean(process.env.ADMIN_LOGIN_ID?.trim() && process.env.ADMIN_PASSWORD?.trim());
+  return Boolean(readWorkerEnv("ADMIN_LOGIN_ID") && readWorkerEnv("ADMIN_PASSWORD"));
 }
 
 function safeEqualString(a: string, b: string): boolean {
@@ -13,9 +14,9 @@ function safeEqualString(a: string, b: string): boolean {
 
 /** Fallback login when the database is down — set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare (encrypted). */
 export function verifyEnvAdmin(loginId: string, password: string) {
-  const envId = process.env.ADMIN_LOGIN_ID?.trim();
-  const envEmail = process.env.ADMIN_EMAIL?.trim();
-  const envPass = process.env.ADMIN_PASSWORD?.trim();
+  const envId = readWorkerEnv("ADMIN_LOGIN_ID");
+  const envEmail = readWorkerEnv("ADMIN_EMAIL");
+  const envPass = readWorkerEnv("ADMIN_PASSWORD");
   if (!envId || !envPass) return null;
 
   const login = loginId.trim();

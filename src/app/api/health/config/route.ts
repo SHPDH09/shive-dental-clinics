@@ -1,26 +1,24 @@
 import { isAuthConfigured } from "@/lib/auth-env";
+import { resolveDatabaseUrl } from "@/lib/database-url";
+import { getAuthUrl } from "@/lib/auth-env";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL?.trim());
+  const hasDatabase = Boolean(resolveDatabaseUrl());
   const hasAuth = isAuthConfigured();
-  const hasAuthUrl = Boolean(
-    process.env.AUTH_URL?.trim() ||
-      process.env.NEXTAUTH_URL?.trim() ||
-      process.env.NEXT_PUBLIC_APP_URL?.trim(),
-  );
+  const hasAuthUrl = Boolean(getAuthUrl());
 
   return NextResponse.json({
-    ok: hasDatabaseUrl && hasAuth,
-    databaseUrlConfigured: hasDatabaseUrl,
+    ok: hasDatabase && hasAuth,
+    databaseUrlConfigured: hasDatabase,
     authSecretConfigured: hasAuth,
     authUrlConfigured: hasAuthUrl,
     hint: !hasAuth
-      ? "Set AUTH_SECRET in Cloudflare Variables (Production + Preview)"
-      : !hasDatabaseUrl
-        ? "Set DATABASE_URL to your PostgreSQL connection string"
-        : "Configuration looks present; check /api/health/db for DB connectivity",
+      ? "Set AUTH_SECRET in Cloudflare Variables (Encrypt)."
+      : !hasDatabase
+        ? "Set SUPABASE_DB_PASSWORD or DATABASE_URL in Cloudflare secrets."
+        : "Configuration looks present; check /api/health/login-hints",
   });
 }

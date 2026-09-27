@@ -1,26 +1,26 @@
+import { readWorkerEnv } from "@/lib/worker-env";
+
 const DEFAULT_PROJECT_URL = "https://ojfxtzwzpoosmzotzyxm.supabase.co";
 
 export function getSupabaseProjectUrl(): string {
   return (
-    process.env.SUPABASE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    readWorkerEnv("SUPABASE_URL") ||
+    readWorkerEnv("NEXT_PUBLIC_SUPABASE_URL") ||
     DEFAULT_PROJECT_URL
   );
 }
 
 export function getSupabasePublishableKey(): string | undefined {
   return (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+    readWorkerEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ||
+    readWorkerEnv("SUPABASE_PUBLISHABLE_KEY") ||
+    readWorkerEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
   );
 }
 
 /** Server-only — bypasses RLS. Set in Cloudflare secrets, never expose to client. */
 export function getSupabaseSecretKey(): string | undefined {
-  return (
-    process.env.SUPABASE_SECRET_KEY?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  );
+  return readWorkerEnv("SUPABASE_SECRET_KEY") || readWorkerEnv("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 export function isSupabaseConfigured(): boolean {
