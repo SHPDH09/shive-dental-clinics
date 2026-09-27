@@ -1,4 +1,5 @@
 import { isAuthConfigured } from "@/lib/auth-env";
+import { isEnvAdminConfigured } from "@/lib/env-admin";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -13,14 +14,18 @@ export async function GET() {
     dbOk = false;
   }
 
+  const envFallbackOk = isEnvAdminConfigured();
+
   return NextResponse.json({
     authSecretOk: isAuthConfigured(),
     databaseOk: dbOk,
-    dbOnlyLogin: true,
+    envFallbackOk,
     message: !isAuthConfigured()
       ? "Set AUTH_SECRET in Cloudflare Variables (Encrypt)."
-      : !dbOk
-        ? "Database unreachable. Admin login requires AWS RDS — fix DATABASE_URL and RDS connectivity."
-        : "OK — sign in with Admin ID or email and password from the Admin table.",
+      : dbOk
+        ? "OK — sign in with Admin ID or email and password from the Admin table."
+        : envFallbackOk
+          ? "Database offline — you can still sign in with ADMIN_LOGIN_ID / ADMIN_EMAIL and ADMIN_PASSWORD from Cloudflare secrets until RDS is fixed."
+          : "Database unreachable. Set DATABASE_URL or configure ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare.",
   });
 }

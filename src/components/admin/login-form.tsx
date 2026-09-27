@@ -15,7 +15,7 @@ type FormValues = z.infer<typeof loginSchema>;
 type LoginHints = {
   authSecretOk: boolean;
   databaseOk: boolean;
-  dbOnlyLogin?: boolean;
+  envFallbackOk?: boolean;
   message: string;
 };
 
@@ -54,9 +54,9 @@ export function LoginForm() {
     if (res?.error) {
       if (hints && !hints.authSecretOk) {
         setError("AUTH_SECRET is missing on the server. Add it in Cloudflare → Variables (Encrypt), then redeploy.");
-      } else if (hints && !hints.databaseOk) {
+      } else if (hints && !hints.databaseOk && !hints.envFallbackOk) {
         setError(
-          "Database is not connected. Admin login only works against AWS RDS — fix DATABASE_URL on the server.",
+          "Database is not connected and no emergency admin is configured. Fix DATABASE_URL or set ADMIN_LOGIN_ID + ADMIN_PASSWORD in Cloudflare.",
         );
       } else {
         setError("Invalid Admin ID or password.");
@@ -77,7 +77,7 @@ export function LoginForm() {
       {hints && (
         <div
           className={`rounded-xl border p-3 text-xs leading-relaxed ${
-            hints.authSecretOk && hints.databaseOk
+            hints.authSecretOk && (hints.databaseOk || hints.envFallbackOk)
               ? "border-teal-200 bg-teal-50 text-teal-900"
               : "border-amber-200 bg-amber-50 text-amber-950"
           }`}
@@ -85,8 +85,11 @@ export function LoginForm() {
           <p className="font-semibold">Server checklist</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>AUTH_SECRET: {hints.authSecretOk ? "OK" : "Missing — add in Cloudflare"}</li>
-            <li>Database (required for login): {hints.databaseOk ? "Connected" : "Not connected"}</li>
-            <li>Login source: RDS Admin table only</li>
+            <li>Database: {hints.databaseOk ? "Connected (RDS)" : "Not connected"}</li>
+            <li>
+              Emergency login:{" "}
+              {hints.envFallbackOk ? "Configured (Cloudflare secrets)" : "Not configured"}
+            </li>
           </ul>
           <p className="mt-2">{hints.message}</p>
         </div>

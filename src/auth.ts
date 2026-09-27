@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { loginSchema } from "@/lib/validations";
 import { authConfig } from "@/auth.config";
 import { resolveAuthSecret } from "@/lib/auth-env";
+import { verifyEnvAdmin } from "@/lib/env-admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -43,6 +44,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (error) {
           console.error("Admin login DB error:", error);
         }
+
+        const envUser = verifyEnvAdmin(loginId, password);
+        if (envUser) return envUser;
 
         return null;
       },
