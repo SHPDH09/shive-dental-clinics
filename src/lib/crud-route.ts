@@ -18,6 +18,7 @@ type ModelName =
   | "media"
   | "beforeAfter"
   | "enquiry"
+  | "messageTemplate"
   | "heroStat"
   | "notification"
   | "branch";
