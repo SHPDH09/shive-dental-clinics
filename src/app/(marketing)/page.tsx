@@ -7,13 +7,15 @@ import { TestimonialsSection } from "@/components/public/testimonials-section";
 import { GallerySection } from "@/components/public/gallery-section";
 import { WatchLearnSection } from "@/components/public/watch-learn-section";
 import { BeforeAfterSection } from "@/components/public/before-after-section";
+import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
 import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
   getPublicBeforeAfter,
+  getPublicBranches,
   getFeaturedDoctor,
-  getPublicDoctors,
+  getFeaturedPublicDoctors,
   getPublicGallery,
   getPublicServices,
   getPublicTestimonials,
@@ -21,13 +23,14 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, videos, featuredCases, allCases] =
+  const [settings, stats, services, branches, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
     getPublicServices(),
+    getPublicBranches(),
     getFeaturedDoctor(),
-    getPublicDoctors(),
+    getFeaturedPublicDoctors(6),
     getPublicTestimonials(),
     getPublicGallery(),
     getPublicVideos(6),
@@ -50,7 +53,10 @@ export default async function HomePage() {
               <h2 className="text-2xl font-bold text-slate-900">Book an appointment in under a minute</h2>
               <p className="mt-2 text-slate-600">Tell us your preferred time — we will confirm shortly.</p>
             </div>
-            <AppointmentForm services={services.map((s) => ({ id: s.id, name: s.name }))} compact />
+            <AppointmentForm
+              services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
+              compact
+            />
           </div>
         </div>
       </section>
@@ -62,11 +68,12 @@ export default async function HomePage() {
         whyChooseUs={settings.whyChooseUs}
       />
       <FeaturedDoctorSection doctor={featuredDoctor} />
-      <DoctorsSection doctors={doctors} />
+      <DoctorsSection doctors={teamDoctors} />
       <TestimonialsSection testimonials={testimonials} />
       <GallerySection items={gallery} />
       <WatchLearnSection videos={videos} />
       <BeforeAfterSection cases={beforeAfter} />
+      <BranchesSection branches={branches} />
       <ContactSection
         phone={settings.phone}
         email={settings.email}

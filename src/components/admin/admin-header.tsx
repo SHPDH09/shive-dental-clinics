@@ -32,6 +32,9 @@ export function AdminHeader() {
         </p>
       </div>
       <div className="flex items-center gap-3">
+        <Link href="/admin/profile" className="text-sm text-slate-600 hover:text-slate-900">
+          Profile
+        </Link>
         <Link href="/" className="text-sm text-[var(--primary)] hover:underline">View site</Link>
         <Button type="button" variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/admin/login" })}>
           <LogOut className="h-4 w-4" />

@@ -7,11 +7,13 @@ export type SupabaseModelName =
   | "Appointment"
   | "Lead"
   | "Service"
+  | "ServiceCategory"
   | "Doctor"
   | "Testimonial"
   | "Media"
   | "BeforeAfter"
   | "Enquiry"
+  | "MessageTemplate"
   | "HeroStat"
   | "Notification"
   | "Branch"
@@ -22,11 +24,13 @@ const modelToTable: Record<string, SupabaseModelName> = {
   appointment: "Appointment",
   lead: "Lead",
   service: "Service",
+  serviceCategory: "ServiceCategory",
   doctor: "Doctor",
   testimonial: "Testimonial",
   media: "Media",
   beforeAfter: "BeforeAfter",
   enquiry: "Enquiry",
+  messageTemplate: "MessageTemplate",
   heroStat: "HeroStat",
   notification: "Notification",
   branch: "Branch",

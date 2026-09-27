@@ -9,6 +9,8 @@ datasource db {
 
 enum AdminRole {
   SUPER_ADMIN
+  MANAGER
+  RECEPTIONIST
   STAFF
 }
 
@@ -49,9 +51,23 @@ enum MediaType {
   VIDEO
 }
 
+enum EnquirySource {
+  WEBSITE
+  APPOINTMENT
+  WHATSAPP
+  PHONE
+  GOOGLE
+  INSTAGRAM
+  FACEBOOK
+  REFERRAL
+  OTHER
+}
+
 enum EnquiryStatus {
-  UNREAD
-  READ
+  NEW
+  IN_PROGRESS
+  REPLIED
+  CLOSED
 }
 
 enum NotificationType {
@@ -68,14 +84,45 @@ enum BranchStatus {
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  loginId      String    @unique
-  name         String
-  email        String?   @unique
-  passwordHash String
-  role         AdminRole @default(STAFF)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  loginId         String    @unique
+  name            String
+  email           String?   @unique
+  phone           String?
+  profilePhotoUrl String?
+  passwordHash    String
+  role            AdminRole @default(RECEPTIONIST)
+  branchId        String?
+  branch          Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  active          Boolean   @default(true)
+  lastLoginAt     DateTime?
+  permissions     Json?
+  loginAttempts   Int       @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  activityLogs    AdminActivityLog[]
+
+  @@index([role])
+  @@index([branchId])
+  @@index([active])
+}
+
+model AdminActivityLog {
+  id          String   @id @default(cuid())
+  adminId     String?
+  admin       Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminName   String
+  action      String
+  entityType  String?
+  entityId    String?
+  entityLabel String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
 }
 
 model Patient {
@@ -92,40 +139,66 @@ model Patient {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   appointments   Appointment[]
+  enquiries      Enquiry[]
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  services  Service[]
 }
 
 model Service {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  description String
-  shortDesc   String?
-  image       String?
-  price       Decimal?      @db.Decimal(10, 2)
-  enabled     Boolean       @default(true)
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  appointments Appointment[]
+  id                String           @id @default(cuid())
+  name              String
+  slug              String           @unique
+  description       String
+  shortDesc         String?
+  whatIsTreatment   String?
+  image             String?
+  icon              String?
+  categoryId        String?
+  category          ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  treatmentDuration String?
+  price             Decimal?         @db.Decimal(10, 2)
+  hidePrice         Boolean          @default(false)
+  benefits          Json             @default("[]")
+  treatmentSteps    Json             @default("[]")
+  faqs              Json             @default("[]")
+  featured          Boolean          @default(false)
+  enabled           Boolean          @default(true)
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  appointments      Appointment[]
 }
 
 model Doctor {
-  id                 String   @id @default(cuid())
+  id                 String        @id @default(cuid())
   name               String
+  slug               String        @unique
   qualification      String
   specialization     String
   experienceYears    Int
   bio                String
   summary            String?
+  areasOfExpertise   Json          @default("[]")
+  languagesSpoken    String?
+  weeklySchedule     Json?
   registrationNumber String?
   phone              String?
   image              String?
   consultationHours  String?
-  featured           Boolean  @default(false)
-  enabled            Boolean  @default(true)
-  sortOrder          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  featured           Boolean       @default(false)
+  enabled            Boolean       @default(true)
+  sortOrder          Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  appointments       Appointment[]
 }
 
 model Appointment {
@@ -136,8 +209,12 @@ model Appointment {
   patientName     String
   phone           String
   email           String?
+  branchId        String?
+  branch          Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
   serviceId       String?
   service         Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  doctorId        String?
+  doctor          Doctor?           @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   treatmentName   String
   appointmentDate DateTime
   appointmentTime String
@@ -150,6 +227,7 @@ model Appointment {
   @@index([appointmentDate])
   @@index([status])
   @@index([createdAt])
+  @@index([doctorId, appointmentDate, appointmentTime])
 }
 
 model Lead {
@@ -221,15 +299,40 @@ model BeforeAfter {
 }
 
 model Enquiry {
-  id        String        @id @default(cuid())
+  id            String         @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  subject       String         @default("General enquiry")
+  message       String
+  source        EnquirySource  @default(WEBSITE)
+  status        EnquiryStatus  @default(NEW)
+  important     Boolean        @default(false)
+  assignedStaff String?
+  patientId     String?
+  patient       Patient?       @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  conversation  Json           @default("[]")
+  auditLog      Json           @default("[]")
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([assignedStaff])
+  @@index([important])
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
   name      String
-  phone     String
-  email     String?
-  message   String
-  status    EnquiryStatus @default(UNREAD)
-  notes     String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  slug      String   @unique
+  subject   String
+  body      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
@@ -253,17 +356,35 @@ model HeroStat {
 }
 
 model Branch {
-  id        String       @id @default(cuid())
-  name      String
-  location  String
-  phone     String?
-  openTime  String
-  closeTime String
-  offDays   String?
-  status    BranchStatus @default(ACTIVE)
-  sortOrder Int          @default(0)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  image          String?
+  address        String
+  city           String
+  state          String?
+  pinCode        String?
+  location       String?
+  phone          String
+  whatsapp       String?
+  mapUrl         String?
+  mapEmbedUrl    String?
+  latitude       String?
+  longitude      String?
+  weeklySchedule Json?
+  openTime       String
+  closeTime      String
+  offDays        String?
+  doctorIds      Json           @default("[]")
+  serviceIds     Json           @default("[]")
+  featured       Boolean        @default(false)
+  published      Boolean        @default(true)
+  status         BranchStatus   @default(ACTIVE)
+  sortOrder      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  appointments   Appointment[]
+  admins         Admin[]
 }
 
 model ClinicSettings {

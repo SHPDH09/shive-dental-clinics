@@ -1,52 +1,17 @@
-import { prisma } from "@/lib/prisma";
+export {
+  getPublicServicesList as getPublicServices,
+  getPublicServiceBySlug as getServiceBySlug,
+  getFeaturedPublicServices,
+} from "@/lib/public-services";
+export type { PublicService } from "@/lib/public-service-types";
 
-export async function getPublicServices() {
-  try {
-    return await prisma.service.findMany({
-      where: { enabled: true },
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return [];
-  }
-}
-
-export async function getServiceBySlug(slug: string) {
-  try {
-    return await prisma.service.findFirst({
-      where: { slug, enabled: true },
-    });
-  } catch {
-    return null;
-  }
-}
-
-export async function getPublicDoctors() {
-  try {
-    return await prisma.doctor.findMany({
-      where: { enabled: true },
-      orderBy: [{ featured: "desc" }, { sortOrder: "asc" }],
-    });
-  } catch {
-    return [];
-  }
-}
-
-export async function getFeaturedDoctor() {
-  try {
-    const featured = await prisma.doctor.findFirst({
-      where: { enabled: true, featured: true },
-      orderBy: { sortOrder: "asc" },
-    });
-    if (featured) return featured;
-    return await prisma.doctor.findFirst({
-      where: { enabled: true },
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return null;
-  }
-}
+export {
+  getPublicDoctorsList as getPublicDoctors,
+  getPublicDoctorBySlug,
+  getFeaturedPublicDoctor as getFeaturedDoctor,
+  getFeaturedPublicDoctors,
+} from "@/lib/public-doctors";
+export type { PublicDoctor } from "@/lib/public-doctor-types";
 
 export { getPublicTestimonials } from "@/lib/public-testimonials";
 
@@ -54,15 +19,16 @@ export { getPublicGalleryItems as getPublicGallery } from "@/lib/public-gallery"
 
 export { getPublicVideos } from "@/lib/public-videos";
 
-export async function getPublicBranches() {
-  try {
-    return await prisma.branch.findMany({
-      orderBy: { sortOrder: "asc" },
-    });
-  } catch {
-    return [];
-  }
-}
+export {
+  getPublicBranchesList as getPublicBranches,
+  getPublicBranchBySlug,
+} from "@/lib/public-branches";
+export {
+  searchPublicBranches,
+  branchDirectionsUrl,
+  branchOpeningLines,
+} from "@/lib/public-branch-utils";
+export type { PublicBranch } from "@/lib/public-branch-types";
 
 import { getPublicTransformations } from "@/lib/public-transformations";
 

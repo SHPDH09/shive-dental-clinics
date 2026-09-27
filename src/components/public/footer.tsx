@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import type { PublicBranch } from "@/lib/public-branch-types";
 
-export type FooterBranch = {
-  id: string;
-  name: string;
-  location: string;
-  phone: string | null;
-  openTime: string;
-  closeTime: string;
-  offDays: string | null;
-  status: "ACTIVE" | "CLOSED";
-};
+export type FooterBranch = PublicBranch;
 
 type FooterProps = {
   clinicName: string;
@@ -68,7 +60,7 @@ export function PublicFooter({
               </Link>
             </li>
             <li>
-              <Link href="/#services" className="hover:text-white">
+              <Link href="/services" className="hover:text-white">
                 Services
               </Link>
             </li>
@@ -117,33 +109,30 @@ export function PublicFooter({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-bold text-white">{branch.name}</h3>
-                    <span
-                      className={
-                        branch.status === "ACTIVE"
-                          ? "shrink-0 rounded-full bg-teal-900/80 px-2 py-0.5 text-xs font-medium text-teal-300"
-                          : "shrink-0 rounded-full bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-300"
-                      }
-                    >
-                      {branch.status === "ACTIVE" ? "Open" : "Closed"}
+                    <span className="shrink-0 rounded-full bg-teal-900/80 px-2 py-0.5 text-xs font-medium text-teal-300">
+                      Open
                     </span>
                   </div>
                   <p className="mt-3 flex gap-2 text-slate-400">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sky-500" />
-                    {branch.location}
+                    {branch.fullAddress}
                   </p>
                   <p className="mt-2 flex gap-2 text-slate-400">
                     <Clock className="h-4 w-4 shrink-0 text-sky-500" />
-                    {branch.openTime} – {branch.closeTime}
-                    {branch.offDays ? ` · Off: ${branch.offDays}` : ""}
+                    {branch.openingHoursSummary}
                   </p>
-                  {branch.phone && (
-                    <p className="mt-2 flex gap-2">
-                      <Phone className="h-4 w-4 shrink-0 text-sky-500" />
-                      <a href={`tel:${branch.phone.replace(/\s/g, "")}`} className="hover:text-white">
-                        {branch.phone}
-                      </a>
-                    </p>
-                  )}
+                  <p className="mt-2 flex gap-2">
+                    <Phone className="h-4 w-4 shrink-0 text-sky-500" />
+                    <a href={`tel:${branch.phone.replace(/\s/g, "")}`} className="hover:text-white">
+                      {branch.phone}
+                    </a>
+                  </p>
+                  <Link
+                    href={`/branches/${branch.slug}`}
+                    className="mt-3 inline-block text-xs font-semibold text-sky-400 hover:text-white"
+                  >
+                    View location →
+                  </Link>
                 </article>
               ))}
             </div>

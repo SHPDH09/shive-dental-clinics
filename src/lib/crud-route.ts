@@ -12,11 +12,13 @@ type ModelName =
   | "appointment"
   | "lead"
   | "service"
+  | "serviceCategory"
   | "doctor"
   | "testimonial"
   | "media"
   | "beforeAfter"
   | "enquiry"
+  | "messageTemplate"
   | "heroStat"
   | "notification"
   | "branch";

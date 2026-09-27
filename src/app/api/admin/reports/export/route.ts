@@ -1,38 +1,50 @@
-import { requireAdminSession } from "@/lib/api-auth";
+import { requirePermission } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { buildReportsData } from "@/lib/reports/build-reports";
+import { csvWithMeta, toCsv } from "@/lib/reports/csv";
+import {
+  buildExcelHtml,
+  buildReportCsv,
+  buildReportHtml,
+} from "@/lib/reports/export-document";
+import { parseReportFilters } from "@/lib/reports/parse-params";
+import { reportsAccessForRole } from "@/lib/reports/permissions";
+import type { CustomReportType } from "@/lib/reports/types";
 import { NextResponse } from "next/server";
 
-function csvEscape(value: unknown): string {
-  if (value == null) return "";
-  const str =
-    value instanceof Date
-      ? value.toISOString()
-      : typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value);
-  if (/[",\n\r]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+const LEGACY_TYPES = new Set(["appointments", "patients", "leads"]);
+const SECTION_TYPES = new Set([
+  "summary",
+  "appointments",
+  "patients",
+  "leads",
+  "services",
+  "doctors",
+  "branches",
+  "full",
+]);
+
+function appointmentWhereFromFilters(filters: ReturnType<typeof parseReportFilters>) {
+  return {
+    appointmentDate: { gte: filters.from, lte: filters.to },
+    ...(filters.branchId ? { branchId: filters.branchId } : {}),
+    ...(filters.doctorId ? { doctorId: filters.doctorId } : {}),
+    ...(filters.serviceId ? { serviceId: filters.serviceId } : {}),
+    ...(filters.appointmentStatus ? { status: filters.appointmentStatus } : {}),
+  };
 }
 
-function toCsv(headers: string[], rows: Record<string, unknown>[]): string {
-  const lines = [headers.join(",")];
-  for (const row of rows) {
-    lines.push(headers.map((h) => csvEscape(row[h])).join(","));
-  }
-  return lines.join("\n");
-}
-
-export async function GET(req: Request) {
-  const { error } = await requireAdminSession();
-  if (error) return error;
-
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type");
-
+async function legacyCsv(
+  type: string,
+  clinicName: string,
+  filters: ReturnType<typeof parseReportFilters>,
+  allowPatients: boolean,
+) {
   if (type === "appointments") {
-    const items = await prisma.appointment.findMany({ orderBy: { createdAt: "desc" } });
+    const items = await prisma.appointment.findMany({
+      where: appointmentWhereFromFilters(filters),
+      orderBy: { appointmentDate: "desc" },
+    });
     const csv = toCsv(
       [
         "appointmentCode",
@@ -43,6 +55,9 @@ export async function GET(req: Request) {
         "appointmentDate",
         "appointmentTime",
         "status",
+        "branchId",
+        "doctorId",
+        "serviceId",
         "notes",
         "createdAt",
       ],
@@ -55,20 +70,24 @@ export async function GET(req: Request) {
         appointmentDate: a.appointmentDate,
         appointmentTime: a.appointmentTime,
         status: a.status,
+        branchId: a.branchId,
+        doctorId: a.doctorId,
+        serviceId: a.serviceId,
         notes: a.notes,
         createdAt: a.createdAt,
       })),
     );
-    return new NextResponse(csv, {
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="appointments.csv"',
-      },
-    });
+    return csvWithMeta(clinicName, "Appointments export", csv);
   }
 
   if (type === "leads") {
-    const items = await prisma.lead.findMany({ orderBy: { createdAt: "desc" } });
+    const items = await prisma.lead.findMany({
+      where: {
+        createdAt: { gte: filters.from, lte: filters.to },
+        ...(filters.leadSource ? { source: filters.leadSource } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+    });
     const csv = toCsv(
       [
         "name",
@@ -82,29 +101,19 @@ export async function GET(req: Request) {
         "assignedStaff",
         "createdAt",
       ],
-      items.map((l) => ({
-        name: l.name,
-        phone: l.phone,
-        email: l.email,
-        source: l.source,
-        interestedService: l.interestedService,
-        status: l.status,
-        followUpDate: l.followUpDate,
-        notes: l.notes,
-        assignedStaff: l.assignedStaff,
-        createdAt: l.createdAt,
-      })),
+      items.map((l) => ({ ...l })),
     );
-    return new NextResponse(csv, {
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="leads.csv"',
-      },
-    });
+    return csvWithMeta(clinicName, "Leads export", csv);
   }
 
   if (type === "patients") {
-    const items = await prisma.patient.findMany({ orderBy: { createdAt: "desc" } });
+    if (!allowPatients) {
+      return null;
+    }
+    const items = await prisma.patient.findMany({
+      where: { createdAt: { lte: filters.to } },
+      orderBy: { createdAt: "desc" },
+    });
     const csv = toCsv(
       [
         "patientCode",
@@ -114,7 +123,6 @@ export async function GET(req: Request) {
         "gender",
         "dateOfBirth",
         "address",
-        "medicalNotes",
         "createdAt",
       ],
       items.map((p) => ({
@@ -125,20 +133,81 @@ export async function GET(req: Request) {
         gender: p.gender,
         dateOfBirth: p.dateOfBirth,
         address: p.address,
-        medicalNotes: p.medicalNotes,
         createdAt: p.createdAt,
       })),
     );
+    return csvWithMeta(clinicName, "Patients export", csv);
+  }
+
+  return null;
+}
+
+export async function GET(req: Request) {
+  const { session, admin, error } = await requirePermission("reports", "export");
+  if (error) return error;
+
+  const access = reportsAccessForRole(session!.user.role, admin);
+  const { searchParams } = new URL(req.url);
+  const filters = parseReportFilters(searchParams);
+  const format = (searchParams.get("format") ?? "csv").toLowerCase();
+  const type = (searchParams.get("type") ?? "full").toLowerCase() as CustomReportType | string;
+  const section = searchParams.get("section") ?? type;
+
+  const settings = await prisma.clinicSettings.findUnique({ where: { id: "default" } });
+  const clinicName = settings?.clinicName ?? "Shiv Dental Clinic";
+
+  if (LEGACY_TYPES.has(type) && !searchParams.get("section")) {
+    if (type === "patients" && !access.patientsDetail) {
+      return NextResponse.json({ error: "Forbidden — patient export not allowed" }, { status: 403 });
+    }
+    const csv = await legacyCsv(type, clinicName, filters, access.patientsDetail);
+    if (!csv) {
+      return NextResponse.json({ error: "Invalid export type" }, { status: 400 });
+    }
+    const filename = `${type}-${filters.from.toISOString().slice(0, 10)}.csv`;
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="patients.csv"',
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   }
 
-  return NextResponse.json(
-    { error: "Invalid type. Use appointments, leads, or patients." },
-    { status: 400 },
-  );
+  const sec = SECTION_TYPES.has(section) ? section : "full";
+  const data = await buildReportsData(filters, access);
+  if (!access.revenue) {
+    data.revenue = null;
+    data.summary.revenue = null;
+  }
+
+  const stamp = filters.from.toISOString().slice(0, 10);
+  const baseName = `shiv-report-${sec}-${stamp}`;
+
+  if (format === "pdf") {
+    const html = buildReportHtml(data, sec);
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${baseName}.html"`,
+      },
+    });
+  }
+
+  if (format === "xlsx" || format === "excel") {
+    const html = buildExcelHtml(data, sec);
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${baseName}.xls"`,
+      },
+    });
+  }
+
+  const csv = buildReportCsv(data, sec);
+  return new NextResponse("\uFEFF" + csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${baseName}.csv"`,
+    },
+  });
 }
