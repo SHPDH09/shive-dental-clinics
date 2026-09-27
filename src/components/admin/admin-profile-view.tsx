@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export function AdminProfileView() {
       setMessage("Profile updated.");
       await load();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Update failed");
+      setMessage(e instanceof AdminApiError ? e.message : e instanceof Error ? e.message : "Update failed");
     }
   };
 
@@ -114,7 +114,13 @@ export function AdminProfileView() {
         </div>
       </div>
 
-      {message && <p className="text-sm text-teal-700">{message}</p>}
+      {message && (
+        <p
+          className={`text-sm ${message.includes("failed") || message.includes("invalid") || message.includes("missing") || message.includes("not found") || message.includes("Incorrect") ? "text-red-600" : "text-teal-700"}`}
+        >
+          {message}
+        </p>
+      )}
 
       <div className="card-premium space-y-4 p-6">
         <h3 className="font-semibold text-slate-900">Edit profile</h3>
@@ -126,7 +132,7 @@ export function AdminProfileView() {
           <Label>Phone</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919876543210" />
         </div>
-        <ImageUploadField label="Profile photo" value={photo} onChange={setPhoto} />
+        <ImageUploadField label="Profile photo" folder="profiles" value={photo} onChange={setPhoto} />
         <Button type="button" onClick={() => void saveProfile()}>
           Save profile
         </Button>

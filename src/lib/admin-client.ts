@@ -1,3 +1,5 @@
+import { messageFromApiErrorField } from "@/lib/zod-api-error";
+
 export class AdminApiError extends Error {
   constructor(
     message: string,
@@ -21,8 +23,10 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
   if (!res.ok) {
     let message = res.statusText;
     try {
-      const body = await res.json();
-      message = body.error ?? message;
+      const body = (await res.json()) as { error?: unknown };
+      if (body.error !== undefined) {
+        message = messageFromApiErrorField(body.error);
+      }
     } catch {
       /* ignore */
     }

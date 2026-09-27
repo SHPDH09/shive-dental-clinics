@@ -99,7 +99,7 @@ export async function updateAdminRow(id: string, data: Record<string, unknown>) 
     .eq("id", id)
     .select(adminPublicSelect)
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return updated;
 }
 
