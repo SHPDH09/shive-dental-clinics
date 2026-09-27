@@ -1,37 +1,37 @@
-import { ImageIcon } from "lucide-react";
+import Link from "next/link";
+import { GalleryMasonry } from "@/components/public/gallery-masonry";
+import type { PublicGalleryItem } from "@/lib/public-gallery";
 
-type MediaItem = {
-  id: string;
-  title: string;
-  mediaUrl: string;
-  description: string | null;
-};
-
-export function GallerySection({ items }: { items: MediaItem[] }) {
+export function GallerySection({ items }: { items: PublicGalleryItem[] }) {
   return (
-    <section id="gallery" className="scroll-mt-24 py-20">
+    <section id="gallery" className="scroll-mt-24 bg-gradient-to-b from-white to-slate-50 py-20">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
-        <h2 className="section-title">Clinic gallery</h2>
-        <p className="section-subtitle">A glimpse of our modern, welcoming space.</p>
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-teal-600">Gallery</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+            Inside Shiv Dental Clinic
+          </h2>
+          <p className="mt-3 text-base text-slate-600">
+            Take a look at our clinic, team, treatments and patient experiences.
+          </p>
+        </div>
+
         {items.length === 0 ? (
-          <div className="mt-12 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 py-16 text-slate-400">
-            <ImageIcon className="h-10 w-10" />
-            <p className="mt-2 text-sm">Gallery photos coming soon</p>
-          </div>
+          <p className="mt-12 text-center text-sm text-slate-500">
+            Gallery photos and videos will appear here once published by admin.
+          </p>
         ) : (
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {items.map((item) => (
-              <figure key={item.id} className="group overflow-hidden rounded-2xl bg-slate-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.mediaUrl}
-                  alt={item.title}
-                  className="aspect-square w-full object-cover transition group-hover:scale-105"
-                />
-              </figure>
-            ))}
-          </div>
+          <GalleryMasonry items={items} limit={12} showFilters />
         )}
+
+        <div className="mt-10 flex justify-center">
+          <Link
+            href="/gallery"
+            className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-teal-700"
+          >
+            View Full Gallery →
+          </Link>
+        </div>
       </div>
     </section>
   );

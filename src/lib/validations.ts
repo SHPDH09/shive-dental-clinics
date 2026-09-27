@@ -69,6 +69,23 @@ export const adminCreateSchema = z.object({
   role: z.enum(["SUPER_ADMIN", "STAFF"]).default("STAFF"),
 });
 
+export const galleryMediaSchema = z.object({
+  title: z.string().min(2, "Title is required"),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  mediaType: z.enum(["IMAGE", "VIDEO"]),
+  mediaUrl: z.string().min(1, "Upload a file first"),
+  category: z.enum([
+    "clinic",
+    "doctors-team",
+    "treatments",
+    "smile-transformations",
+    "patient-moments",
+    "videos",
+  ]),
+  isPublic: z.boolean().default(false),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
+});
+
 export const testimonialSchema = z.object({
   patientName: z.string().min(2, "Patient name is required"),
   patientImage: z.string().max(2048).optional().or(z.literal("")),

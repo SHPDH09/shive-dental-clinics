@@ -1,10 +1,13 @@
 import { AdminPageShell } from "@/components/admin/page-shell";
-import { MediaView } from "@/components/admin/media-view";
+import { GalleryView } from "@/components/admin/gallery-view";
 
 export default function AdminGalleryPage() {
   return (
-    <AdminPageShell title="Gallery" description="Clinic photos for the public site">
-      <MediaView mediaType="IMAGE" />
+    <AdminPageShell
+      title="Gallery"
+      description="Upload images and videos — patient media stays private until you mark Public ✓"
+    >
+      <GalleryView defaultMediaType="ALL" />
     </AdminPageShell>
   );
 }

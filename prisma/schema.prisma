@@ -191,8 +191,8 @@ model Media {
   mediaType   MediaType
   mediaUrl    String
   category    String        @default("clinic")
-  isPublic    Boolean       @default(true)
-  status      PublishStatus @default(PUBLISHED)
+  isPublic    Boolean       @default(false)
+  status      PublishStatus @default(DRAFT)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }

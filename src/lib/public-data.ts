@@ -50,28 +50,12 @@ export async function getFeaturedDoctor() {
 
 export { getPublicTestimonials } from "@/lib/public-testimonials";
 
-export async function getPublicGallery() {
-  try {
-    return await prisma.media.findMany({
-      where: { mediaType: "IMAGE", isPublic: true, status: "PUBLISHED" },
-      orderBy: { createdAt: "desc" },
-      take: 24,
-    });
-  } catch {
-    return [];
-  }
-}
+export { getPublicGalleryItems as getPublicGallery } from "@/lib/public-gallery";
 
 export async function getPublicVideos() {
-  try {
-    return await prisma.media.findMany({
-      where: { mediaType: "VIDEO", isPublic: true, status: "PUBLISHED" },
-      orderBy: { createdAt: "desc" },
-      take: 12,
-    });
-  } catch {
-    return [];
-  }
+  const { getPublicGalleryItems } = await import("@/lib/public-gallery");
+  const items = await getPublicGalleryItems(24);
+  return items.filter((i) => i.mediaType === "VIDEO");
 }
 
 export async function getPublicBranches() {

@@ -1,10 +1,10 @@
 import { AdminPageShell } from "@/components/admin/page-shell";
-import { MediaView } from "@/components/admin/media-view";
+import { GalleryView } from "@/components/admin/gallery-view";
 
 export default function AdminVideosPage() {
   return (
-    <AdminPageShell title="Videos" description="Video media for marketing">
-      <MediaView mediaType="VIDEO" />
+    <AdminPageShell title="Videos" description="Video gallery — managed together with clinic gallery">
+      <GalleryView defaultMediaType="VIDEO" />
     </AdminPageShell>
   );
 }
