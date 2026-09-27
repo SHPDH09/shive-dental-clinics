@@ -16,28 +16,17 @@ type ModelName =
   | "notification";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const models: Record<ModelName, any> = {
-  patient: prisma.patient,
-  appointment: prisma.appointment,
-  lead: prisma.lead,
-  service: prisma.service,
-  doctor: prisma.doctor,
-  testimonial: prisma.testimonial,
-  media: prisma.media,
-  beforeAfter: prisma.beforeAfter,
-  enquiry: prisma.enquiry,
-  heroStat: prisma.heroStat,
-  notification: prisma.notification,
-};
+function getDelegate(model: ModelName): any {
+  return prisma[model as keyof typeof prisma];
+}
 
 export function createCrudHandlers(model: ModelName, options?: { searchFields?: string[] }) {
-  const delegate = models[model];
-
   return {
     async GET(req: Request) {
       const { error } = await requireAdminSession();
       if (error) return error;
 
+      const delegate = getDelegate(model);
       const { searchParams } = new URL(req.url);
       const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
       const limit = Math.min(100, parseInt(searchParams.get("limit") || "20", 10));
@@ -65,6 +54,7 @@ export function createCrudHandlers(model: ModelName, options?: { searchFields?: 
     async POST(req: Request) {
       const { error } = await requireAdminSession();
       if (error) return error;
+      const delegate = getDelegate(model);
       const data = await req.json();
       const item = await delegate.create({ data });
       return NextResponse.json(item);
@@ -76,7 +66,7 @@ export async function crudById(model: ModelName, req: Request, id: string) {
   const { error } = await requireAdminSession();
   if (error) return { error };
 
-  const delegate = models[model];
+  const delegate = getDelegate(model);
 
   if (req.method === "GET") {
     const item = await delegate.findUnique({ where: { id } });
