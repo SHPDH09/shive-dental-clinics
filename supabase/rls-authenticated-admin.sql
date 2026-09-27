@@ -1,0 +1,36 @@
+-- Allow logged-in Supabase Auth users (admin panel) to read/write clinic tables via publishable key + JWT.
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+ALTER TABLE IF EXISTS "Admin" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Appointment" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Patient" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Lead" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Service" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Doctor" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Testimonial" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Media" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "BeforeAfter" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Enquiry" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "HeroStat" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Notification" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "Branch" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "ClinicSettings" ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'Admin','Appointment','Patient','Lead','Service','Doctor','Testimonial',
+    'Media','BeforeAfter','Enquiry','HeroStat','Notification','Branch','ClinicSettings'
+  ]
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS admin_authenticated_all ON %I', t);
+    EXECUTE format(
+      'CREATE POLICY admin_authenticated_all ON %I FOR ALL TO authenticated USING (true) WITH CHECK (true)',
+      t
+    );
+  END LOOP;
+END $$;

@@ -14,6 +14,7 @@
     "admin:reset": "tsx scripts/reset-admin.ts",
     "admin:seed-supabase": "tsx scripts/seed-admin-supabase.ts",
     "supabase:sync-auth-user": "tsx scripts/sync-supabase-auth-user.ts",
+    "supabase:apply-rls": "tsx scripts/apply-supabase-rls.ts",
     "secrets:cloudflare": "node scripts/sync-cloudflare-secrets.mjs",
     "preview": "npm run cf:build && opennextjs-cloudflare preview",
     "deploy": "npm run cf:build && wrangler deploy",

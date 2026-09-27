@@ -1,4 +1,5 @@
 import { authenticateAdmin } from "@/lib/supabase/admin-login";
+import { SUPABASE_ACCESS_COOKIE } from "@/lib/supabase/data-client";
 import { resolveAuthSecret, sessionCookieName } from "@/lib/auth-env";
 import { loginSchema } from "@/lib/validations";
 import { encode } from "next-auth/jwt";
@@ -47,5 +48,16 @@ export async function POST(req: Request) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+
+  if (user.accessToken) {
+    res.cookies.set(SUPABASE_ACCESS_COOKIE, user.accessToken, {
+      httpOnly: true,
+      secure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+    });
+  }
+
   return res;
 }

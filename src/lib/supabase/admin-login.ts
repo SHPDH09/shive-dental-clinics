@@ -22,6 +22,14 @@ type SupabaseAuthUser = {
   user_metadata?: { role?: string; name?: string };
 };
 
+export type AdminAuthResult = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  accessToken?: string;
+};
+
 async function findAdminRow(loginId: string): Promise<AdminRow | null> {
   if (!getSupabaseSecretKey()) return null;
   try {
@@ -38,11 +46,10 @@ async function findAdminRow(loginId: string): Promise<AdminRow | null> {
   }
 }
 
-/** Edge-friendly Supabase password grant (works on Cloudflare Workers). */
 async function supabasePasswordSignIn(
   email: string,
   password: string,
-): Promise<SupabaseAuthUser | null> {
+): Promise<{ user: SupabaseAuthUser; accessToken: string } | null> {
   const apikey = getSupabasePublishableKey();
   if (!apikey) return null;
 
@@ -58,8 +65,12 @@ async function supabasePasswordSignIn(
       body: JSON.stringify({ email, password }),
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as { user?: SupabaseAuthUser };
-    return json.user ?? null;
+    const json = (await res.json()) as {
+      access_token?: string;
+      user?: SupabaseAuthUser;
+    };
+    if (!json.access_token || !json.user) return null;
+    return { user: json.user, accessToken: json.access_token };
   } catch {
     return null;
   }
@@ -68,7 +79,7 @@ async function supabasePasswordSignIn(
 async function supabaseJsPasswordSignIn(
   email: string,
   password: string,
-): Promise<SupabaseAuthUser | null> {
+): Promise<{ user: SupabaseAuthUser; accessToken: string } | null> {
   const publishable = getSupabasePublishableKey();
   if (!publishable) return null;
   try {
@@ -76,8 +87,8 @@ async function supabaseJsPasswordSignIn(
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data, error } = await authClient.auth.signInWithPassword({ email, password });
-    if (error || !data.user) return null;
-    return data.user as SupabaseAuthUser;
+    if (error || !data.user || !data.session?.access_token) return null;
+    return { user: data.user as SupabaseAuthUser, accessToken: data.session.access_token };
   } catch {
     return null;
   }
@@ -87,28 +98,30 @@ function sessionUserFromAuth(
   authUser: SupabaseAuthUser,
   admin: AdminRow | null,
   email: string,
-) {
+  accessToken?: string,
+): AdminAuthResult {
   const meta = authUser.user_metadata ?? {};
   return {
     id: admin?.id ?? authUser.id,
     email,
     name: admin?.name ?? meta.name ?? "Shiv Dental Admin",
     role: admin?.role ?? meta.role ?? "SUPER_ADMIN",
+    accessToken,
   };
 }
 
 /** Supabase Auth (email) + optional Admin table password hash. */
-export async function authenticateAdmin(loginId: string, password: string) {
+export async function authenticateAdmin(loginId: string, password: string): Promise<AdminAuthResult | null> {
   const trimmed = loginId.trim();
   const admin = await findAdminRow(trimmed);
   const email = admin?.email ?? (trimmed.includes("@") ? trimmed : null);
 
   if (email) {
-    const authUser =
+    const auth =
       (await supabasePasswordSignIn(email, password)) ??
       (await supabaseJsPasswordSignIn(email, password));
-    if (authUser) {
-      return sessionUserFromAuth(authUser, admin, email);
+    if (auth) {
+      return sessionUserFromAuth(auth.user, admin, email, auth.accessToken);
     }
   }
 

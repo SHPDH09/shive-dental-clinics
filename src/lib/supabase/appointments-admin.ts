@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 import { addDays, endOfDay, startOfDay } from "date-fns";
 
 export async function listAppointmentsAdmin(options: {
@@ -11,7 +11,7 @@ export async function listAppointmentsAdmin(options: {
   dateFrom?: string | null;
   dateTo?: string | null;
 }) {
-  const sb = createSupabaseServiceClient();
+  const sb = await getAdminSupabaseClient();
   const from = (options.page - 1) * options.limit;
   const to = from + options.limit - 1;
 
@@ -53,17 +53,14 @@ export async function listAppointmentsAdmin(options: {
 }
 
 export async function getAppointmentAdmin(id: string) {
-  const sb = createSupabaseServiceClient();
+  const sb = await getAdminSupabaseClient();
   const { data, error } = await sb.from("Appointment").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export async function updateAppointmentAdmin(
-  id: string,
-  data: Record<string, unknown>,
-) {
-  const sb = createSupabaseServiceClient();
+export async function updateAppointmentAdmin(id: string, data: Record<string, unknown>) {
+  const sb = await getAdminSupabaseClient();
   const payload = {
     ...data,
     updatedAt: new Date().toISOString(),
@@ -79,7 +76,7 @@ export async function updateAppointmentAdmin(
 }
 
 export async function deleteAppointmentAdmin(id: string) {
-  const sb = createSupabaseServiceClient();
+  const sb = await getAdminSupabaseClient();
   const { error } = await sb.from("Appointment").delete().eq("id", id);
   if (error) throw error;
 }

@@ -1,6 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { getSupabaseSecretKey } from "@/lib/supabase/env";
+import { canUseSupabaseDataLayer, getAdminSupabaseClient } from "@/lib/supabase/data-client";
 import { NextResponse } from "next/server";
 
 export type SupabaseModelName =
@@ -34,17 +33,13 @@ const modelToTable: Record<string, SupabaseModelName> = {
 };
 
 export function useSupabaseCrud(): boolean {
-  return Boolean(getSupabaseSecretKey());
+  return canUseSupabaseDataLayer();
 }
 
 function tableFor(model: string): SupabaseModelName {
   const t = modelToTable[model];
   if (!t) throw new Error(`Unknown model: ${model}`);
   return t;
-}
-
-function client() {
-  return createSupabaseServiceClient();
 }
 
 export async function supabaseList(
@@ -60,8 +55,9 @@ export async function supabaseList(
   const table = tableFor(model);
   const from = (options.page - 1) * options.limit;
   const to = from + options.limit - 1;
+  const sb = await getAdminSupabaseClient();
 
-  let query = client().from(table).select("*", { count: "exact" });
+  let query = sb.from(table).select("*", { count: "exact" });
 
   if (options.status) {
     query = query.eq("status", options.status);
@@ -95,21 +91,24 @@ export async function supabaseCreate(model: string, data: Record<string, unknown
     row.createdAt = data.createdAt ?? now;
   }
 
-  const { data: created, error } = await client().from(table).insert(row).select().single();
+  const sb = await getAdminSupabaseClient();
+  const { data: created, error } = await sb.from(table).insert(row).select().single();
   if (error) throw error;
   return created;
 }
 
 export async function supabaseFindUnique(model: string, id: string) {
   const table = tableFor(model);
-  const { data, error } = await client().from(table).select("*").eq("id", id).maybeSingle();
+  const sb = await getAdminSupabaseClient();
+  const { data, error } = await sb.from(table).select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data;
 }
 
 export async function supabaseUpdate(model: string, id: string, data: Record<string, unknown>) {
   const table = tableFor(model);
-  const { data: updated, error } = await client()
+  const sb = await getAdminSupabaseClient();
+  const { data: updated, error } = await sb
     .from(table)
     .update({ ...data, updatedAt: new Date().toISOString() })
     .eq("id", id)
@@ -121,13 +120,15 @@ export async function supabaseUpdate(model: string, id: string, data: Record<str
 
 export async function supabaseDelete(model: string, id: string) {
   const table = tableFor(model);
-  const { error } = await client().from(table).delete().eq("id", id);
+  const sb = await getAdminSupabaseClient();
+  const { error } = await sb.from(table).delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function supabaseCount(model: string, filter?: Record<string, string>) {
   const table = tableFor(model);
-  let query = client().from(table).select("*", { count: "exact", head: true });
+  const sb = await getAdminSupabaseClient();
+  let query = sb.from(table).select("*", { count: "exact", head: true });
   if (filter) {
     for (const [k, v] of Object.entries(filter)) {
       query = query.eq(k, v);
