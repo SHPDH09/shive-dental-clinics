@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations";
 import { authConfig } from "@/auth.config";
 
@@ -18,6 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
+        const { prisma } = await import("@/lib/prisma");
         const admin = await prisma.admin.findUnique({
           where: { email: parsed.data.email.toLowerCase() },
         });

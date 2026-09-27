@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { PublicFooter } from "@/components/public/footer";
 import { PublicHeader } from "@/components/public/header";
 import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
