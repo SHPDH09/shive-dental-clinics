@@ -11,6 +11,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Cloud Agent
 
 - Default branch: **main**. Install: `.cursor/environment.json` → `scripts/cloud-agent-install.sh`.
-- **Secrets** (never commit): `DATABASE_URL` (PostgreSQL), `AUTH_SECRET`, optional `ADMIN_PASSWORD` for env fallback login.
+- **No `.env` in repo.** Production secrets live in Cloudflare (`CLOUDFLARE-SECRETS.md`). Cursor/CI inject env vars when needed.
 - Verify DB: `npx tsx scripts/test-db-pool.ts` or `npm run db:setup`. Health: `/api/health/db`, `/api/health/config`.
 - Dev: `npm run dev`. Build: `NODE_OPTIONS=--max-old-space-size=8192 npm run build`. Cloudflare: `npm run cf:build` / `npm run deploy` (`CLOUDFLARE.md`).

@@ -13,10 +13,8 @@ Production-style dental clinic software: premium patient website, online booking
 
 ```bash
 npm install
-cp env.example .env
-# Edit .env: DATABASE_URL, AUTH_SECRET, ADMIN_LOGIN_ID, ADMIN_EMAIL, ADMIN_PASSWORD
-npm run db:push
-npm run admin:reset
+# Production: secrets only on Cloudflare — see CLOUDFLARE-SECRETS.md
+# Local DB setup (one-time): export SUPABASE_DB_PASSWORD=... && npm run db:push && npm run admin:reset
 npm run dev
 ```
 

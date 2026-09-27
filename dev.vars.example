@@ -1,4 +1,7 @@
-# Wrangler local preview (copy to .dev.vars)
-DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/shiv_dental?schema=public"
-AUTH_SECRET="local-dev-secret-change-in-production"
-ADMIN_PASSWORD="change-me"
+# Local `wrangler dev` / `npm run preview` only — copy to `.dev.vars` (gitignored).
+# Production uses Cloudflare Dashboard secrets — see CLOUDFLARE-SECRETS.md
+
+AUTH_SECRET="generate-or-use-production-value-locally-only"
+ADMIN_PASSWORD="local-dev-password"
+SUPABASE_SECRET_KEY="sb_secret_..."
+SUPABASE_DB_PASSWORD="your-supabase-db-password"

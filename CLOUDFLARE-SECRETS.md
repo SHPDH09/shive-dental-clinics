@@ -1,26 +1,39 @@
-# Fix live login checklist (Cloudflare Dashboard)
+# Cloudflare — all credentials (no `.env` in production)
 
-Worker: **shive-dental-clinics**  
-URL: https://dash.cloudflare.com/b82993580bed27dbe1dae142d07fa7e7/workers/services/view/shive-dental-clinics/production/settings
+**Worker:** `shive-dental-clinics`  
+**Settings:** https://dash.cloudflare.com/b82993580bed27dbe1dae142d07fa7e7/workers/services/view/shive-dental-clinics/production/settings
 
-Go to **Settings → Variables and Secrets → Add** → choose **Encrypt** for each:
+## Plain variables (in `wrangler.jsonc` — deploy with repo)
 
-| Name | Value (from your `.env` / Supabase) |
-|------|-------------------------------------|
-| `AUTH_SECRET` | Long random string (same as local `.env`) |
-| `ADMIN_PASSWORD` | `Raunak@12583` (website admin login password) |
-| `SUPABASE_SECRET_KEY` | `sb_secret_…` from Supabase API keys |
-| `SUPABASE_DB_PASSWORD` | Supabase **database** password (pooler; same as you used for `db:push`) |
+| Name | Purpose |
+|------|---------|
+| `AUTH_URL`, `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL` | Live site URL |
+| `ADMIN_LOGIN_ID`, `ADMIN_EMAIL` | `rk331159@gmail.com` |
+| `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
 
-Plain **Variables** (non-secret) are already in `wrangler.jsonc`: `ADMIN_LOGIN_ID`, `ADMIN_EMAIL`, Supabase public URL/key.
+## Encrypted secrets (Dashboard → **Add** → **Encrypt**)
 
-After saving, click **Deploy** or push to `main` (GitHub Action) or run locally:
+| Name | Where to get value |
+|------|---------------------|
+| `AUTH_SECRET` | Random: `openssl rand -base64 32` |
+| `ADMIN_PASSWORD` | Website admin login password |
+| `SUPABASE_SECRET_KEY` | Supabase Dashboard → Project Settings → API → **secret** key |
+| `SUPABASE_DB_PASSWORD` | Supabase Dashboard → Database → connection password |
+
+Optional: `DATABASE_URL` — full Postgres URL if not using `SUPABASE_DB_PASSWORD`.
+
+## CLI (your PC, after `wrangler login` or valid `CLOUDFLARE_API_TOKEN`)
 
 ```bash
+export AUTH_SECRET='...'
+export ADMIN_PASSWORD='...'
+export SUPABASE_SECRET_KEY='sb_secret_...'
+export SUPABASE_DB_PASSWORD='...'
+npm run secrets:cloudflare
 npm run deploy
 ```
 
-Check: https://shive-dental-clinics.shivedentalclinic-com.workers.dev/api/health/login-hints  
-All items should be OK / Connected / Configured.
+**Do not commit `.env`.** Local preview: `dev.vars.example` → `.dev.vars`.
 
-**Login:** `rk331159@gmail.com` / `Raunak@12583`
+Login: **ADMIN_LOGIN_ID** / **ADMIN_PASSWORD** from secrets, or Supabase `Admin` table after `db:push`.
