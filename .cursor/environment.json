@@ -1,0 +1,10 @@
+{
+  "name": "Shiv Dental Clinic — main + AWS RDS",
+  "install": "bash scripts/cloud-agent-install.sh",
+  "terminals": [
+    {
+      "name": "Next.js dev",
+      "command": "npm run dev"
+    }
+  ]
+}
