@@ -36,3 +36,12 @@ export async function getAdminSupabaseClient(): Promise<SupabaseClient> {
 export function canUseSupabaseDataLayer(): boolean {
   return Boolean(getSupabaseSecretKey() || getSupabasePublishableKey());
 }
+
+/** Prefer service role (bypasses RLS); fall back to admin JWT session. */
+export async function getAdminWriteSupabaseClient(): Promise<SupabaseClient> {
+  const serviceKey = getSupabaseSecretKey();
+  if (serviceKey) {
+    return createSupabaseServiceClient();
+  }
+  return getAdminSupabaseClient();
+}

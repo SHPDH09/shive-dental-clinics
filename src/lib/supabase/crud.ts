@@ -1,5 +1,9 @@
 import { createId } from "@paralleldrive/cuid2";
-import { canUseSupabaseDataLayer, getAdminSupabaseClient } from "@/lib/supabase/data-client";
+import {
+  canUseSupabaseDataLayer,
+  getAdminSupabaseClient,
+  getAdminWriteSupabaseClient,
+} from "@/lib/supabase/data-client";
 import { NextResponse } from "next/server";
 
 export type SupabaseModelName =
@@ -99,9 +103,11 @@ export async function supabaseCreate(model: string, data: Record<string, unknown
     row.createdAt = data.createdAt ?? now;
   }
 
-  const sb = await getAdminSupabaseClient();
+  const sb = await getAdminWriteSupabaseClient();
   const { data: created, error } = await sb.from(table).insert(row).select().single();
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
   return created;
 }
 
@@ -115,7 +121,7 @@ export async function supabaseFindUnique(model: string, id: string) {
 
 export async function supabaseUpdate(model: string, id: string, data: Record<string, unknown>) {
   const table = tableFor(model);
-  const sb = await getAdminSupabaseClient();
+  const sb = await getAdminWriteSupabaseClient();
   const { data: updated, error } = await sb
     .from(table)
     .update({ ...data, updatedAt: new Date().toISOString() })
@@ -128,7 +134,7 @@ export async function supabaseUpdate(model: string, id: string, data: Record<str
 
 export async function supabaseDelete(model: string, id: string) {
   const table = tableFor(model);
-  const sb = await getAdminSupabaseClient();
+  const sb = await getAdminWriteSupabaseClient();
   const { error } = await sb.from(table).delete().eq("id", id);
   if (error) throw error;
 }
