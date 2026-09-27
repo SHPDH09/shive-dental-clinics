@@ -1,4 +1,4 @@
-import { getSupabaseProjectRef, isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseProjectRef, isSupabaseConfigured } from "./supabase/env";
 
 function isLegacyAwsRdsUrl(url: string): boolean {
   return url.includes("rds.amazonaws.com");
@@ -10,7 +10,9 @@ export function resolveDatabaseUrl(): string | undefined {
   if (password) {
     const ref = getSupabaseProjectRef();
     const encoded = encodeURIComponent(password);
-    return `postgresql://postgres:${encoded}@db.${ref}.supabase.co:5432/postgres?schema=public&sslmode=require`;
+    const poolerHost =
+      process.env.SUPABASE_POOLER_HOST?.trim() || "aws-0-ap-south-1.pooler.supabase.com";
+    return `postgresql://postgres.${ref}:${encoded}@${poolerHost}:5432/postgres?schema=public&sslmode=require&uselibpqcompat=true`;
   }
 
   const direct = process.env.DATABASE_URL?.trim();

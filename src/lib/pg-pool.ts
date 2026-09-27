@@ -12,12 +12,26 @@ function sslFromConnectionString(connectionString: string): PoolConfig["ssl"] | 
   }
 }
 
+function withLibpqSslCompat(connectionString: string): string {
+  try {
+    const url = new URL(connectionString.replace(/^postgresql:/, "postgres:"));
+    if (url.searchParams.get("sslmode") === "require" && !url.searchParams.has("uselibpqcompat")) {
+      url.searchParams.set("uselibpqcompat", "true");
+      return url.toString().replace(/^postgres:/, "postgresql:");
+    }
+  } catch {
+    /* keep original */
+  }
+  return connectionString;
+}
+
 export function createPgPool(connectionString: string) {
   const serverless = { max: 1, idleTimeoutMillis: 20_000, connectionTimeoutMillis: 15_000 };
+  const normalized = withLibpqSslCompat(connectionString);
 
   return new Pool({
-    connectionString,
-    ssl: sslFromConnectionString(connectionString),
+    connectionString: normalized,
+    ssl: sslFromConnectionString(normalized),
     ...serverless,
   });
 }
