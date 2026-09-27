@@ -8,12 +8,7 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
+function createPrismaClient(connectionString: string) {
   const pool = globalForPrisma.pool ?? createPgPool(connectionString);
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.pool = pool;
@@ -26,8 +21,28 @@ function createPrismaClient() {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+/** Lazily creates Prisma client so `next build` can run without DATABASE_URL (e.g. Cloudflare CI). */
+export function getPrismaClient(): PrismaClient {
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set");
+  }
+
+  globalForPrisma.prisma = createPrismaClient(connectionString);
+  return globalForPrisma.prisma;
 }
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, receiver);
+    if (typeof value === "function") {
+      return (value as (...args: unknown[]) => unknown).bind(client);
+    }
+    return value;
+  },
+});
