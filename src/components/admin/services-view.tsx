@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
 import { LoadingState } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";

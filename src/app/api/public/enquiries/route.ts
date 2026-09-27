@@ -1,10 +1,8 @@
-import { createId } from "@paralleldrive/cuid2";
-import { findPatientIdByPhone } from "@/lib/enquiry-helpers";
-import { prisma } from "@/lib/prisma";
+import { createPublicEnquiry } from "@/lib/create-public-enquiry";
 import { createNotification } from "@/lib/notifications";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
-import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { enquirySchema } from "@/lib/validations";
+import { firstZodFieldError } from "@/lib/zod-api-error";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -17,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = enquirySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: firstZodFieldError(parsed.error) }, { status: 400 });
     }
 
     if (parsed.data.website) {
@@ -26,49 +24,24 @@ export async function POST(req: Request) {
 
     const data = parsed.data;
     const subject = data.subject?.trim() || "Website contact enquiry";
-    const patientId = await findPatientIdByPhone(data.phone);
-    const inbound = {
-      id: createId(),
-      direction: "in" as const,
-      subject,
-      body: data.message,
-      sentAt: new Date().toISOString(),
-    };
-
-    const payload = {
+    const enquiry = await createPublicEnquiry({
       name: data.name,
       phone: data.phone,
-      email: data.email || null,
+      email: data.email,
       subject,
       message: data.message,
-      source: "WEBSITE",
-      status: "NEW",
-      important: false,
-      patientId,
-      conversation: [inbound],
-      auditLog: [],
-    };
-
-    let enquiry: { id: string; name: string };
-
-    if (useSupabaseCrud()) {
-      enquiry = (await supabaseCreate("enquiry", payload)) as { id: string; name: string };
-    } else {
-      enquiry = await prisma.enquiry.create({
-        data: {
-          ...payload,
-          source: "WEBSITE",
-          status: "NEW",
-        },
-      });
-    }
-
-    await createNotification({
-      type: "NEW_ENQUIRY",
-      title: "New message",
-      message: `${enquiry.name}: ${subject}`,
-      link: "/admin/messages",
     });
+
+    try {
+      await createNotification({
+        type: "NEW_ENQUIRY",
+        title: "New message",
+        message: `${enquiry.name}: ${subject}`,
+        link: "/admin/messages",
+      });
+    } catch (notifyErr) {
+      console.error("Enquiry notification failed (enquiry saved):", notifyErr);
+    }
 
     return NextResponse.json({ success: true, id: enquiry.id });
   } catch (e) {

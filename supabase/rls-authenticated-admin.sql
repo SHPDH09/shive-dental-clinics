@@ -18,6 +18,7 @@ ALTER TABLE IF EXISTS "HeroStat" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Notification" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "Branch" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "ClinicSettings" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "HeroSlide" ENABLE ROW LEVEL SECURITY;
 
 DO $$
 DECLARE
@@ -25,7 +26,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'Admin','Appointment','Patient','Lead','Service','ServiceCategory','Doctor','Testimonial',
-    'Media','BeforeAfter','Enquiry','HeroStat','Notification','Branch','ClinicSettings'
+    'Media','BeforeAfter','Enquiry','HeroStat','HeroSlide','Notification','Branch','ClinicSettings'
   ]
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS admin_authenticated_all ON %I', t);

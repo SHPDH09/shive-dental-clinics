@@ -98,8 +98,13 @@ export async function updateAdminRow(id: string, data: Record<string, unknown>) 
     .update({ ...data, updatedAt: new Date().toISOString() })
     .eq("id", id)
     .select(adminPublicSelect)
-    .single();
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!updated) {
+    throw new Error(
+      "Admin account not found for this session — sign out and sign in again with your current admin email.",
+    );
+  }
   return updated;
 }
 
