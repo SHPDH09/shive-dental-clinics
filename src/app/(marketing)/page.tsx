@@ -13,7 +13,7 @@ import { getClinicSettings, getHeroStats } from "@/lib/settings";
 import {
   getPublicBeforeAfter,
   getFeaturedDoctor,
-  getPublicDoctors,
+  getFeaturedPublicDoctors,
   getPublicGallery,
   getPublicServices,
   getPublicTestimonials,
@@ -21,13 +21,13 @@ import {
 } from "@/lib/public-data";
 
 export default async function HomePage() {
-  const [settings, stats, services, featuredDoctor, doctors, testimonials, gallery, videos, featuredCases, allCases] =
+  const [settings, stats, services, featuredDoctor, teamDoctors, testimonials, gallery, videos, featuredCases, allCases] =
     await Promise.all([
     getClinicSettings(),
     getHeroStats(),
     getPublicServices(),
     getFeaturedDoctor(),
-    getPublicDoctors(),
+    getFeaturedPublicDoctors(6),
     getPublicTestimonials(),
     getPublicGallery(),
     getPublicVideos(6),
@@ -65,7 +65,7 @@ export default async function HomePage() {
         whyChooseUs={settings.whyChooseUs}
       />
       <FeaturedDoctorSection doctor={featuredDoctor} />
-      <DoctorsSection doctors={doctors} />
+      <DoctorsSection doctors={teamDoctors} />
       <TestimonialsSection testimonials={testimonials} />
       <GallerySection items={gallery} />
       <WatchLearnSection videos={videos} />

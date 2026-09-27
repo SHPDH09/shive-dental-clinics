@@ -1,3 +1,4 @@
+import { isAppointmentSlotAvailable } from "@/lib/appointment-slots";
 import { prisma } from "@/lib/prisma";
 import { supabaseCreate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { appointmentPublicSchema } from "@/lib/validations";
@@ -17,6 +18,20 @@ export async function POST(req: Request) {
     const appointmentCode = generateCode("APT");
     const appointmentDate = new Date(data.appointmentDate);
 
+    if (data.doctorId) {
+      const slotOk = await isAppointmentSlotAvailable(
+        data.doctorId,
+        data.appointmentDate,
+        data.appointmentTime,
+      );
+      if (!slotOk) {
+        return NextResponse.json(
+          { error: "This time slot is no longer available. Please choose another time." },
+          { status: 409 },
+        );
+      }
+    }
+
     let appointment: { id: string; appointmentCode: string; patientName: string; treatmentName: string };
 
     if (useSupabaseCrud()) {
@@ -26,6 +41,7 @@ export async function POST(req: Request) {
         phone: data.phone,
         email: data.email || null,
         serviceId: data.serviceId || null,
+        doctorId: data.doctorId || null,
         treatmentName: data.treatmentName,
         appointmentDate: appointmentDate.toISOString(),
         appointmentTime: data.appointmentTime,
@@ -41,6 +57,7 @@ export async function POST(req: Request) {
           phone: data.phone,
           email: data.email || null,
           serviceId: data.serviceId || null,
+          doctorId: data.doctorId || null,
           treatmentName: data.treatmentName,
           appointmentDate,
           appointmentTime: data.appointmentTime,

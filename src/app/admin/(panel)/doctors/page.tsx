@@ -3,7 +3,10 @@ import { DoctorsView } from "@/components/admin/doctors-view";
 
 export default function AdminDoctorsPage() {
   return (
-    <AdminPageShell title="Doctor profiles" description="Add doctor photo, summary, and qualifications — shown on the homepage">
+    <AdminPageShell
+      title="Doctors"
+      description="Manage doctor profiles, availability, featured placement, and publishing for the public website"
+    >
       <DoctorsView />
     </AdminPageShell>
   );
