@@ -19,6 +19,7 @@ import { formatCurrency } from "@/lib/utils";
 type BranchOption = { id: string; name: string };
 
 type DashboardData = {
+  dbUnavailable?: boolean;
   branchId: string | null;
   branchName: string | null;
   cards: {
@@ -76,6 +77,13 @@ export function DashboardView() {
 
   return (
     <div className="space-y-8">
+      {data.dbUnavailable && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Dashboard could not load live data from the database. Check Cloudflare secrets{" "}
+          <code className="text-xs">SUPABASE_SECRET_KEY</code> and{" "}
+          <code className="text-xs">SUPABASE_DB_PASSWORD</code>, then redeploy.
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-slate-700">Branch report</label>
         <select

@@ -1,8 +1,34 @@
 import { branchScopeFilter } from "@/lib/admin-context";
 import { requireAdminContext } from "@/lib/api-auth";
+import { buildDashboardSupabase } from "@/lib/dashboard/build-dashboard-supabase";
 import { prisma } from "@/lib/prisma";
+import { useSupabaseCrud } from "@/lib/supabase/crud";
 import { NextResponse } from "next/server";
 import { startOfDay, endOfDay, startOfMonth, endOfMonth, subDays } from "date-fns";
+
+function emptyDashboard(branchId: string | undefined, dbUnavailable = false) {
+  return NextResponse.json({
+    branchId: branchId ?? null,
+    branchName: null,
+    cards: {
+      todayAppointments: 0,
+      pendingAppointments: 0,
+      completedAppointments: 0,
+      totalPatients: 0,
+      newLeads: 0,
+      conversionRate: 0,
+      monthlyRevenue: null,
+    },
+    doctorAvailability: [],
+    charts: {
+      appointmentsByDay: [],
+      leadFunnel: [],
+      popularServices: [],
+      patientGrowth: [],
+    },
+    dbUnavailable,
+  });
+}
 
 export async function GET(req: Request) {
   const { admin, error } = await requireAdminContext();
@@ -11,6 +37,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const branchId =
     searchParams.get("branchId")?.trim() || branchScopeFilter(admin ?? null) || undefined;
+
+  if (useSupabaseCrud()) {
+    try {
+      const payload = await buildDashboardSupabase(branchId);
+      return NextResponse.json(payload);
+    } catch (e) {
+      console.error("Dashboard Supabase error:", e);
+      return emptyDashboard(branchId, true);
+    }
+  }
 
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
@@ -84,6 +120,9 @@ export async function GET(req: Request) {
         : Promise.resolve([]),
     ]);
 
+    void monthStart;
+    void monthEnd;
+
     const totalPatients =
       branchId && totalPatientsAtBranch
         ? totalPatientsAtBranch.length
@@ -93,9 +132,7 @@ export async function GET(req: Request) {
 
     let doctorAvailability: { name: string; hours: string | null }[] = [];
     if (branchRow && branchDoctors.length > 0) {
-      const ids = Array.isArray(branchRow.doctorIds)
-        ? (branchRow.doctorIds as string[])
-        : [];
+      const ids = Array.isArray(branchRow.doctorIds) ? (branchRow.doctorIds as string[]) : [];
       doctorAvailability = branchDoctors
         .filter((d) => ids.length === 0 || ids.includes(d.id))
         .map((d) => ({ name: d.name, hours: d.consultationHours }));
@@ -132,26 +169,6 @@ export async function GET(req: Request) {
     });
   } catch (e) {
     console.error("Dashboard DB error:", e);
-    return NextResponse.json({
-      branchId: branchId ?? null,
-      branchName: null,
-      cards: {
-        todayAppointments: 0,
-        pendingAppointments: 0,
-        completedAppointments: 0,
-        totalPatients: 0,
-        newLeads: 0,
-        conversionRate: 0,
-        monthlyRevenue: null,
-      },
-      doctorAvailability: [],
-      charts: {
-        appointmentsByDay: [],
-        leadFunnel: [],
-        popularServices: [],
-        patientGrowth: [],
-      },
-      dbUnavailable: true,
-    });
+    return emptyDashboard(branchId, true);
   }
 }
