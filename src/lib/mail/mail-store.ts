@@ -1,7 +1,8 @@
 import { createId } from "@paralleldrive/cuid2";
-import { getSupabaseSecretKey } from "@/lib/supabase/env";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
+import {
+  getMailboxSupabaseClient,
+  isMailboxTableMissingMessage,
+} from "@/lib/mail/mailbox-supabase";
 
 export type MailFolder = "inbox" | "sent" | "trash";
 
@@ -45,7 +46,11 @@ export async function listMailboxMessages(options: {
   limit: number;
   q?: string;
 }) {
-  const sb = await getAdminSupabaseClient();
+  const sb = await getMailboxSupabaseClient();
+  if (!sb) {
+    return { items: [] as MailboxRow[], total: 0, tableMissing: false, dbUnavailable: true };
+  }
+
   const from = (options.page - 1) * options.limit;
   const to = from + options.limit - 1;
 
@@ -57,33 +62,38 @@ export async function listMailboxMessages(options: {
     .range(from, to);
 
   if (options.q?.trim()) {
-    const q = options.q.trim();
+    const q = options.q.trim().replace(/[%_,]/g, " ");
     query = query.or(`subject.ilike.%${q}%,fromAddress.ilike.%${q}%,bodyText.ilike.%${q}%`);
   }
 
   const { data, error, count } = await query;
   if (error) {
-    if (/does not exist|PGRST205/i.test(error.message)) {
-      return { items: [] as MailboxRow[], total: 0, tableMissing: true };
+    if (isMailboxTableMissingMessage(error.message)) {
+      return { items: [] as MailboxRow[], total: 0, tableMissing: true, dbUnavailable: false };
+    }
+    if (/permission denied|row-level security|42501/i.test(error.message)) {
+      return { items: [] as MailboxRow[], total: 0, tableMissing: false, dbUnavailable: true };
     }
     throw error;
   }
-  return { items: (data ?? []).map((r) => mapRow(r as Record<string, unknown>)), total: count ?? 0, tableMissing: false };
+  return {
+    items: (data ?? []).map((r) => mapRow(r as Record<string, unknown>)),
+    total: count ?? 0,
+    tableMissing: false,
+    dbUnavailable: false,
+  };
 }
 
 export async function getMailboxMessage(id: string) {
-  const sb = await getAdminSupabaseClient();
+  const sb = await getMailboxSupabaseClient();
+  if (!sb) return null;
   const { data, error } = await sb.from("MailboxMessage").select("*").eq("id", id).maybeSingle();
-  if (error) throw error;
+  if (error) {
+    if (isMailboxTableMissingMessage(error.message)) return null;
+    throw error;
+  }
   if (!data) return null;
   return mapRow(data as Record<string, unknown>);
-}
-
-async function mailboxSupabaseClient() {
-  if (getSupabaseSecretKey()) {
-    return createSupabaseServiceClient();
-  }
-  return getAdminSupabaseClient();
 }
 
 export async function saveSentMail(input: {
@@ -96,7 +106,8 @@ export async function saveSentMail(input: {
   bodyHtml?: string;
   sentAt: Date;
 }) {
-  const sb = await mailboxSupabaseClient();
+  const sb = await getMailboxSupabaseClient();
+  if (!sb) return;
   const now = new Date().toISOString();
   const row = {
     id: input.id ?? createId(),
@@ -115,12 +126,13 @@ export async function saveSentMail(input: {
     updatedAt: now,
   };
   const { error } = await sb.from("MailboxMessage").upsert(row, { onConflict: "id" });
-  if (error && !/does not exist|PGRST205/i.test(error.message)) throw error;
+  if (error && !isMailboxTableMissingMessage(error.message)) throw error;
 }
 
 export async function upsertInboxMail(rows: Omit<MailboxRow, "createdAt">[]) {
   if (rows.length === 0) return 0;
-  const sb = await getAdminSupabaseClient();
+  const sb = await getMailboxSupabaseClient();
+  if (!sb) return 0;
   const now = new Date().toISOString();
   const payload = rows.map((r) => ({
     ...r,
@@ -130,7 +142,7 @@ export async function upsertInboxMail(rows: Omit<MailboxRow, "createdAt">[]) {
   }));
   const { error } = await sb.from("MailboxMessage").upsert(payload, { onConflict: "id" });
   if (error) {
-    if (/does not exist|PGRST205/i.test(error.message)) return 0;
+    if (isMailboxTableMissingMessage(error.message)) return 0;
     throw error;
   }
   return rows.length;
@@ -140,7 +152,8 @@ export async function updateMailboxMessage(
   id: string,
   patch: Partial<Pick<MailboxRow, "read" | "starred" | "folder">>,
 ) {
-  const sb = await getAdminSupabaseClient();
+  const sb = await getMailboxSupabaseClient();
+  if (!sb) return null;
   const { data, error } = await sb
     .from("MailboxMessage")
     .update({ ...patch, updatedAt: new Date().toISOString() })

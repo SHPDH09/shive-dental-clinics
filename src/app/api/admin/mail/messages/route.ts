@@ -18,7 +18,12 @@ export async function GET(req: Request) {
     const result = await listMailboxMessages({ folder, page, limit, q });
     return NextResponse.json(result);
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Could not load mail" }, { status: 503 });
+    console.error("listMailboxMessages:", e);
+    return NextResponse.json({
+      items: [],
+      total: 0,
+      tableMissing: false,
+      dbUnavailable: true,
+    });
   }
 }

@@ -30,6 +30,7 @@ export function CommunicationsView() {
   const [syncing, setSyncing] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [tableMissing, setTableMissing] = useState(false);
+  const [dbUnavailable, setDbUnavailable] = useState(false);
   const [q, setQ] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const [to, setTo] = useState("");
@@ -53,14 +54,20 @@ export function CommunicationsView() {
     try {
       const params = new URLSearchParams({ folder, page: "1", limit: "40" });
       if (q.trim()) params.set("q", q.trim());
-      const res = await adminFetch<{ items: MailRow[]; tableMissing?: boolean }>(
-        `/api/admin/mail/messages?${params}`,
-      );
+      const res = await adminFetch<{
+        items: MailRow[];
+        tableMissing?: boolean;
+        dbUnavailable?: boolean;
+      }>(`/api/admin/mail/messages?${params}`);
       setItems(res.items ?? []);
       setTableMissing(Boolean(res.tableMissing));
-    } catch {
-      setError("Could not load emails");
+      setDbUnavailable(Boolean(res.dbUnavailable));
+    } catch (e) {
+      setError(
+        e instanceof AdminApiError ? e.message : "Could not load emails — try signing in again.",
+      );
       setItems([]);
+      setDbUnavailable(true);
     } finally {
       setLoading(false);
     }
@@ -165,8 +172,16 @@ export function CommunicationsView() {
       )}
       {tableMissing && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Mailbox table missing. Run <code className="text-xs">npm run supabase:apply-premium</code> (includes mailbox
-          migration).
+          Mailbox database table is not created yet. Run{" "}
+          <code className="text-xs">npm run supabase:apply-premium</code> once (includes{" "}
+          <code className="text-xs">migration-mailbox.sql</code>). You can still <strong>Compose</strong> and send email
+          via SMTP; inbox sync needs the table.
+        </div>
+      )}
+      {dbUnavailable && !tableMissing && !error && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Could not load saved mail from the database. Check Supabase credentials on the server. Compose and send still
+          work if SMTP is configured.
         </div>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
