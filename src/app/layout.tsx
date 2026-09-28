@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     siteName: clinicName,
   },
   robots: { index: true, follow: true },
+  verification: {
+    google: "XThxVmKDx2q8dFHkMEcgcv7odBqKMz_DCJvye7EL_fM",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
