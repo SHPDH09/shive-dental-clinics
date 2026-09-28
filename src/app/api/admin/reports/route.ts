@@ -4,6 +4,8 @@ import { parseReportFilters } from "@/lib/reports/parse-params";
 import { reportsAccessForRole } from "@/lib/reports/permissions";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   const { session, admin, error } = await requirePermission("reports", "view");
   if (error) return error;

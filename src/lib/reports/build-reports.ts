@@ -9,6 +9,7 @@ import {
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ReportFilters, ReportsAccess, ReportsPayload } from "@/lib/reports/types";
+import { useSupabaseCrud } from "@/lib/supabase/crud";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -138,10 +139,16 @@ export function emptyReportsPayload(
   };
 }
 
+/** Reports for admin UI — Supabase on Cloudflare, Prisma when DATABASE_URL is available. */
 export async function buildReportsData(
   filters: ReportFilters,
   access: ReportsAccess,
 ): Promise<ReportsPayload> {
+  if (useSupabaseCrud()) {
+    const { buildReportsSupabase } = await import("@/lib/reports/build-reports-supabase");
+    return buildReportsSupabase(filters, access);
+  }
+
   const defaultClinicName = "Shiv Dental Clinic";
   const apptWhere = appointmentWhere(filters);
   const leadWhereClause = leadWhere(filters);

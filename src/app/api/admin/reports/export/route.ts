@@ -10,7 +10,10 @@ import {
 import { parseReportFilters } from "@/lib/reports/parse-params";
 import { reportsAccessForRole } from "@/lib/reports/permissions";
 import type { CustomReportType } from "@/lib/reports/types";
+import { useSupabaseCrud } from "@/lib/supabase/crud";
 import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
 
 const LEGACY_TYPES = new Set(["appointments", "patients", "leads"]);
 const SECTION_TYPES = new Set([
@@ -153,8 +156,20 @@ export async function GET(req: Request) {
   const type = (searchParams.get("type") ?? "full").toLowerCase() as CustomReportType | string;
   const section = searchParams.get("section") ?? type;
 
-  const settings = await prisma.clinicSettings.findUnique({ where: { id: "default" } });
-  const clinicName = settings?.clinicName ?? "Shiv Dental Clinic";
+  let clinicName = "Shiv Dental Clinic";
+  if (useSupabaseCrud()) {
+    try {
+      const { getAdminSupabaseClient } = await import("@/lib/supabase/data-client");
+      const sb = await getAdminSupabaseClient();
+      const { data } = await sb.from("ClinicSettings").select("clinicName").eq("id", "default").maybeSingle();
+      if (data?.clinicName) clinicName = String(data.clinicName);
+    } catch {
+      /* keep default */
+    }
+  } else {
+    const settings = await prisma.clinicSettings.findUnique({ where: { id: "default" } });
+    clinicName = settings?.clinicName ?? clinicName;
+  }
 
   if (LEGACY_TYPES.has(type) && !searchParams.get("section")) {
     if (type === "patients" && !access.patientsDetail) {
