@@ -109,8 +109,10 @@ export async function POST(req: Request) {
         emailWarning = patientResult.error ?? "Could not send confirmation email";
         console.error("Appointment patient email:", patientResult);
       }
-      if (!adminResult.ok && !("skipped" in adminResult && adminResult.skipped)) {
-        console.error("Appointment admin notify:", adminResult);
+      if (adminResult.ok && "messageId" in adminResult) {
+        console.info("Admin notified of new appointment:", appointment.appointmentCode);
+      } else if (!adminResult.ok && !("skipped" in adminResult && adminResult.skipped)) {
+        console.error("Appointment admin notify failed:", adminResult);
       }
     } catch (mailErr) {
       console.error("Appointment email error:", mailErr);

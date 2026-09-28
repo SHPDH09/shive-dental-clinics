@@ -6,10 +6,39 @@ import {
   updateAppointmentAdmin,
 } from "@/lib/supabase/appointments-admin";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
+import type { AppointmentMailContext } from "@/lib/mail/appointment-emails";
+import { emailPatientOnStatusChange } from "@/lib/mail/appointment-status-mail";
 import { NextResponse } from "next/server";
 import type { AppointmentStatus } from "@/generated/prisma/client";
 
+export const runtime = "nodejs";
+
 type RouteContext = { params: Promise<{ id: string }> };
+
+function mailCtxFromRecord(row: {
+  patientName: string;
+  email?: string | null;
+  phone: string;
+  treatmentName: string;
+  appointmentCode: string;
+  appointmentDate: string | Date;
+  appointmentTime: string;
+}): AppointmentMailContext {
+  const dateRaw = row.appointmentDate;
+  const dateStr =
+    typeof dateRaw === "string"
+      ? dateRaw.slice(0, 10)
+      : dateRaw.toISOString().slice(0, 10);
+  return {
+    patientName: String(row.patientName),
+    email: row.email ?? null,
+    phone: String(row.phone),
+    treatmentName: String(row.treatmentName),
+    appointmentCode: String(row.appointmentCode),
+    appointmentDate: dateStr,
+    appointmentTime: String(row.appointmentTime),
+  };
+}
 
 export async function GET(_req: Request, context: RouteContext) {
   const { error } = await requireAdminSession();
@@ -84,23 +113,39 @@ export async function PATCH(req: Request, context: RouteContext) {
     if (useSupabaseCrud()) {
       const before = await getAppointmentAdmin(id);
       const item = await updateAppointmentAdmin(id, data);
+      let patientEmailSent = false;
+      let patientEmailWarning: string | undefined;
       if (before && body.status !== undefined && body.status !== before.status) {
-        const { sendAppointmentStatusEmail } = await import("@/lib/mail/appointment-emails");
-        void sendAppointmentStatusEmail(
-          {
-            patientName: String(item.patientName ?? before.patientName),
-            email: (item.email ?? before.email) as string | null,
-            phone: String(item.phone ?? before.phone),
-            treatmentName: String(item.treatmentName ?? before.treatmentName),
-            appointmentCode: String(item.appointmentCode ?? before.appointmentCode),
-            appointmentDate: String(item.appointmentDate ?? before.appointmentDate).slice(0, 10),
-            appointmentTime: String(item.appointmentTime ?? before.appointmentTime),
-            status: String(body.status),
-          },
+        const mailCtx = mailCtxFromRecord({
+          patientName: String(item.patientName ?? before.patientName),
+          email: (item.email ?? before.email) as string | null,
+          phone: String(item.phone ?? before.phone),
+          treatmentName: String(item.treatmentName ?? before.treatmentName),
+          appointmentCode: String(item.appointmentCode ?? before.appointmentCode),
+          appointmentDate: String(item.appointmentDate ?? before.appointmentDate),
+          appointmentTime: String(item.appointmentTime ?? before.appointmentTime),
+        });
+        const mailResult = await emailPatientOnStatusChange(
+          mailCtx,
           String(body.status),
+          String(before.status),
         );
+        if (mailResult.ok && "messageId" in mailResult) {
+          patientEmailSent = true;
+        } else if (!mailResult.ok) {
+          if ("skipped" in mailResult && mailResult.skipped && body.status === "CONFIRMED") {
+            patientEmailWarning = "Patient has no email — confirmation saved but not emailed.";
+          } else {
+            patientEmailWarning = mailResult.error ?? "Could not email patient";
+            console.error("Appointment status email:", mailResult);
+          }
+        }
       }
-      return NextResponse.json(item);
+      return NextResponse.json({
+        ...item,
+        patientEmailSent,
+        ...(patientEmailWarning ? { patientEmailWarning } : {}),
+      });
     }
 
     const beforePrisma = await prisma.appointment.findUnique({ where: { id } });
@@ -121,23 +166,30 @@ export async function PATCH(req: Request, context: RouteContext) {
       data: prismaData,
       include: { patient: true, service: true },
     });
+    let patientEmailSent = false;
+    let patientEmailWarning: string | undefined;
     if (beforePrisma && body.status !== undefined && body.status !== beforePrisma.status) {
-      const { sendAppointmentStatusEmail } = await import("@/lib/mail/appointment-emails");
-      void sendAppointmentStatusEmail(
-        {
-          patientName: item.patientName,
-          email: item.email,
-          phone: item.phone,
-          treatmentName: item.treatmentName,
-          appointmentCode: item.appointmentCode,
-          appointmentDate: item.appointmentDate.toISOString().slice(0, 10),
-          appointmentTime: item.appointmentTime,
-          status: item.status,
-        },
+      const mailCtx = mailCtxFromRecord(item);
+      const mailResult = await emailPatientOnStatusChange(
+        mailCtx,
         item.status,
+        beforePrisma.status,
       );
+      if (mailResult.ok && "messageId" in mailResult) {
+        patientEmailSent = true;
+      } else if (!mailResult.ok) {
+        if ("skipped" in mailResult && mailResult.skipped && body.status === "CONFIRMED") {
+          patientEmailWarning = "Patient has no email — confirmation saved but not emailed.";
+        } else {
+          patientEmailWarning = mailResult.error ?? "Could not email patient";
+        }
+      }
     }
-    return NextResponse.json(item);
+    return NextResponse.json({
+      ...item,
+      patientEmailSent,
+      ...(patientEmailWarning ? { patientEmailWarning } : {}),
+    });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

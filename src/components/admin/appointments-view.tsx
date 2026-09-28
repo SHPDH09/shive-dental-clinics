@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useAdminList } from "@/components/admin/use-admin-list";
 import { DataTable } from "@/components/admin/data-table";
 import { LoadingState } from "@/components/admin/loading-state";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 
@@ -20,13 +21,30 @@ type Appointment = {
 
 export function AppointmentsView() {
   const { data, loading, error, reload } = useAdminList<Appointment>("/api/admin/appointments");
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const updateStatus = async (id: string, status: string) => {
-    await adminFetch(`/api/admin/appointments/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
-    reload();
+    setActionMsg(null);
+    try {
+      const res = await adminFetch<
+        Appointment & { patientEmailSent?: boolean; patientEmailWarning?: string }
+      >(`/api/admin/appointments/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      if (status === "CONFIRMED") {
+        if (res.patientEmailSent) {
+          setActionMsg("Appointment confirmed — confirmation email sent to patient.");
+        } else if (res.patientEmailWarning) {
+          setActionMsg(res.patientEmailWarning);
+        } else {
+          setActionMsg("Appointment confirmed.");
+        }
+      }
+      reload();
+    } catch (e) {
+      setActionMsg(e instanceof AdminApiError ? e.message : "Update failed");
+    }
   };
 
   if (loading) return <LoadingState />;
@@ -35,6 +53,10 @@ export function AppointmentsView() {
   const items = data?.items ?? [];
 
   return (
+    <>
+      {actionMsg && (
+        <p className="mb-4 rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900">{actionMsg}</p>
+      )}
     <DataTable
       headers={["Code", "Patient", "Treatment", "When", "Status", "Actions"]}
       empty={items.length === 0}
@@ -65,5 +87,6 @@ export function AppointmentsView() {
         </tr>
       ))}
     </DataTable>
+    </>
   );
 }
