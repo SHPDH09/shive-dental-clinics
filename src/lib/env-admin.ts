@@ -1,7 +1,12 @@
+import { readWorkerEnvPlainOrB64 } from "@/lib/env-b64";
 import { readWorkerEnv } from "@/lib/worker-env";
 
+function adminPassword(): string | undefined {
+  return readWorkerEnvPlainOrB64("ADMIN_PASSWORD");
+}
+
 export function isEnvAdminConfigured(): boolean {
-  return Boolean(readWorkerEnv("ADMIN_LOGIN_ID") && readWorkerEnv("ADMIN_PASSWORD"));
+  return Boolean(readWorkerEnv("ADMIN_LOGIN_ID") && adminPassword());
 }
 
 function safeEqualString(a: string, b: string): boolean {
@@ -25,7 +30,7 @@ export function verifyEnvAdmin(loginId: string, password: string) {
 
   const envId = readWorkerEnv("ADMIN_LOGIN_ID");
   const envEmail = readWorkerEnv("ADMIN_EMAIL");
-  const envPass = readWorkerEnv("ADMIN_PASSWORD");
+  const envPass = adminPassword();
   if (!envId || !envPass) return null;
 
   const login = loginId.trim();

@@ -1,3 +1,4 @@
+import { readWorkerEnvPlainOrB64 } from "@/lib/env-b64";
 import { readWorkerEnv } from "@/lib/worker-env";
 import { loadSettingsRow } from "@/lib/clinic-settings/service";
 import type { ClinicSecrets, ExtendedClinicSettings } from "@/lib/clinic-settings/types";
@@ -22,9 +23,9 @@ export function smtpFromEnv(): SmtpConfig | null {
     readWorkerEnv("SMTP_USERNAME")?.trim() ||
     readWorkerEnv("GMAIL_USER")?.trim();
   const pass = normalizeAppPassword(
-    readWorkerEnv("SMTP_APP_PASSWORD") ||
-      readWorkerEnv("SMTP_PASSWORD") ||
-      readWorkerEnv("GMAIL_APP_PASSWORD") ||
+    readWorkerEnvPlainOrB64("SMTP_APP_PASSWORD") ||
+      readWorkerEnvPlainOrB64("SMTP_PASSWORD") ||
+      readWorkerEnvPlainOrB64("GMAIL_APP_PASSWORD") ||
       "",
   );
   if (!user || !pass) return null;

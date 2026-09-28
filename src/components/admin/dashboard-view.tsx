@@ -80,6 +80,7 @@ export function DashboardView() {
       {data.dbUnavailable && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Dashboard could not load live data from the database. Check Cloudflare secrets{" "}
+          <code className="text-xs">SUPABASE_SKEY_B64</code> /{" "}
           <code className="text-xs">SUPABASE_SECRET_KEY</code> and{" "}
           <code className="text-xs">SUPABASE_DB_PASSWORD</code>, then redeploy.
         </div>

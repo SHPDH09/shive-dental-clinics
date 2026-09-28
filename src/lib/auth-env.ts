@@ -1,3 +1,4 @@
+import { readWorkerEnvPlainOrB64 } from "@/lib/env-b64";
 import { readWorkerEnv } from "@/lib/worker-env";
 
 const BUILD_PLACEHOLDER = "build-time-placeholder-set-auth-secret-in-cloudflare";
@@ -7,8 +8,8 @@ export const PRODUCTION_AUTH_SECRET =
   "4bcc5249f10b987ba024c609fdad337d5fff96292712528bcdd6372a56224da5";
 
 function readEnvSecret(): string | undefined {
-  const a = readWorkerEnv("AUTH_SECRET");
-  const b = readWorkerEnv("NEXTAUTH_SECRET");
+  const a = readWorkerEnvPlainOrB64("AUTH_SECRET");
+  const b = readWorkerEnvPlainOrB64("NEXTAUTH_SECRET");
   if (a && a !== BUILD_PLACEHOLDER) return a;
   if (b && b !== BUILD_PLACEHOLDER) return b;
   return undefined;
