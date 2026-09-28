@@ -11,7 +11,7 @@ import {
   enquiryStatusLabel,
   type ConversationEntry,
 } from "@/lib/enquiry-sources";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -76,6 +76,8 @@ export function MessagesView() {
 
   const [replySubject, setReplySubject] = useState("");
   const [replyBody, setReplyBody] = useState("");
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replySuccess, setReplySuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const loadStats = useCallback(async () => {
@@ -116,6 +118,8 @@ export function MessagesView() {
     setSelected(e);
     setReplySubject(e.subject.startsWith("Re:") ? e.subject : `Re: ${e.subject}`);
     setReplyBody("");
+    setReplyError(null);
+    setReplySuccess(null);
     setPatientCtx(null);
     try {
       const ctx = await adminFetch<PatientContext>(`/api/admin/enquiries/${e.id}/patient`);
@@ -149,14 +153,26 @@ export function MessagesView() {
   const sendReply = async () => {
     if (!selected) return;
     setSaving(true);
+    setReplyError(null);
+    setReplySuccess(null);
     try {
-      const updated = await adminFetch<EnquiryRecord>(`/api/admin/enquiries/${selected.id}/reply`, {
-        method: "POST",
-        body: JSON.stringify({ subject: replySubject, message: replyBody, sentBy: "Admin" }),
-      });
+      const updated = await adminFetch<EnquiryRecord & { emailSent?: boolean; emailTo?: string }>(
+        `/api/admin/enquiries/${selected.id}/reply`,
+        {
+          method: "POST",
+          body: JSON.stringify({ subject: replySubject, message: replyBody, sentBy: "Admin" }),
+        },
+      );
       setSelected(updated);
       setReplyBody("");
+      setReplySuccess(
+        updated.emailTo
+          ? `Reply emailed to ${updated.emailTo}.`
+          : "Reply sent by email.",
+      );
       await load();
+    } catch (e) {
+      setReplyError(e instanceof AdminApiError ? e.message : "Could not send reply. Check SMTP settings.");
     } finally {
       setSaving(false);
     }
@@ -406,8 +422,13 @@ export function MessagesView() {
                   </select>
                 )}
                 <div>
-                  <Label>To</Label>
-                  <Input value={selected.email ?? selected.phone} readOnly />
+                  <Label>To (email)</Label>
+                  <Input value={selected.email?.trim() || ""} readOnly placeholder="No email on file" />
+                  {!selected.email?.trim() && (
+                    <p className="mt-1 text-xs text-amber-700">
+                      Add an email on the enquiry or use WhatsApp / phone — SMTP reply needs a valid email.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Subject</Label>
@@ -417,10 +438,20 @@ export function MessagesView() {
                   <Label>Message</Label>
                   <Textarea rows={5} value={replyBody} onChange={(e) => setReplyBody(e.target.value)} />
                 </div>
-                <Button type="button" disabled={saving || !replyBody.trim()} onClick={() => void sendReply()}>
-                  Send reply
+                {replyError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{replyError}</p>}
+                {replySuccess && (
+                  <p className="rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-800">{replySuccess}</p>
+                )}
+                <Button
+                  type="button"
+                  disabled={saving || !replyBody.trim() || !selected.email?.trim()}
+                  onClick={() => void sendReply()}
+                >
+                  Send reply by email
                 </Button>
-                <p className="text-xs text-slate-500">Reply is saved in the clinic inbox. Copy the text to email or WhatsApp if you send it externally.</p>
+                <p className="text-xs text-slate-500">
+                  Sends via clinic Gmail (SMTP) and saves the thread here. Requires SMTP on the server.
+                </p>
               </div>
             </div>
           </div>

@@ -5,12 +5,54 @@ import {
   parseAuditLog,
   parseConversation,
 } from "@/lib/enquiry-helpers";
+import { isValidReplyEmail, sendEnquiryReplyEmail } from "@/lib/mail/enquiry-reply-mail";
 import { prisma } from "@/lib/prisma";
 import { supabaseUpdate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { enquiryReplySchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 type RouteContext = { params: Promise<{ id: string }> };
+
+type EnquiryRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  subject?: string;
+  conversation: unknown;
+  auditLog: unknown;
+};
+
+async function persistReply(row: EnquiryRow, reply: {
+  id: string;
+  direction: "out";
+  subject: string;
+  body: string;
+  sentAt: string;
+  sentBy: string;
+}) {
+  const conversation = [...parseConversation(row.conversation), reply];
+  const audit = appendAudit(parseAuditLog(row.auditLog), "Reply sent", reply.sentBy);
+
+  if (useSupabaseCrud()) {
+    const item = await supabaseUpdate("enquiry", row.id, {
+      conversation,
+      auditLog: audit,
+      status: "REPLIED",
+    });
+    return item;
+  }
+
+  return prisma.enquiry.update({
+    where: { id: row.id },
+    data: {
+      conversation,
+      auditLog: audit,
+      status: "REPLIED",
+    },
+  });
+}
 
 export async function POST(req: Request, context: RouteContext) {
   const { error } = await requireAdminSession();
@@ -23,50 +65,77 @@ export async function POST(req: Request, context: RouteContext) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const reply = {
-    id: createId(),
-    direction: "out" as const,
-    subject: parsed.data.subject,
-    body: parsed.data.message,
-    sentAt: new Date().toISOString(),
-    sentBy: parsed.data.sentBy ?? "Admin",
-  };
+  let row: EnquiryRow | null = null;
 
   if (useSupabaseCrud()) {
     try {
       const { supabaseFindUnique } = await import("@/lib/supabase/crud");
-      const row = await supabaseFindUnique("enquiry", id);
-      if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
-      const conversation = [...parseConversation(row.conversation), reply];
-      const audit = appendAudit(parseAuditLog(row.auditLog), "Reply sent", reply.sentBy);
-      const item = await supabaseUpdate("enquiry", id, {
-        conversation,
-        auditLog: audit,
-        status: "REPLIED",
-      });
-      return NextResponse.json(item);
+      const found = await supabaseFindUnique("enquiry", id);
+      if (!found) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      row = found as EnquiryRow;
     } catch (e) {
       console.error(e);
-      return NextResponse.json({ error: "Failed to send reply" }, { status: 503 });
+      return NextResponse.json({ error: "Failed to load enquiry" }, { status: 503 });
+    }
+  } else {
+    try {
+      const found = await prisma.enquiry.findUnique({ where: { id } });
+      if (!found) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      row = found;
+    } catch (e) {
+      console.error(e);
+      return NextResponse.json({ error: "Failed to load enquiry" }, { status: 503 });
     }
   }
 
-  try {
-    const existing = await prisma.enquiry.findUnique({ where: { id } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const conversation = [...parseConversation(existing.conversation), reply];
-    const audit = appendAudit(parseAuditLog(existing.auditLog), "Reply sent", reply.sentBy);
-    const item = await prisma.enquiry.update({
-      where: { id },
-      data: {
-        conversation,
-        auditLog: audit,
-        status: "REPLIED",
+  if (!isValidReplyEmail(row.email)) {
+    return NextResponse.json(
+      {
+        error:
+          "This message has no valid patient email. Use the WhatsApp or phone buttons to reply, or ask the patient for an email address.",
       },
-    });
-    return NextResponse.json(item);
+      { status: 400 },
+    );
+  }
+
+  const baseSubject = parsed.data.subject.trim() || row.subject?.trim() || "Your enquiry";
+  const subject = baseSubject.startsWith("Re:") ? baseSubject : `Re: ${baseSubject}`;
+
+  const mailResult = await sendEnquiryReplyEmail({
+    to: row.email!,
+    patientName: row.name,
+    subject,
+    message: parsed.data.message,
+  });
+
+  if (!mailResult.ok) {
+    return NextResponse.json(
+      { error: mailResult.error || "Email could not be sent. Check SMTP settings on the server." },
+      { status: 502 },
+    );
+  }
+
+  const reply = {
+    id: createId(),
+    direction: "out" as const,
+    subject,
+    body: parsed.data.message,
+    sentAt: new Date().toISOString(),
+    sentBy: parsed.data.sentBy ?? "Admin",
+    emailMessageId: mailResult.messageId,
+  };
+
+  try {
+    const item = await persistReply(row, reply);
+    return NextResponse.json({ ...item, emailSent: true, emailTo: row.email });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to send reply" }, { status: 400 });
+    console.error("Reply saved after email — DB update failed:", e);
+    return NextResponse.json(
+      {
+        error: "Email was sent but saving the reply in the inbox failed. Refresh and check the conversation.",
+        emailSent: true,
+      },
+      { status: 503 },
+    );
   }
 }

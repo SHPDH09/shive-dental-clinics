@@ -45,6 +45,7 @@ export type ConversationEntry = {
   body: string;
   sentAt: string;
   sentBy?: string;
+  emailMessageId?: string;
 };
 
 export type AuditEntry = {

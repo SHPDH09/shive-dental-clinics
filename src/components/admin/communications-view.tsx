@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
-import { adminFetch } from "@/lib/admin-client";
+import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -114,8 +114,10 @@ export function CommunicationsView() {
       setSubject("");
       setBody("");
       setFolder("sent");
-    } catch {
-      setError("Send failed — check SMTP secrets on Cloudflare");
+    } catch (e) {
+      setError(
+        e instanceof AdminApiError ? e.message : "Send failed — check SMTP secrets on Cloudflare",
+      );
     } finally {
       setSending(false);
     }
@@ -241,6 +243,27 @@ export function CommunicationsView() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  {folder === "inbox" && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const from = selected.fromAddress.trim();
+                        const reSubject = selected.subject?.startsWith("Re:")
+                          ? selected.subject
+                          : `Re: ${selected.subject || "Your message"}`;
+                        setTo(from);
+                        setSubject(reSubject);
+                        setBody("");
+                        setComposeOpen(true);
+                        setError(null);
+                      }}
+                    >
+                      <Send className="mr-1 h-4 w-4" />
+                      Reply
+                    </Button>
+                  )}
                   <Button type="button" variant="secondary" size="sm" onClick={() => void toggleStar(selected)}>
                     <Star className="h-4 w-4" />
                   </Button>
