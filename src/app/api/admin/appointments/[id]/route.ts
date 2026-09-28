@@ -82,9 +82,28 @@ export async function PATCH(req: Request, context: RouteContext) {
 
   try {
     if (useSupabaseCrud()) {
+      const before = await getAppointmentAdmin(id);
       const item = await updateAppointmentAdmin(id, data);
+      if (before && body.status !== undefined && body.status !== before.status) {
+        const { sendAppointmentStatusEmail } = await import("@/lib/mail/appointment-emails");
+        void sendAppointmentStatusEmail(
+          {
+            patientName: String(item.patientName ?? before.patientName),
+            email: (item.email ?? before.email) as string | null,
+            phone: String(item.phone ?? before.phone),
+            treatmentName: String(item.treatmentName ?? before.treatmentName),
+            appointmentCode: String(item.appointmentCode ?? before.appointmentCode),
+            appointmentDate: String(item.appointmentDate ?? before.appointmentDate).slice(0, 10),
+            appointmentTime: String(item.appointmentTime ?? before.appointmentTime),
+            status: String(body.status),
+          },
+          String(body.status),
+        );
+      }
       return NextResponse.json(item);
     }
+
+    const beforePrisma = await prisma.appointment.findUnique({ where: { id } });
 
     const prismaData: {
       status?: AppointmentStatus;
@@ -102,6 +121,22 @@ export async function PATCH(req: Request, context: RouteContext) {
       data: prismaData,
       include: { patient: true, service: true },
     });
+    if (beforePrisma && body.status !== undefined && body.status !== beforePrisma.status) {
+      const { sendAppointmentStatusEmail } = await import("@/lib/mail/appointment-emails");
+      void sendAppointmentStatusEmail(
+        {
+          patientName: item.patientName,
+          email: item.email,
+          phone: item.phone,
+          treatmentName: item.treatmentName,
+          appointmentCode: item.appointmentCode,
+          appointmentDate: item.appointmentDate.toISOString().slice(0, 10),
+          appointmentTime: item.appointmentTime,
+          status: item.status,
+        },
+        item.status,
+      );
+    }
     return NextResponse.json(item);
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

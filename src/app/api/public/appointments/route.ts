@@ -82,6 +82,25 @@ export async function POST(req: Request) {
     });
 
     try {
+      const { sendAppointmentBookedEmail, notifyAdminNewAppointment } = await import(
+        "@/lib/mail/appointment-emails"
+      );
+      const mailCtx = {
+        patientName: data.patientName,
+        email: data.email,
+        phone: data.phone,
+        treatmentName: data.treatmentName,
+        appointmentCode: appointment.appointmentCode,
+        appointmentDate: data.appointmentDate,
+        appointmentTime: data.appointmentTime,
+      };
+      void sendAppointmentBookedEmail(mailCtx);
+      void notifyAdminNewAppointment(mailCtx);
+    } catch {
+      /* email non-blocking */
+    }
+
+    try {
       await createAppointmentEnquiry({
         patientName: data.patientName,
         phone: data.phone,

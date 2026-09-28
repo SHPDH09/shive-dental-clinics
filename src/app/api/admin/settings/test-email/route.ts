@@ -1,8 +1,9 @@
 import { requirePermission } from "@/lib/api-auth";
-import { loadSettingsRow } from "@/lib/clinic-settings/service";
-import type { ClinicSecrets } from "@/lib/clinic-settings/types";
+import { sendMail } from "@/lib/mail/send-mail";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+export const runtime = "nodejs";
 
 const schema = z.object({
   to: z.string().email(),
@@ -18,20 +19,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Valid recipient email required" }, { status: 400 });
   }
 
-  const row = await loadSettingsRow();
-  const secrets = (row.secrets ?? {}) as ClinicSecrets;
-  const extended = row.extendedSettings as { email?: { smtpHost?: string; senderName?: string } };
+  const result = await sendMail({
+    to: parsed.data.to,
+    subject: "Shiv Dental Clinic — SMTP test",
+    text: "This is a test email from Shiv Dental Clinic admin. SMTP is working correctly.",
+  });
 
-  if (!secrets.smtpPassword || !extended?.email?.smtpHost) {
-    return NextResponse.json(
-      { error: "Configure SMTP host and password before sending a test email." },
-      { status: 400 },
-    );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 502 });
   }
 
-  // Outbound SMTP is environment-dependent; confirm configuration without exposing secrets.
   return NextResponse.json({
     ok: true,
-    message: `Test email queued to ${parsed.data.to}. Verify SMTP credentials in your mail provider dashboard.`,
+    message: `Test email sent to ${parsed.data.to}.`,
   });
 }

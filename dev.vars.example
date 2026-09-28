@@ -5,3 +5,10 @@ AUTH_SECRET="generate-or-use-production-value-locally-only"
 ADMIN_PASSWORD="local-dev-password"
 SUPABASE_SECRET_KEY="sb_secret_..."
 SUPABASE_DB_PASSWORD="your-supabase-db-password"
+
+# Gmail SMTP (use App Password — not your Google account password)
+SMTP_USER="your-clinic@gmail.com"
+SMTP_APP_PASSWORD="xxxx xxxx xxxx xxxx"
+SMTP_FROM_NAME="Shiv Dental Clinic"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"

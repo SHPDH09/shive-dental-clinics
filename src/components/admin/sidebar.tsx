@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Star,
   MapPin,
+  Mail,
   Shield,
   PanelLeftClose,
   Sparkles,
@@ -39,6 +40,7 @@ const iconMap = {
   doctors: UserCircle,
   branches: MapPin,
   messages: MessageSquare,
+  communications: Mail,
   reports: BarChart3,
   admins: Shield,
   settings: Settings,
@@ -107,6 +109,18 @@ export function AdminSidebar({ onHide }: Props) {
             </Link>
           );
         })}
+        <Link
+          href="/admin/communications"
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+            pathname.startsWith("/admin/communications")
+              ? "bg-sky-50 text-[var(--primary)]"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+          )}
+        >
+          <Mail className="h-4 w-4 shrink-0" />
+          Communications
+        </Link>
         {showHeroSlides && (
           <Link
             href="/admin/hero-slides"

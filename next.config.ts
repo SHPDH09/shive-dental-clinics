@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     "@prisma/adapter-pg",
     "@prisma/adapter-neon",
     "@neondatabase/serverless",
+    "nodemailer",
+    "imapflow",
+    "mailparser",
   ],
   images: {
     remotePatterns: [

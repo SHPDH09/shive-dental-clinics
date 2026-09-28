@@ -35,8 +35,11 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           HEALTHCHECK_TOKEN: ${{ secrets.HEALTHCHECK_TOKEN }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
         run: |
-          for name in AUTH_SECRET SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD DATABASE_URL ADMIN_PASSWORD ADMIN_LOGIN_ID ADMIN_EMAIL HEALTHCHECK_TOKEN; do
+          for name in AUTH_SECRET SUPABASE_SECRET_KEY SUPABASE_DB_PASSWORD DATABASE_URL ADMIN_PASSWORD ADMIN_LOGIN_ID ADMIN_EMAIL HEALTHCHECK_TOKEN SMTP_USER SMTP_APP_PASSWORD SMTP_FROM_NAME; do
             val="${!name:-}"
             if [ -n "$val" ]; then
               printf '%s' "$val" | npx wrangler secret put "$name" || echo "warn: failed $name"

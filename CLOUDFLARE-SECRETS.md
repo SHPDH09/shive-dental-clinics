@@ -24,6 +24,16 @@ Admin **login password** lives in **Supabase** (`Admin` table + Supabase Auth us
 
 Optional: `DATABASE_URL` — full Postgres URL if not using `SUPABASE_DB_PASSWORD`.
 
+### Gmail SMTP (appointment emails + admin Communications)
+
+| Name | Example |
+|------|---------|
+| `SMTP_USER` | `shivedentalclinic.com@gmail.com` |
+| `SMTP_APP_PASSWORD` | Google App Password (16 chars, no spaces) |
+| `SMTP_FROM_NAME` | `Shiv Dental Clinic` |
+
+Uses `smtp.gmail.com:587` and IMAP `imap.gmail.com:993` for inbox sync in **Admin → Communications**.
+
 ## CLI (your PC, after `wrangler login` or valid `CLOUDFLARE_API_TOKEN`)
 
 ```bash
