@@ -4,16 +4,18 @@
  * Does not read .env — pass values via environment or CI secrets.
  *
  * Example:
- *   AUTH_SECRET=... ADMIN_PASSWORD=... SUPABASE_SECRET_KEY=... SUPABASE_DB_PASSWORD=... \
- *     npm run secrets:cloudflare
+ *   AUTH_SECRET=... ADMIN_PASSWORD=... npm run secrets:cloudflare
  */
 import { spawnSync } from "node:child_process";
 
 const SECRETS = [
   "AUTH_SECRET",
-  "ADMIN_PASSWORD",
   "SUPABASE_SECRET_KEY",
   "SUPABASE_DB_PASSWORD",
+  "ADMIN_LOGIN_ID",
+  "ADMIN_EMAIL",
+  "ADMIN_PASSWORD",
+  "HEALTHCHECK_TOKEN",
   "DATABASE_URL",
 ];
 
