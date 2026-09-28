@@ -6,7 +6,8 @@ import { Menu, Phone, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ClinicNameAlternate } from "@/components/public/clinic-name-alternate";
-import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
+import { CLINIC_LOGO_URL, CLINIC_STOREFRONT_BG } from "@/lib/branding";
+import Image from "next/image";
 
 const nav = [
   { href: "/services", label: "Services" },
@@ -24,8 +25,9 @@ type HeaderProps = {
   backgroundImageUrl?: string | null;
 };
 
-export function PublicHeader({ clinicName, phone, backgroundImageUrl }: HeaderProps) {
+export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }: HeaderProps) {
   const bgUrl = backgroundImageUrl?.trim() || CLINIC_STOREFRONT_BG;
+  const logo = logoUrl?.trim() || CLINIC_LOGO_URL;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -40,7 +42,15 @@ export function PublicHeader({ clinicName, phone, backgroundImageUrl }: HeaderPr
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--primary)]/82" />
 
       <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <Link href="/" className="font-bold text-white">
+        <Link href="/" className="flex min-w-0 items-center gap-3 font-bold text-white">
+          <Image
+            src={logo}
+            alt={`${clinicName} logo`}
+            width={48}
+            height={48}
+            className="h-11 w-11 shrink-0 rounded-lg object-contain ring-1 ring-white/25"
+            priority
+          />
           <ClinicNameAlternate englishName={clinicName} className="text-white" />
         </Link>
 
