@@ -25,8 +25,14 @@ export function useAdminList<T>(path: string, query?: Record<string, string>) {
       .then((res) => {
         if (!cancelled) setData(res);
       })
-      .catch(() => {
-        if (!cancelled) setError("Failed to load data");
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          const msg =
+            err && typeof err === "object" && "message" in err && typeof err.message === "string"
+              ? err.message
+              : "Failed to load data";
+          setError(msg);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

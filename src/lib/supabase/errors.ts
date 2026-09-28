@@ -15,6 +15,9 @@ export function mapSupabaseErrorMessage(message: string): string {
   if (/Could not find the 'address' column.*Branch/i.test(message)) {
     return 'Branch table is outdated — run supabase/migration-branches-premium.sql in Supabase SQL Editor.';
   }
+  if (/Lead/i.test(message) && /column|schema cache/i.test(message)) {
+    return "Lead table needs update — run npm run supabase:apply-premium (migration-core-admin-tables.sql).";
+  }
   if (/relation.*does not exist|Could not find the table/i.test(message)) {
     if (/ServiceCategory/i.test(message)) {
       return (

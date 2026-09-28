@@ -39,6 +39,7 @@ async function main() {
   });
   await client.connect();
 
+  await runFile(client, "supabase/migration-core-admin-tables.sql");
   await runFile(client, "supabase/migration-admins-premium.sql");
   await runFile(client, "supabase/migration-doctors-premium.sql");
   await runFile(client, "supabase/migration-branches-premium.sql");

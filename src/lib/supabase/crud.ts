@@ -9,8 +9,14 @@ import { NextResponse } from "next/server";
 
 function supabaseHttpStatus(message: string): number {
   if (/permission denied|row-level security|RLS|42501/i.test(message)) return 403;
-  if (/Could not find the table|does not exist|PGRST205/i.test(message)) return 503;
-  return 400;
+  if (
+    /Could not find the table|does not exist|PGRST205|schema cache|column.*does not exist/i.test(
+      message,
+    )
+  ) {
+    return 503;
+  }
+  return 503;
 }
 
 export type SupabaseModelName =
@@ -95,7 +101,10 @@ export async function supabaseList(
   }
 
   const { data, error, count } = await query;
-  if (error) throw error;
+  if (error) {
+    console.error(`supabaseList ${table}:`, error.message, error.details, error.hint);
+    throw error;
+  }
   return { items: data ?? [], total: count ?? 0 };
 }
 
