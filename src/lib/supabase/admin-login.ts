@@ -102,16 +102,15 @@ async function supabaseJsPasswordSignIn(
 
 function sessionUserFromAuth(
   authUser: SupabaseAuthUser,
-  admin: AdminRow | null,
+  admin: AdminRow,
   email: string,
   accessToken?: string,
 ): AdminAuthResult {
-  const meta = authUser.user_metadata ?? {};
   return {
-    id: admin?.id ?? authUser.id,
-    email,
-    name: admin?.name ?? meta.name ?? "Shiv Dental Admin",
-    role: admin?.role ?? meta.role ?? "SUPER_ADMIN",
+    id: admin.id,
+    email: admin.email ?? email,
+    name: admin.name,
+    role: admin.role,
     accessToken,
   };
 }
@@ -128,7 +127,24 @@ export async function authenticateAdmin(loginId: string, password: string): Prom
       (await supabasePasswordSignIn(email, password)) ??
       (await supabaseJsPasswordSignIn(email, password));
     if (auth) {
-      return sessionUserFromAuth(auth.user, admin, email, auth.accessToken);
+      let linked = admin;
+      if (!linked && email) {
+        linked = await findAdminRow(email);
+      }
+      if (!linked?.id) {
+        return null;
+      }
+      if (linked.active === false) {
+        return null;
+      }
+      await recordLoginSuccess(linked.id);
+      void writeAdminAudit({
+        adminId: linked.id,
+        adminName: linked.name,
+        action: "LOGIN",
+        entityType: "session",
+      });
+      return sessionUserFromAuth(auth.user, linked, email, auth.accessToken);
     }
   }
 

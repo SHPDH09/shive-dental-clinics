@@ -9,6 +9,7 @@ import { ImageUploadField } from "@/components/admin/image-upload-field";
 
 type Me = {
   id: string;
+  dbLinked?: boolean;
   name: string;
   email: string | null;
   phone: string | null;
@@ -132,9 +133,17 @@ export function AdminProfileView() {
         </div>
       </div>
 
+      {!me.dbLinked && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Your sign-in is not linked to a clinic admin record. Ask a super admin to add{" "}
+          <strong>{me.email ?? "your email"}</strong> under <strong>Admins</strong>, then sign out and sign in
+          again.
+        </div>
+      )}
+
       {message && (
         <p
-          className={`text-sm ${message.includes("failed") || message.includes("invalid") || message.includes("missing") || message.includes("not found") || message.includes("Incorrect") ? "text-red-600" : "text-teal-700"}`}
+          className={`text-sm ${message.includes("failed") || message.includes("invalid") || message.includes("missing") || message.includes("not found") || message.includes("Incorrect") || message.includes("linked") || message.includes("not registered") ? "text-red-600" : "text-teal-700"}`}
         >
           {message}
         </p>

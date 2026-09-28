@@ -14,9 +14,13 @@ export async function GET() {
   const { session, admin, error } = await requireAdminContext();
   if (error) return error;
 
+  const adminDbId = await resolveAdminDbId(session!.user.id, session!.user.email);
+  const dbLinked = Boolean(admin && adminDbId);
+
   const matrix = admin?.permissions ?? mergePermissions(session!.user.role, null);
 
   return NextResponse.json({
+    dbLinked,
     id: admin?.id ?? session!.user.id,
     name: admin?.name ?? session!.user.name,
     email: admin?.email ?? session!.user.email,

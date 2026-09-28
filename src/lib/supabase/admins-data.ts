@@ -82,13 +82,27 @@ export async function findAdminById(id: string) {
 
 export async function findAdminByLogin(loginId: string) {
   const sb = await getAdminSupabaseClient();
+  const trimmed = loginId.trim();
   const { data, error } = await sb
     .from("Admin")
     .select("*")
-    .or(`loginId.eq.${loginId},email.eq.${loginId}`)
+    .or(`loginId.eq.${trimmed},email.eq.${trimmed}`)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  if (data) return data;
+
+  if (trimmed.includes("@")) {
+    const lower = trimmed.toLowerCase();
+    const { data: byEmail, error: err2 } = await sb
+      .from("Admin")
+      .select("*")
+      .ilike("email", lower)
+      .maybeSingle();
+    if (err2) throw err2;
+    if (byEmail) return byEmail;
+  }
+
+  return null;
 }
 
 export async function updateAdminRow(id: string, data: Record<string, unknown>) {
