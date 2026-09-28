@@ -17,6 +17,10 @@ export async function getMailTransport(cfg: SmtpConfig) {
     host: cfg.host,
     port: cfg.port,
     secure: cfg.secure,
+    requireTLS: !cfg.secure && cfg.port === 587,
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 30_000,
     auth: { user: cfg.user, pass: cfg.pass },
   });
 }
@@ -41,16 +45,20 @@ export async function sendMail(input: SendMailInput): Promise<{ ok: true; messag
       html: input.html ?? input.text.replace(/\n/g, "<br/>"),
     });
 
-    await saveSentMail({
-      id: createId(),
-      toAddresses: toList,
-      ccAddresses: input.cc ?? [],
-      fromAddress: cfg.fromEmail,
-      subject: input.subject,
-      bodyText: input.text,
-      bodyHtml: input.html,
-      sentAt: new Date(),
-    });
+    try {
+      await saveSentMail({
+        id: createId(),
+        toAddresses: toList,
+        ccAddresses: input.cc ?? [],
+        fromAddress: cfg.fromEmail,
+        subject: input.subject,
+        bodyText: input.text,
+        bodyHtml: input.html,
+        sentAt: new Date(),
+      });
+    } catch (storeErr) {
+      console.warn("saveSentMail (non-fatal):", storeErr);
+    }
 
     return { ok: true, messageId: info.messageId ?? createId() };
   } catch (e) {

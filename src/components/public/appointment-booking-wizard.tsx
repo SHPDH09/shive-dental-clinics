@@ -134,7 +134,10 @@ export function AppointmentBookingWizard({
     if (step === 3) return Boolean(serviceId);
     if (step === 4) return Boolean(date);
     if (step === 5) return Boolean(time);
-    if (step === 6) return patientName.trim().length >= 2 && phone.trim().length >= 10;
+    if (step === 6) {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+      return patientName.trim().length >= 2 && phone.trim().length >= 10 && emailOk;
+    }
     return false;
   };
 
@@ -163,7 +166,12 @@ export function AppointmentBookingWizard({
         setError(typeof json.error === "string" ? json.error : "Could not book. Please try another time.");
         return;
       }
-      setSuccess(`Thank you! Your reference is ${json.appointmentId}. We will confirm shortly.`);
+      const emailNote = json.confirmationEmailSent
+        ? " A confirmation email has been sent to your inbox."
+        : json.emailWarning
+          ? ` Note: ${json.emailWarning}.`
+          : "";
+      setSuccess(`Thank you! Your reference is ${json.appointmentId}.${emailNote} We will confirm shortly.`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -335,8 +343,17 @@ export function AppointmentBookingWizard({
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="sm:col-span-2">
-              <Label>Email (optional)</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                required
+              />
+              {step === 6 && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (
+                <p className="mt-1 text-xs text-red-600">Enter a valid email for your confirmation.</p>
+              ) : null}
             </div>
             <div className="sm:col-span-2">
               <Label>Message (optional)</Label>

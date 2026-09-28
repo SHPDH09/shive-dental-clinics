@@ -4,7 +4,7 @@ import { z } from "zod";
 export const appointmentPublicSchema = z.object({
   patientName: z.string().min(2, "Name is required"),
   phone: z.string().min(10, "Valid phone number required"),
-  email: z.string().email("Valid email required").optional().or(z.literal("")),
+  email: z.string().trim().min(1, "Email is required for confirmation").email("Valid email required"),
   doctorId: z.string().optional(),
   branchId: z.string().optional(),
   treatmentName: z.string().min(1, "Select a treatment"),

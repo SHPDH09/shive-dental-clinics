@@ -85,7 +85,12 @@ export function AppointmentForm({
         setError("Please check your details and try again.");
         return;
       }
-      setSuccess(`Thank you! Your reference is ${json.appointmentId}. We will confirm shortly.`);
+      const emailNote = json.confirmationEmailSent
+        ? " A confirmation email has been sent to your inbox."
+        : json.emailWarning
+          ? ` Note: ${json.emailWarning}.`
+          : "";
+      setSuccess(`Thank you! Your reference is ${json.appointmentId}.${emailNote} We will confirm shortly.`);
       reset({
         patientName: "",
         phone: "",
@@ -136,8 +141,9 @@ export function AppointmentForm({
           {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
         </div>
         <div>
-          <Label>Email (optional)</Label>
-          <Input type="email" {...register("email")} placeholder="you@email.com" />
+          <Label>Email</Label>
+          <Input type="email" {...register("email")} placeholder="you@email.com" required />
+          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
         <div>
           <Label>Treatment</Label>

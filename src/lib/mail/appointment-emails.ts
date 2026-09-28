@@ -1,7 +1,11 @@
+import {
+  buildAppointmentBookedHtml,
+  buildAppointmentBookedText,
+} from "@/lib/mail/appointment-email-template";
 import { sendMail } from "@/lib/mail/send-mail";
 import { readWorkerEnv } from "@/lib/worker-env";
 
-type AppointmentMailContext = {
+export type AppointmentMailContext = {
   patientName: string;
   email?: string | null;
   phone: string;
@@ -18,26 +22,19 @@ function clinicPhone(): string {
 
 export async function sendAppointmentBookedEmail(ctx: AppointmentMailContext) {
   const to = ctx.email?.trim();
-  if (!to) return { ok: false as const, skipped: true };
+  if (!to) return { ok: false as const, skipped: true, error: "Patient email missing" };
 
-  const subject = `Appointment received — ${ctx.appointmentCode} | Shiv Dental Clinic`;
-  const text = `Dear ${ctx.patientName},
+  const phone = clinicPhone();
+  const subject = `Appointment booked — Ref ${ctx.appointmentCode} | Shiv Dental Clinic`;
+  const text = buildAppointmentBookedText(ctx, phone);
+  const html = buildAppointmentBookedHtml(ctx, phone);
 
-Thank you for booking with Shiv Dental Clinic.
+  const replyTo =
+    readWorkerEnv("SMTP_FROM_EMAIL")?.trim() ||
+    readWorkerEnv("ADMIN_EMAIL")?.trim() ||
+    readWorkerEnv("SMTP_USER")?.trim();
 
-Reference: ${ctx.appointmentCode}
-Treatment: ${ctx.treatmentName}
-Date: ${ctx.appointmentDate}
-Time: ${ctx.appointmentTime}
-Phone: ${ctx.phone}
-
-Your request is pending confirmation. Our team will contact you shortly.
-
-For urgent help call ${clinicPhone()}.
-
-— Shiv Dental Clinic`;
-
-  return sendMail({ to, subject, text });
+  return sendMail({ to, subject, text, html, replyTo });
 }
 
 export async function sendAppointmentStatusEmail(

@@ -8,6 +8,8 @@ import { createAppointmentEnquiry } from "@/lib/create-appointment-enquiry";
 import { createNotification } from "@/lib/notifications";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   try {
     const limited = enforceRateLimit(req, "appointment", 12, 60 * 60 * 1000);
@@ -81,23 +83,38 @@ export async function POST(req: Request) {
       link: "/admin/appointments",
     });
 
+    const mailCtx = {
+      patientName: data.patientName,
+      email: data.email,
+      phone: data.phone,
+      treatmentName: data.treatmentName,
+      appointmentCode: appointment.appointmentCode,
+      appointmentDate: data.appointmentDate,
+      appointmentTime: data.appointmentTime,
+    };
+
+    let patientEmailSent = false;
+    let emailWarning: string | undefined;
     try {
       const { sendAppointmentBookedEmail, notifyAdminNewAppointment } = await import(
         "@/lib/mail/appointment-emails"
       );
-      const mailCtx = {
-        patientName: data.patientName,
-        email: data.email,
-        phone: data.phone,
-        treatmentName: data.treatmentName,
-        appointmentCode: appointment.appointmentCode,
-        appointmentDate: data.appointmentDate,
-        appointmentTime: data.appointmentTime,
-      };
-      void sendAppointmentBookedEmail(mailCtx);
-      void notifyAdminNewAppointment(mailCtx);
-    } catch {
-      /* email non-blocking */
+      const [patientResult, adminResult] = await Promise.all([
+        sendAppointmentBookedEmail(mailCtx),
+        notifyAdminNewAppointment(mailCtx),
+      ]);
+      if (patientResult.ok) {
+        patientEmailSent = true;
+      } else if (!("skipped" in patientResult && patientResult.skipped)) {
+        emailWarning = patientResult.error ?? "Could not send confirmation email";
+        console.error("Appointment patient email:", patientResult);
+      }
+      if (!adminResult.ok && !("skipped" in adminResult && adminResult.skipped)) {
+        console.error("Appointment admin notify:", adminResult);
+      }
+    } catch (mailErr) {
+      console.error("Appointment email error:", mailErr);
+      emailWarning = "Could not send confirmation email";
     }
 
     try {
@@ -123,6 +140,8 @@ export async function POST(req: Request) {
       success: true,
       appointmentId: appointment.appointmentCode,
       id: appointment.id,
+      confirmationEmailSent: patientEmailSent,
+      ...(emailWarning ? { emailWarning } : {}),
     });
   } catch (error) {
     console.error(error);

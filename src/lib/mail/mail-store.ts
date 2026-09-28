@@ -1,4 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
+import { getSupabaseSecretKey } from "@/lib/supabase/env";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 
 export type MailFolder = "inbox" | "sent" | "trash";
@@ -77,6 +79,13 @@ export async function getMailboxMessage(id: string) {
   return mapRow(data as Record<string, unknown>);
 }
 
+async function mailboxSupabaseClient() {
+  if (getSupabaseSecretKey()) {
+    return createSupabaseServiceClient();
+  }
+  return getAdminSupabaseClient();
+}
+
 export async function saveSentMail(input: {
   id?: string;
   fromAddress: string;
@@ -87,7 +96,7 @@ export async function saveSentMail(input: {
   bodyHtml?: string;
   sentAt: Date;
 }) {
-  const sb = await getAdminSupabaseClient();
+  const sb = await mailboxSupabaseClient();
   const now = new Date().toISOString();
   const row = {
     id: input.id ?? createId(),
