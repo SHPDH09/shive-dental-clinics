@@ -30,7 +30,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="admin-canvas flex min-h-screen">
       {!sidebarHidden && <AdminSidebar onHide={toggleSidebar} />}
       <div className="relative flex min-w-0 flex-1 flex-col">
         <AdminHeader sidebarHidden={sidebarHidden} onShowSidebar={toggleSidebar} />

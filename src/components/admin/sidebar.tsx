@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
+import { CLINIC_LOGO_URL } from "@/lib/branding";
 import { ADMIN_NAV, can, type PermissionMatrix } from "@/lib/rbac/permissions";
 import {
   BarChart3,
@@ -70,18 +72,65 @@ export function AdminSidebar({ onHide }: Props) {
     return can(permissions, link.resource, "view");
   });
 
+  const navGroups: { label: string; resources: (keyof typeof iconMap)[] }[] = [
+    {
+      label: "Main",
+      resources: ["dashboard", "appointments", "patients", "leads", "reports"],
+    },
+    {
+      label: "Content",
+      resources: [
+        "testimonials",
+        "gallery",
+        "videos",
+        "beforeAfter",
+        "services",
+        "doctors",
+        "branches",
+        "messages",
+      ],
+    },
+    {
+      label: "System",
+      resources: ["admins", "settings"],
+    },
+  ];
+
   const showHeroSlides = permissions ? can(permissions, "settings", "view") : true;
 
+  const navLink = (href: string, label: string, icon: React.ReactNode, active: boolean) => (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+        active ? "admin-nav-active text-white" : "text-slate-300 hover:bg-white/8 hover:text-white",
+      )}
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-        <Link href="/admin" className="font-bold text-[var(--primary)]">
-          Shiv Admin
+    <aside className="admin-sidebar hidden w-[17.5rem] shrink-0 flex-col border-r lg:flex">
+      <div className="flex h-[4.25rem] shrink-0 items-center justify-between border-b border-white/10 px-4">
+        <Link href="/admin" className="flex min-w-0 items-center gap-3">
+          <Image
+            src={CLINIC_LOGO_URL}
+            alt="Shiv Dental Clinic"
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-lg object-contain ring-1 ring-white/20"
+          />
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-bold text-white">Shiv Dental</p>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-amber-400/90">Admin</p>
+          </div>
         </Link>
         {onHide && (
           <button
             type="button"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-50"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
             aria-label="Hide menu"
             onClick={onHide}
           >
@@ -89,79 +138,62 @@ export function AdminSidebar({ onHide }: Props) {
           </button>
         )}
       </div>
-      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-3">
-        {links.map(({ href, label, resource }) => {
-          const Icon = iconMap[resource as keyof typeof iconMap] ?? LayoutDashboard;
-          const active = pathname === href || (href !== "/admin" && pathname.startsWith(href));
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
+        {navGroups.map((group) => {
+          const groupLinks = links.filter((l) =>
+            group.resources.includes(l.resource as keyof typeof iconMap),
+          );
+          if (groupLinks.length === 0) return null;
           return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                active
-                  ? "bg-sky-50 text-[var(--primary)]"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </Link>
+            <div key={group.label} className="mb-2">
+              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                {group.label}
+              </p>
+              {groupLinks.map(({ href, label, resource }) => {
+                const Icon = iconMap[resource as keyof typeof iconMap] ?? LayoutDashboard;
+                const active = pathname === href || (href !== "/admin" && pathname.startsWith(href));
+                return (
+                  <div key={href}>
+                    {navLink(href, label, <Icon className="h-4 w-4 shrink-0 opacity-90" />, active)}
+                  </div>
+                );
+              })}
+            </div>
           );
         })}
-        <Link
-          href="/admin/communications"
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-            pathname.startsWith("/admin/communications")
-              ? "bg-sky-50 text-[var(--primary)]"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-          )}
-        >
-          <Mail className="h-4 w-4 shrink-0" />
-          Communications
-        </Link>
-        {showHeroSlides && (
-          <Link
-            href="/admin/hero-slides"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-              pathname.startsWith("/admin/hero-slides")
-                ? "bg-sky-50 text-[var(--primary)]"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-            )}
-          >
-            <Sparkles className="h-4 w-4 shrink-0" />
-            Hero slides
-          </Link>
+        {navLink(
+          "/admin/communications",
+          "Communications",
+          <Mail className="h-4 w-4 shrink-0 opacity-90" />,
+          pathname.startsWith("/admin/communications"),
         )}
-        {role === "SUPER_ADMIN" && (
-          <Link
-            href="/admin/super"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-              pathname.startsWith("/admin/super")
-                ? "bg-sky-50 text-[var(--primary)]"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-            )}
-          >
-            <Shield className="h-4 w-4 shrink-0" />
-            Super admin panel
-          </Link>
-        )}
-        <Link
-          href="/admin/profile"
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-            pathname === "/admin/profile"
-              ? "bg-sky-50 text-[var(--primary)]"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+        {showHeroSlides &&
+          navLink(
+            "/admin/hero-slides",
+            "Hero slides",
+            <Sparkles className="h-4 w-4 shrink-0 opacity-90" />,
+            pathname.startsWith("/admin/hero-slides"),
           )}
-        >
-          <UserCircle className="h-4 w-4 shrink-0" />
-          My profile
-        </Link>
+        {role === "SUPER_ADMIN" &&
+          navLink(
+            "/admin/super",
+            "Super admin",
+            <Shield className="h-4 w-4 shrink-0 opacity-90" />,
+            pathname.startsWith("/admin/super"),
+          )}
+        <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          Account
+        </p>
+        {navLink(
+          "/admin/profile",
+          "My profile",
+          <UserCircle className="h-4 w-4 shrink-0 opacity-90" />,
+          pathname === "/admin/profile",
+        )}
       </nav>
+      <div className="border-t border-white/10 p-4">
+        <p className="text-center text-[10px] text-slate-500">Shiv Dental Clinic · Secure admin</p>
+      </div>
     </aside>
   );
 }

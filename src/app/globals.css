@@ -58,6 +58,30 @@ body {
   box-shadow: var(--shadow);
 }
 
+.admin-canvas {
+  background:
+    radial-gradient(ellipse 120% 80% at 100% -20%, rgb(14 165 233 / 0.08), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 0% 100%, rgb(13 148 136 / 0.06), transparent 45%),
+    #f1f5f9;
+}
+
+.admin-sidebar {
+  background: linear-gradient(180deg, #0b1f3a 0%, #0f172a 48%, #0c4a6e 100%);
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+.admin-nav-active {
+  background: linear-gradient(90deg, rgb(234 179 8 / 0.22), rgb(14 165 233 / 0.12));
+  box-shadow: inset 3px 0 0 #eab308;
+  color: #fff;
+}
+
+.admin-stat-glow {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.8) inset,
+    0 12px 40px -16px rgb(3 105 161 / 0.2);
+}
+
 .btn-primary {
   @apply inline-flex items-center justify-center rounded-full bg-[var(--cta)] px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cta)];
 }
