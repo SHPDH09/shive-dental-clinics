@@ -1,4 +1,6 @@
 import { endOfDay, startOfDay, subDays } from "date-fns";
+import type { DashboardDateRange } from "@/lib/dashboard/date-range";
+import { parseDashboardDateRange } from "@/lib/dashboard/date-range";
 import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 
 export type DashboardPayload = {
@@ -22,11 +24,16 @@ export type DashboardPayload = {
   };
 };
 
-export async function buildDashboardSupabase(branchId?: string): Promise<DashboardPayload> {
+export async function buildDashboardSupabase(
+  branchId?: string,
+  range?: DashboardDateRange,
+): Promise<DashboardPayload> {
   const sb = await getAdminSupabaseClient();
+  const period = range ?? parseDashboardDateRange(null, null);
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
-  const since30 = subDays(new Date(), 30).toISOString();
+  const rangeStartIso = period.from.toISOString();
+  const rangeEndIso = period.to.toISOString();
 
   const [
     todayAppointments,
@@ -97,8 +104,10 @@ export async function buildDashboardSupabase(branchId?: string): Promise<Dashboa
     (async () => {
       let q = sb
         .from("Appointment")
-        .select("appointmentDate,treatmentName")
-        .gte("appointmentDate", since30);
+        .select("appointmentDate,treatmentName,status")
+        .gte("appointmentDate", rangeStartIso)
+        .lte("appointmentDate", rangeEndIso)
+        .neq("status", "CANCELLED");
       if (branchId) q = q.eq("branchId", branchId);
       const { data, error } = await q;
       if (error) throw error;
@@ -111,7 +120,8 @@ export async function buildDashboardSupabase(branchId?: string): Promise<Dashboa
     sb
       .from("Patient")
       .select("createdAt")
-      .gte("createdAt", subDays(new Date(), 90).toISOString())
+      .gte("createdAt", rangeStartIso)
+      .lte("createdAt", rangeEndIso)
       .then((r) => {
         if (r.error) throw r.error;
         return r.data ?? [];

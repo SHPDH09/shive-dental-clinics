@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { adminFetch } from "@/lib/admin-client";
+import { AdminServiceSearch } from "@/components/admin/admin-service-search";
 import { LoadingState } from "@/components/admin/loading-state";
 import { StatCard } from "@/components/admin/stat-card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,9 @@ import {
   BarChart3,
   IndianRupee,
   Stethoscope,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react";
 import {
   Area,
@@ -39,8 +43,14 @@ import { formatCurrency } from "@/lib/utils";
 
 type BranchOption = { id: string; name: string };
 
+const ZOOM_KEY = "shiv-admin-dash-zoom";
+const MIN_ZOOM = 80;
+const MAX_ZOOM = 120;
+const ZOOM_STEP = 10;
+
 type DashboardData = {
   dbUnavailable?: boolean;
+  dateRange?: { from: string; to: string };
   branchId: string | null;
   branchName: string | null;
   cards: {
@@ -70,20 +80,56 @@ const quickActions = [
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
 ];
 
+function defaultFromDate() {
+  return format(subDays(new Date(), 29), "yyyy-MM-dd");
+}
+function defaultToDate() {
+  return format(new Date(), "yyyy-MM-dd");
+}
+
 export function DashboardView() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [branchId, setBranchId] = useState("");
+  const [fromDate, setFromDate] = useState(defaultFromDate);
+  const [toDate, setToDate] = useState(defaultToDate);
+  const [zoom, setZoom] = useState(100);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(ZOOM_KEY);
+      if (saved) {
+        const n = Number.parseInt(saved, 10);
+        if (n >= MIN_ZOOM && n <= MAX_ZOOM) setZoom(n);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setZoomLevel = (next: number) => {
+    const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next));
+    setZoom(clamped);
+    try {
+      localStorage.setItem(ZOOM_KEY, String(clamped));
+    } catch {
+      /* ignore */
+    }
+  };
 
   const load = useCallback(async () => {
     setError(null);
     setRefreshing(true);
     try {
-      const q = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
-      const dash = await adminFetch<DashboardData>(`/api/admin/dashboard${q}`);
+      const params = new URLSearchParams();
+      if (branchId) params.set("branchId", branchId);
+      if (fromDate) params.set("from", fromDate);
+      if (toDate) params.set("to", toDate);
+      const qs = params.toString();
+      const dash = await adminFetch<DashboardData>(`/api/admin/dashboard${qs ? `?${qs}` : ""}`);
       setData(dash);
       setUpdatedAt(new Date());
     } catch {
@@ -91,7 +137,7 @@ export function DashboardView() {
     } finally {
       setRefreshing(false);
     }
-  }, [branchId]);
+  }, [branchId, fromDate, toDate]);
 
   useEffect(() => {
     adminFetch<{ items: BranchOption[] }>("/api/admin/branches?limit=100")
@@ -120,10 +166,131 @@ export function DashboardView() {
 
   const funnelData = data.charts.leadFunnel.filter((f) => f.count > 0);
 
-  const totalAppts30 = chartData.reduce((s, d) => s + d.count, 0);
+  const totalApptsRange = chartData.reduce((s, d) => s + d.count, 0);
+  const rangeLabel =
+    data.dateRange?.from && data.dateRange?.to
+      ? `${data.dateRange.from} → ${data.dateRange.to}`
+      : `${fromDate} → ${toDate}`;
+
+  const applyPreset = (days: number) => {
+    setToDate(defaultToDate());
+    setFromDate(format(subDays(new Date(), days - 1), "yyyy-MM-dd"));
+  };
 
   return (
-    <div className="space-y-8 animate-fade-up">
+    <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
+      <div className="sticky top-0 z-20 -mx-1 space-y-4 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-5 shadow-sm backdrop-blur-md md:px-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-600">Overview of clinic activity · {rangeLabel}</p>
+        </div>
+        <div className="flex justify-center">
+          <AdminServiceSearch />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+          <label className="sr-only" htmlFor="dash-from">
+            From date
+          </label>
+          <input
+            id="dash-from"
+            type="date"
+            value={fromDate}
+            max={toDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800"
+          />
+          <span className="text-xs font-medium text-slate-400">to</span>
+          <label className="sr-only" htmlFor="dash-to">
+            To date
+          </label>
+          <input
+            id="dash-to"
+            type="date"
+            value={toDate}
+            min={fromDate}
+            max={defaultToDate()}
+            onChange={(e) => setToDate(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800"
+          />
+          <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={() => applyPreset(7)}>
+            7d
+          </Button>
+          <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={() => applyPreset(30)}>
+            30d
+          </Button>
+          <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={() => applyPreset(90)}>
+            90d
+          </Button>
+          <select
+            aria-label="Branch"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800"
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
+          >
+            <option value="">All branches</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0"
+              aria-label="Decrease dashboard size"
+              disabled={zoom <= MIN_ZOOM}
+              onClick={() => setZoomLevel(zoom - ZOOM_STEP)}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[3rem] text-center text-xs font-semibold text-slate-600">{zoom}%</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0"
+              aria-label="Increase dashboard size"
+              disabled={zoom >= MAX_ZOOM}
+              onClick={() => setZoomLevel(zoom + ZOOM_STEP)}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0"
+              aria-label="Reset dashboard size"
+              onClick={() => setZoomLevel(100)}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="rounded-full"
+            disabled={refreshing}
+            onClick={() => void load()}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          {updatedAt && <span className="text-xs text-slate-500">Updated {format(updatedAt, "h:mm a")}</span>}
+        </div>
+        {data.branchName && (
+          <p className="text-center text-xs font-medium text-sky-700">Branch: {data.branchName}</p>
+        )}
+      </div>
+
+      <div
+        className="origin-top space-y-8 animate-fade-up pb-8"
+        style={{ zoom: zoom / 100 }}
+      >
       {data.dbUnavailable && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Dashboard could not load live data from the database. Check Cloudflare secrets{" "}
@@ -143,22 +310,6 @@ export function DashboardView() {
               : "No appointments on the calendar for today yet."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="rounded-full"
-            disabled={refreshing}
-            onClick={() => void load()}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          {updatedAt && (
-            <span className="text-xs text-slate-500">Updated {format(updatedAt, "h:mm a")}</span>
-          )}
-        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -177,27 +328,6 @@ export function DashboardView() {
             <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" />
           </Link>
         ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
-        <label className="text-sm font-semibold text-slate-700">Branch report</label>
-        <select
-          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-800 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
-          value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
-        >
-          <option value="">All branches</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-        {data.branchName && (
-          <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
-            {data.branchName}
-          </span>
-        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -252,8 +382,8 @@ export function DashboardView() {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm xl:col-span-2">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <h2 className="font-semibold text-slate-900">Appointments · 30 days</h2>
-              <p className="text-xs text-slate-500">{totalAppts30} total in range</p>
+              <h2 className="font-semibold text-slate-900">Appointments by date</h2>
+              <p className="text-xs text-slate-500">{totalApptsRange} in selected range</p>
             </div>
           </div>
           <div className="mt-4 h-72">
@@ -347,7 +477,8 @@ export function DashboardView() {
         </div>
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <h2 className="font-semibold text-slate-900">Patient growth · 90 days</h2>
+          <h2 className="font-semibold text-slate-900">Patient growth</h2>
+          <p className="text-xs text-slate-500">New patients in selected range</p>
           <div className="mt-4 h-56">
             {growthData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -376,6 +507,7 @@ export function DashboardView() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

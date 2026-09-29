@@ -112,7 +112,7 @@ export function AdminSidebar({ onHide }: Props) {
   );
 
   return (
-    <aside className="admin-sidebar hidden w-[17.5rem] shrink-0 flex-col border-r lg:flex">
+    <aside className="admin-sidebar hidden h-screen w-[17.5rem] shrink-0 flex-col overflow-hidden border-r lg:flex">
       <div className="flex h-[4.25rem] shrink-0 items-center justify-between border-b border-white/10 px-4">
         <Link href="/admin" className="flex min-w-0 items-center gap-3">
           <Image

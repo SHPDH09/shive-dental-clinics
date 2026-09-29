@@ -1,6 +1,7 @@
 import { branchScopeFilter } from "@/lib/admin-context";
 import { requireAdminContext } from "@/lib/api-auth";
 import { buildDashboardSupabase } from "@/lib/dashboard/build-dashboard-supabase";
+import { parseDashboardDateRange } from "@/lib/dashboard/date-range";
 import { prisma } from "@/lib/prisma";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
 import { NextResponse } from "next/server";
@@ -37,11 +38,15 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const branchId =
     searchParams.get("branchId")?.trim() || branchScopeFilter(admin ?? null) || undefined;
+  const dateRange = parseDashboardDateRange(
+    searchParams.get("from"),
+    searchParams.get("to"),
+  );
 
   if (useSupabaseCrud()) {
     try {
-      const payload = await buildDashboardSupabase(branchId);
-      return NextResponse.json(payload);
+      const payload = await buildDashboardSupabase(branchId, dateRange);
+      return NextResponse.json({ ...payload, dateRange: { from: dateRange.fromIso, to: dateRange.toIso } });
     } catch (e) {
       console.error("Dashboard Supabase error:", e);
       return emptyDashboard(branchId, true);
@@ -52,6 +57,8 @@ export async function GET(req: Request) {
   const todayEnd = endOfDay(new Date());
   const monthStart = startOfMonth(new Date());
   const monthEnd = endOfMonth(new Date());
+  const rangeStart = dateRange.from;
+  const rangeEnd = dateRange.to;
 
   const appointmentWhere = branchId ? { branchId } : {};
   const todayWhere = {
@@ -93,21 +100,29 @@ export async function GET(req: Request) {
       prisma.appointment.groupBy({
         by: ["appointmentDate"],
         _count: true,
-        where: { ...appointmentWhere, appointmentDate: { gte: subDays(new Date(), 30) } },
+        where: {
+          ...appointmentWhere,
+          appointmentDate: { gte: rangeStart, lte: rangeEnd },
+          status: { not: "CANCELLED" },
+        },
         orderBy: { appointmentDate: "asc" },
       }),
       prisma.lead.groupBy({ by: ["status"], _count: true }),
       prisma.appointment.groupBy({
         by: ["treatmentName"],
         _count: true,
-        where: appointmentWhere,
+        where: {
+          ...appointmentWhere,
+          appointmentDate: { gte: rangeStart, lte: rangeEnd },
+          status: { not: "CANCELLED" },
+        },
         orderBy: { _count: { treatmentName: "desc" } },
         take: 6,
       }),
       prisma.patient.groupBy({
         by: ["createdAt"],
         _count: true,
-        where: { createdAt: { gte: subDays(new Date(), 90) } },
+        where: { createdAt: { gte: rangeStart, lte: rangeEnd } },
       }),
       prisma.clinicSettings.findUnique({ where: { id: "default" } }),
       branchId ? prisma.branch.findUnique({ where: { id: branchId } }) : Promise.resolve(null),
@@ -139,6 +154,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({
+      dateRange: { from: dateRange.fromIso, to: dateRange.toIso },
       branchId: branchId ?? null,
       branchName: branchRow?.name ?? null,
       cards: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
 import { LoadingState } from "@/components/admin/loading-state";
@@ -103,6 +104,7 @@ function asFaqs(value: unknown): { question: string; answer: string }[] {
 }
 
 export function ServicesView() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<"services" | "categories">("services");
   const [items, setItems] = useState<ServiceRecord[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -117,7 +119,7 @@ export function ServicesView() {
     null,
   );
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterPublished, setFilterPublished] = useState<"" | "true" | "false">("");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
@@ -147,6 +149,11 @@ export function ServicesView() {
       setLoading(false);
     }
   }, [search, filterCategory, filterPublished, sort]);
+
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    setSearch(q);
+  }, [searchParams]);
 
   useEffect(() => {
     void loadCategories();
