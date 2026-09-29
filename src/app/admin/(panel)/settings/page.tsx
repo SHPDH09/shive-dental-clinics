@@ -2,7 +2,9 @@ import { auth } from "@/auth";
 import { loadAdminContext } from "@/lib/admin-context";
 import { can, roleDefaultPermissions } from "@/lib/rbac/permissions";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AdminPageShell } from "@/components/admin/page-shell";
+import { LoadingState } from "@/components/admin/loading-state";
 import { SettingsView } from "@/components/admin/settings-view";
 
 export default async function AdminSettingsPage() {
@@ -23,7 +25,9 @@ export default async function AdminSettingsPage() {
       title="Settings"
       description="Clinic operations, website, communications, security, and integrations"
     >
-      <SettingsView />
+      <Suspense fallback={<LoadingState label="Loading settings…" />}>
+        <SettingsView />
+      </Suspense>
     </AdminPageShell>
   );
 }

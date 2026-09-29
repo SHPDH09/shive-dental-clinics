@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { isSettingsSectionId } from "@/lib/admin/admin-search-index";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import type { AdminSettingsResponse } from "@/lib/clinic-settings/types";
 import {
@@ -44,6 +46,7 @@ function Toggle({
 }
 
 export function SettingsView() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<AdminSettingsResponse | null>(null);
   const [baseline, setBaseline] = useState<AdminSettingsResponse | null>(null);
   const [section, setSection] = useState<SettingsSectionId>("general");
@@ -53,6 +56,11 @@ export function SettingsView() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [secretDraft, setSecretDraft] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const raw = searchParams.get("section");
+    if (raw && isSettingsSectionId(raw)) setSection(raw);
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
