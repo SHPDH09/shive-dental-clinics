@@ -12,6 +12,7 @@ export const appointmentPublicSchema = z.object({
   appointmentDate: z.string().min(1, "Date is required"),
   appointmentTime: z.string().min(1, "Time is required"),
   message: z.string().max(1000).optional(),
+  visitorId: z.string().min(8).max(64).optional(),
 });
 
 const dayScheduleSchema = z.object({

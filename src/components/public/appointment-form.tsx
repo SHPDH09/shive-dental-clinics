@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
+import {
+  getOrCreateVisitorId,
+  setStoredVisitorContact,
+  syncVisitorLead,
+} from "@/lib/visitor-contact";
 
 type FormValues = z.infer<typeof appointmentPublicSchema>;
 
@@ -75,10 +80,16 @@ export function AppointmentForm({
     setError(null);
     setSuccess(null);
     try {
+      const visitorId = getOrCreateVisitorId();
+      setStoredVisitorContact({
+        name: data.patientName,
+        email: data.email,
+        phone: data.phone,
+      });
       const res = await fetch("/api/public/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, visitorId }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -90,6 +101,11 @@ export function AppointmentForm({
         : json.emailWarning
           ? ` Note: ${json.emailWarning}.`
           : "";
+      void syncVisitorLead("/appointment", {
+        name: data.patientName,
+        email: data.email,
+        phone: data.phone,
+      });
       setSuccess(`Thank you! Your reference is ${json.appointmentId}.${emailNote} We will confirm shortly.`);
       reset({
         patientName: "",

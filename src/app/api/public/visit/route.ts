@@ -11,6 +11,7 @@ const bodySchema = z.object({
   email: z.string().max(200).optional().nullable(),
   phone: z.string().max(40).optional().nullable(),
   queryKeys: z.array(z.string().max(80)).max(30).optional(),
+  captureSource: z.string().max(40).optional(),
 });
 
 function isLikelyBot(userAgent: string | null): boolean {
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
       email: data.email?.trim() || null,
       phone: data.phone?.trim() || null,
       queryKeys: data.queryKeys,
+      captureSource: data.captureSource ?? null,
       userAgent: ua,
       clientIp: ip,
     });

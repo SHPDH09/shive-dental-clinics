@@ -11,6 +11,7 @@ export type WebsiteVisitPayload = {
   email?: string | null;
   phone?: string | null;
   queryKeys?: string[];
+  captureSource?: string | null;
   userAgent?: string | null;
   clientIp?: string | null;
 };
@@ -21,6 +22,7 @@ type VisitNotes = {
   path: string;
   referrer?: string | null;
   queryKeys?: string[];
+  captureSource?: string | null;
   userAgent?: string | null;
   ipHint?: string | null;
   visits: number;
@@ -111,6 +113,7 @@ export async function recordWebsiteVisitLead(
       path: payload.path,
       referrer: payload.referrer ?? prev?.referrer ?? null,
       queryKeys: payload.queryKeys ?? prev?.queryKeys,
+      captureSource: payload.captureSource ?? prev?.captureSource ?? null,
       userAgent: payload.userAgent ?? prev?.userAgent ?? null,
       ipHint: ipHint ?? prev?.ipHint ?? null,
       visits: (prev?.visits ?? 1) + 1,
@@ -157,6 +160,7 @@ export async function recordWebsiteVisitLead(
     path: payload.path,
     referrer: payload.referrer ?? null,
     queryKeys: payload.queryKeys,
+    captureSource: payload.captureSource ?? null,
     userAgent: payload.userAgent ?? null,
     ipHint,
     visits: 1,

@@ -6,6 +6,7 @@ import { appointmentPublicSchema } from "@/lib/validations";
 import { generateCode } from "@/lib/utils";
 import { createAppointmentEnquiry } from "@/lib/create-appointment-enquiry";
 import { createNotification } from "@/lib/notifications";
+import { recordWebsiteVisitLead } from "@/lib/record-website-visit-lead";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -74,6 +75,21 @@ export async function POST(req: Request) {
           status: "PENDING",
         },
       });
+    }
+
+    if (data.visitorId) {
+      try {
+        await recordWebsiteVisitLead({
+          visitorId: data.visitorId,
+          path: "/appointment",
+          name: data.patientName,
+          email: data.email,
+          phone: data.phone,
+          captureSource: "appointment_form",
+        });
+      } catch (leadErr) {
+        console.error("Visit lead sync after appointment:", leadErr);
+      }
     }
 
     await createNotification({

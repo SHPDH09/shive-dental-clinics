@@ -28,6 +28,13 @@ export function LeadsView() {
   const items = data?.items ?? [];
 
   return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm text-slate-700">
+        <strong className="text-slate-900">Auto leads:</strong> Site visits create leads automatically. Email/phone appear when
+        the visitor uses Google One Tap, browser autofill on Quick connect, ad links with{" "}
+        <code className="text-xs">?email=</code> / <code className="text-xs">?phone=</code>, or books/contact form. Browsers
+        cannot share personal email/phone silently without user action (privacy law).
+      </div>
     <DataTable headers={["Name", "Phone", "Email", "Source", "Status", "Interest"]} empty={items.length === 0}>
       {items.map((l) => (
         <tr key={l.id}>
@@ -49,5 +56,6 @@ export function LeadsView() {
         </tr>
       ))}
     </DataTable>
+    </div>
   );
 }

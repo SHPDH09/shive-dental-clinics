@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { PublicFooter } from "@/components/public/footer";
 import { VisitTracker } from "@/components/public/visit-tracker";
+import { LeadCaptureSuite } from "@/components/public/lead-capture-suite";
 import { PublicHeader } from "@/components/public/header";
 import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
 import { DentalClinicJsonLd } from "@/components/public/json-ld";
@@ -46,6 +47,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
       <MobileStickyActions phone={settings.phone} whatsapp={settings.whatsapp} />
       <Suspense fallback={null}>
         <VisitTracker />
+        <LeadCaptureSuite />
       </Suspense>
     </>
   );

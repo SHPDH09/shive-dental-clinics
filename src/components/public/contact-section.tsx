@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { useState } from "react";
+import { setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 type FormValues = z.infer<typeof enquirySchema>;
@@ -50,6 +51,8 @@ export function ContactSection({
         setError("Could not send message. Please try again.");
         return;
       }
+      setStoredVisitorContact({ name: data.name, email: data.email, phone: data.phone });
+      void syncVisitorLead("/contact", { name: data.name, email: data.email, phone: data.phone });
       setSuccess(true);
       reset();
     } catch {
