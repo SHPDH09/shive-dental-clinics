@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { format, subDays } from "date-fns";
 import { adminFetch } from "@/lib/admin-client";
-import { AdminServiceSearch } from "@/components/admin/admin-service-search";
 import { LoadingState } from "@/components/admin/loading-state";
 import { StatCard } from "@/components/admin/stat-card";
 import { Button } from "@/components/ui/button";
@@ -152,7 +151,13 @@ export function DashboardView() {
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
   }
-  if (!data) return <LoadingState label="Loading dashboard…" />;
+  if (!data) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        <LoadingState label="Loading dashboard…" />
+      </div>
+    );
+  }
 
   const chartData = data.charts.appointmentsByDay.map((d) => ({
     ...d,
@@ -178,14 +183,11 @@ export function DashboardView() {
   };
 
   return (
-    <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
-      <div className="sticky top-0 z-20 -mx-1 space-y-4 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-5 shadow-sm backdrop-blur-md md:px-6">
+    <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
+      <div className="shrink-0 space-y-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm md:px-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-600">Overview of clinic activity · {rangeLabel}</p>
-        </div>
-        <div className="flex justify-center">
-          <AdminServiceSearch />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
           <label className="sr-only" htmlFor="dash-from">
@@ -287,10 +289,11 @@ export function DashboardView() {
         )}
       </div>
 
-      <div
-        className="origin-top space-y-8 animate-fade-up pb-8"
-        style={{ zoom: zoom / 100 }}
-      >
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200/60 bg-white/50">
+        <div
+          className="space-y-8 p-4 animate-fade-up md:p-6"
+          style={{ zoom: zoom / 100 }}
+        >
       {data.dbUnavailable && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Dashboard could not load live data from the database. Check Cloudflare secrets{" "}
@@ -508,6 +511,7 @@ export function DashboardView() {
           </div>
         </div>
       </div>
+        </div>
       </div>
     </div>
   );

@@ -80,7 +80,7 @@ export function AdminServiceSearch({ className }: { className?: string }) {
       {open && (
         <div
           id="admin-service-search-list"
-          className="absolute left-0 right-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white py-2 shadow-xl"
+          className="absolute left-0 right-0 z-[100] mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white py-2 shadow-xl"
         >
           {loading && hits.length === 0 ? (
             <p className="px-4 py-3 text-sm text-slate-500">Searching…</p>

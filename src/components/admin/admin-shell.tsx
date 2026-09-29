@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AdminSidebar } from "@/components/admin/sidebar";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "shiv-admin-sidebar-hidden";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isDashboard = pathname === "/admin" || pathname === "/admin/";
   const [sidebarHidden, setSidebarHidden] = useState(false);
 
   useEffect(() => {
@@ -34,7 +38,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {!sidebarHidden && <AdminSidebar onHide={toggleSidebar} />}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AdminHeader sidebarHidden={sidebarHidden} onShowSidebar={toggleSidebar} />
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">{children}</div>
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-x-hidden p-4 md:p-8",
+            isDashboard ? "flex flex-col overflow-hidden" : "overflow-y-auto",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

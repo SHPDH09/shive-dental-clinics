@@ -6,6 +6,7 @@ import { LogOut, Menu, PanelLeftOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { format } from "date-fns";
+import { AdminServiceSearch } from "@/components/admin/admin-service-search";
 
 const mobileLinks = [
   { href: "/admin", label: "Dashboard" },
@@ -26,8 +27,9 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
   const today = format(new Date(), "EEE, d MMM yyyy");
 
   return (
-    <header className="relative flex min-h-[4rem] flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-md md:px-6">
-      <div className="flex items-center gap-3">
+    <header className="relative z-30 shrink-0 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+      <div className="flex min-h-[4rem] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
+      <div className="flex min-w-0 items-center gap-3">
         {sidebarHidden && onShowSidebar && (
           <button
             type="button"
@@ -53,6 +55,9 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
             <span className="font-semibold text-slate-900">{session?.user?.name ?? "Admin"}</span>
           </p>
         </div>
+      </div>
+      <div className="hidden min-w-0 flex-1 justify-center px-2 lg:flex">
+        <AdminServiceSearch className="max-w-lg" />
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {isSuper && (
@@ -85,6 +90,10 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Sign out</span>
         </Button>
+      </div>
+      </div>
+      <div className="border-t border-slate-100 px-4 pb-3 lg:hidden">
+        <AdminServiceSearch />
       </div>
       {open && (
         <div className="absolute left-0 right-0 top-full z-40 max-h-[70vh] overflow-y-auto border-b border-slate-200 bg-white p-4 shadow-lg lg:hidden">
