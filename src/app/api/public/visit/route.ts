@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const bodySchema = z.object({
   visitorId: z.string().min(8).max(64),
+  leadId: z.string().min(8).max(64).optional().nullable(),
   path: z.string().min(1).max(500),
   referrer: z.string().max(2000).optional().nullable(),
   name: z.string().max(120).optional().nullable(),
@@ -42,12 +43,13 @@ export async function POST(req: Request) {
     if (data.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
-    if (!checkRateLimit(`visit-vid:${data.visitorId}`, 120, 24 * 60 * 60 * 1000)) {
+    if (!checkRateLimit(`visit-vid:${data.visitorId}`, 24, 24 * 60 * 60 * 1000)) {
       return NextResponse.json({ ok: true, throttled: true });
     }
 
     const result = await recordWebsiteVisitLead({
       visitorId: data.visitorId,
+      leadId: data.leadId,
       path: data.path,
       referrer: data.referrer,
       name: data.name?.trim() || null,

@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  getOrCreateVisitorId,
   getStoredVisitorContact,
+  hasUsableContact,
   syncVisitorLead,
 } from "@/lib/visitor-contact";
+
+const SESSION_VISIT_KEY = "sdc_visit_logged";
 
 function pickContactFromUrl(params: URLSearchParams) {
   const get = (...names: string[]) => {
@@ -26,28 +28,44 @@ function pickContactFromUrl(params: URLSearchParams) {
 export function VisitTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const lastSent = useRef<string | null>(null);
+  const sent = useRef(false);
 
   useEffect(() => {
-    const path = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
-    if (lastSent.current === path) return;
-    lastSent.current = path;
-
     const urlContact = pickContactFromUrl(searchParams);
+    const hasUrlContact = Boolean(urlContact.email || urlContact.phone || urlContact.name);
     const stored = getStoredVisitorContact();
+
+    try {
+      if (!hasUrlContact && !hasUsableContact(stored) && sessionStorage.getItem(SESSION_VISIT_KEY) === "1") {
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
+
+    if (sent.current && !hasUrlContact) return;
+    sent.current = true;
 
     const send = () => {
       void syncVisitorLead(pathname || "/", {
         name: urlContact.name ?? stored?.name,
         email: urlContact.email ?? stored?.email,
         phone: urlContact.phone ?? stored?.phone,
+      }).then(() => {
+        try {
+          if (!hasUrlContact && !hasUsableContact(stored)) {
+            sessionStorage.setItem(SESSION_VISIT_KEY, "1");
+          }
+        } catch {
+          /* ignore */
+        }
       });
     };
 
     if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(send, { timeout: 3000 });
+      requestIdleCallback(send, { timeout: 5000 });
     } else {
-      window.setTimeout(send, 400);
+      window.setTimeout(send, 800);
     }
   }, [pathname, searchParams]);
 

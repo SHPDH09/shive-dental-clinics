@@ -1,4 +1,5 @@
-export const dynamic = "force-dynamic";
+/** Cache layout data briefly to reduce Worker CPU on every page view (Cloudflare 1102). */
+export const revalidate = 120;
 
 import { Suspense } from "react";
 import { PublicFooter } from "@/components/public/footer";

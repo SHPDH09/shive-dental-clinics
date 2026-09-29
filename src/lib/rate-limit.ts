@@ -1,8 +1,22 @@
 const buckets = new Map<string, { count: number; resetAt: number }>();
+const MAX_BUCKETS = 400;
+
+function pruneRateLimitBuckets(now: number) {
+  if (buckets.size <= MAX_BUCKETS) return;
+  for (const [k, v] of buckets) {
+    if (now > v.resetAt) buckets.delete(k);
+  }
+  while (buckets.size > MAX_BUCKETS) {
+    const first = buckets.keys().next().value;
+    if (first === undefined) break;
+    buckets.delete(first);
+  }
+}
 
 /** Simple in-memory rate limiter (per Worker/Node instance). Pair with Cloudflare WAF for global limits. */
 export function checkRateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
+  pruneRateLimitBuckets(now);
   const row = buckets.get(key);
   if (!row || now > row.resetAt) {
     buckets.set(key, { count: 1, resetAt: now + windowMs });

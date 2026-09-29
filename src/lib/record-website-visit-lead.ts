@@ -5,6 +5,7 @@ import { useSupabaseCrud } from "@/lib/supabase/crud";
 
 export type WebsiteVisitPayload = {
   visitorId: string;
+  leadId?: string | null;
   path: string;
   referrer?: string | null;
   name?: string | null;
@@ -63,29 +64,49 @@ function mergeContact(existing: { name: string; phone: string; email: string | n
   };
 }
 
-async function findRecentVisitLead(visitorId: string) {
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+type LeadRow = { id: string; name: string; phone: string; email: string | null; notes: string | null };
+
+async function findLeadById(leadId: string): Promise<LeadRow | null> {
+  if (useSupabaseCrud()) {
+    const sb = await getAdminWriteSupabaseClient();
+    const { data, error } = await sb
+      .from("Lead")
+      .select("id,name,phone,email,notes")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data as LeadRow | null;
+  }
+  return prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { id: true, name: true, phone: true, email: true, notes: true },
+  });
+}
+
+async function findLeadByVisitorId(visitorId: string): Promise<LeadRow | null> {
+  const safe = visitorId.replace(/[^\w-]/g, "");
+  if (!safe) return null;
 
   if (useSupabaseCrud()) {
     const sb = await getAdminWriteSupabaseClient();
     const { data, error } = await sb
       .from("Lead")
-      .select("id,name,phone,email,notes,createdAt")
-      .gte("createdAt", since.toISOString())
+      .select("id,name,phone,email,notes")
+      .ilike("notes", `%${safe}%`)
       .order("createdAt", { ascending: false })
-      .limit(80);
+      .limit(1)
+      .maybeSingle();
     if (error) throw new Error(error.message);
-    for (const row of data ?? []) {
-      const meta = parseNotes(String(row.notes ?? ""));
-      if (meta?.visitorId === visitorId) return row;
-    }
-    return null;
+    const row = data as LeadRow | null;
+    if (!row) return null;
+    const meta = parseNotes(row.notes);
+    return meta?.visitorId === visitorId ? row : null;
   }
 
   const rows = await prisma.lead.findMany({
-    where: { createdAt: { gte: since } },
+    where: { notes: { contains: safe } },
     orderBy: { createdAt: "desc" },
-    take: 80,
+    take: 3,
     select: { id: true, name: true, phone: true, email: true, notes: true },
   });
   for (const row of rows) {
@@ -101,12 +122,19 @@ export async function recordWebsiteVisitLead(
   const visitorId = payload.visitorId.trim();
   if (!visitorId || visitorId.length < 8) throw new Error("Invalid visitor id");
 
-  const existing = await findRecentVisitLead(visitorId);
+  let existing: LeadRow | null = null;
+  if (payload.leadId?.trim()) {
+    existing = await findLeadById(payload.leadId.trim());
+  }
+  if (!existing) {
+    existing = await findLeadByVisitorId(visitorId);
+  }
+
   const now = new Date().toISOString();
   const ipHint = payload.clientIp ? payload.clientIp.replace(/\.\d+$/, ".x") : null;
 
   if (existing) {
-    const prev = parseNotes(String(existing.notes ?? ""));
+    const prev = parseNotes(existing.notes);
     const notes: VisitNotes = {
       type: "auto_website_visit",
       visitorId,

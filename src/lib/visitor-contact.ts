@@ -2,6 +2,7 @@
 
 export const VISITOR_ID_KEY = "sdc_visitor_id";
 export const VISITOR_CONTACT_KEY = "sdc_visitor_contact";
+export const LEAD_ID_KEY = "sdc_lead_id";
 
 export type VisitorContact = {
   name?: string;
@@ -53,6 +54,25 @@ export function setStoredVisitorContact(contact: VisitorContact): void {
   }
 }
 
+export function getStoredLeadId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const id = localStorage.getItem(LEAD_ID_KEY);
+    return id && id.length >= 8 ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredLeadId(id: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LEAD_ID_KEY, id);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function hasUsableContact(c: VisitorContact | null): boolean {
   if (!c) return false;
   const email = c.email?.trim();
@@ -64,25 +84,30 @@ export async function syncVisitorLead(path: string, extra?: VisitorContact): Pro
   const visitorId = getOrCreateVisitorId();
   if (!visitorId) return;
   const stored = getStoredVisitorContact();
-  const payload = {
+  const leadId = getStoredLeadId();
+  const body: Record<string, unknown> = {
     visitorId,
+    leadId,
     path,
     referrer: typeof document !== "undefined" ? document.referrer || null : null,
     name: extra?.name ?? stored?.name ?? null,
     email: extra?.email ?? stored?.email ?? null,
     phone: extra?.phone ?? stored?.phone ?? null,
   };
-  const body: Record<string, unknown> = { ...payload };
-  if (extra) body.captureSource = "prompt";
+  if (extra) body.captureSource = "autofill";
   else if (stored && hasUsableContact(stored)) body.captureSource = "stored_contact";
   else body.captureSource = "visit";
   try {
-    await fetch("/api/public/visit", {
+    const res = await fetch("/api/public/visit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       keepalive: true,
     });
+    if (res.ok) {
+      const json = (await res.json()) as { id?: string };
+      if (json.id) setStoredLeadId(json.id);
+    }
   } catch {
     /* ignore */
   }
