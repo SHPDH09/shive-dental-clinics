@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { getSiteUrl, DEFAULT_SEO_KEYWORDS } from "@/lib/seo/site-url";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -8,21 +9,38 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const clinicName = "Shiv Dental Clinic";
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: `${clinicName} | Premium Dental Care`, template: `%s | ${clinicName}` },
   description:
-    "Professional, compassionate dental care. Book your appointment at Shiv Dental Clinic today.",
+    "Shiv Dental Clinic — expert dentists for implants, root canal, teeth whitening, braces & painless care. Book your appointment online or call today.",
+  keywords: DEFAULT_SEO_KEYWORDS,
+  applicationName: clinicName,
   openGraph: {
     title: `${clinicName} | Premium Dental Care`,
     description: "Professional, compassionate dental care for your whole family.",
     type: "website",
     locale: "en_IN",
     siteName: clinicName,
+    url: siteUrl,
   },
-  robots: { index: true, follow: true },
+  twitter: {
+    card: "summary_large_image",
+    title: `${clinicName} | Premium Dental Care`,
+    description: "Book dental appointments online — implants, RCT, cosmetic dentistry & more.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
   verification: {
     google: "XThxVmKDx2q8dFHkMEcgcv7odBqKMz_DCJvye7EL_fM",
+  },
+  alternates: {
+    canonical: siteUrl,
   },
 };
 

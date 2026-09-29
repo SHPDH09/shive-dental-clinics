@@ -41,10 +41,11 @@ export function HeroSection({
             Premium dental care
           </span>
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-5xl lg:text-[3.25rem]">
-            Your Smile Deserves the Best Care
+            {clinicName} — Your Smile Deserves the Best Care
           </h1>
           <p className="mt-5 max-w-xl text-lg text-slate-700">
-            Professional, compassionate and modern dental care for you and your family at {clinicName}.
+            Trusted dentists for implants, root canal, teeth whitening, braces & family dentistry — book online or
+            walk in for compassionate, modern care.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link href="/appointment" className="btn-primary gap-2">

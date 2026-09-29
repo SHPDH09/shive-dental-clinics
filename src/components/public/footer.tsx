@@ -69,6 +69,11 @@ export function PublicFooter({
                 Contact
               </Link>
             </li>
+            <li>
+              <a href="/sitemap.xml" className="hover:text-white">
+                Sitemap
+              </a>
+            </li>
           </ul>
         </div>
 

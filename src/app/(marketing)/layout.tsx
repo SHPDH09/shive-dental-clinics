@@ -6,12 +6,13 @@ import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
 import { DentalClinicJsonLd } from "@/components/public/json-ld";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { getPublicBranches } from "@/lib/public-data";
+import { getSiteUrl } from "@/lib/seo/site-url";
 import { getClinicSettings } from "@/lib/settings";
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
   const [settings, branches] = await Promise.all([getClinicSettings(), getPublicBranches()]);
   const social = (settings.socialLinks ?? {}) as Record<string, string>;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://shivdentalclinic.com";
+  const siteUrl = getSiteUrl();
 
   return (
     <>
@@ -21,7 +22,8 @@ export default async function MarketingLayout({ children }: { children: React.Re
         phone={settings.phone}
         email={settings.email}
         address={settings.address}
-        url={appUrl}
+        url={siteUrl}
+        logoUrl={settings.logoUrl}
       />
       <PublicHeader
         clinicName={settings.clinicName}
