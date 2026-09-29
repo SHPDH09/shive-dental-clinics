@@ -1,9 +1,5 @@
 import { DashboardView } from "@/components/admin/dashboard-view";
 
 export default function AdminDashboardPage() {
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <DashboardView />
-    </div>
-  );
+  return <DashboardView />;
 }

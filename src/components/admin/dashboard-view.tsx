@@ -151,13 +151,7 @@ export function DashboardView() {
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
   }
-  if (!data) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <LoadingState label="Loading dashboard…" />
-      </div>
-    );
-  }
+  if (!data) return <LoadingState label="Loading dashboard…" />;
 
   const chartData = data.charts.appointmentsByDay.map((d) => ({
     ...d,
@@ -183,8 +177,11 @@ export function DashboardView() {
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
-      <div className="shrink-0 space-y-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm md:px-6">
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-8 pb-8 animate-fade-up"
+      style={{ zoom: zoom / 100 }}
+    >
+      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm md:px-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-600">Overview of clinic activity · {rangeLabel}</p>
@@ -289,11 +286,6 @@ export function DashboardView() {
         )}
       </div>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200/60 bg-white/50">
-        <div
-          className="space-y-8 p-4 animate-fade-up md:p-6"
-          style={{ zoom: zoom / 100 }}
-        >
       {data.dbUnavailable && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Dashboard could not load live data from the database. Check Cloudflare secrets{" "}
@@ -509,8 +501,6 @@ export function DashboardView() {
               <p className="flex h-full items-center justify-center text-sm text-slate-500">No patient growth data yet.</p>
             )}
           </div>
-        </div>
-      </div>
         </div>
       </div>
     </div>
