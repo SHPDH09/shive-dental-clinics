@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { GoogleTagManagerBody, GoogleTagManagerHead } from "@/components/analytics/google-tag-manager";
 import { getSiteUrl, DEFAULT_SEO_KEYWORDS } from "@/lib/seo/site-url";
 import "./globals.css";
 
@@ -47,7 +48,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${jakarta.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <head>
+        <GoogleTagManagerHead />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <GoogleTagManagerBody />
+        {children}
+      </body>
     </html>
   );
 }
