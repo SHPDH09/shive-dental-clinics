@@ -340,34 +340,31 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     })();
   };
 
-  /** Mic prompt must run immediately on this click (browser permission UI). */
+  /** getUserMedia must start in this click handler (browser permission popup). */
   const handleAllowMicAndStart = () => {
-    void (async () => {
-      setError(null);
-      setRequestingMic(true);
+    setError(null);
+    setRequestingMic(true);
 
-      try {
-        await requestMicrophoneStream(micStreamRef);
+    requestMicrophoneStream(micStreamRef)
+      .then(() => {
         unmuteMicStream(micStreamRef.current);
         setMicGranted(true);
-      } catch (e) {
+        setRequestingMic(false);
+
+        if (!isSpeechRecognitionSupported()) {
+          setStarted(true);
+          setError(HI.browserUnsupported);
+          setStep("done");
+          return;
+        }
+
+        setStarted(true);
+        void runFlow();
+      })
+      .catch((e: unknown) => {
         setError(micErrorMessage(errorToMicCode(e)));
         setRequestingMic(false);
-        return;
-      }
-
-      setRequestingMic(false);
-
-      if (!isSpeechRecognitionSupported()) {
-        setStarted(true);
-        setError(HI.browserUnsupported);
-        setStep("done");
-        return;
-      }
-
-      setStarted(true);
-      void runFlow();
-    })();
+      });
   };
 
   if (!open) return null;
