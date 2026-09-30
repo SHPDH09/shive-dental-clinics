@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppointmentBookingWizard } from "@/components/public/appointment-booking-wizard";
 import { AppointmentForm } from "@/components/public/appointment-form";
+import { VoiceBookingTrigger } from "@/components/public/voice-booking-trigger";
 import { getPublicBranches, getPublicDoctors, getPublicServices } from "@/lib/public-data";
 
 export const metadata: Metadata = {
@@ -30,6 +31,14 @@ export default async function AppointmentPage({ searchParams }: PageProps) {
           ? "Choose your branch, doctor, treatment, and a time that works for you."
           : "Choose your preferred date and treatment. Our team will call you to confirm."}
       </p>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <VoiceBookingTrigger
+          services={services.map((s) => ({ id: s.id, name: s.name }))}
+          variant="primary"
+          label="Book with voice assistant"
+        />
+        <span className="text-xs text-slate-500">Uses your microphone · Hindi or English</span>
+      </div>
       <div className="mt-10">
         {useWizard ? (
           <AppointmentBookingWizard

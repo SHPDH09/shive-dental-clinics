@@ -11,6 +11,7 @@ import { BeforeAfterSection } from "@/components/public/before-after-section";
 import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
+import { VoiceBookingTrigger } from "@/components/public/voice-booking-trigger";
 import { HomeTrustStrip } from "@/components/public/home-trust-strip";
 import { HomeQuickLinks } from "@/components/public/home-quick-links";
 import { HomeCtaBand } from "@/components/public/home-cta-band";
@@ -84,6 +85,12 @@ export default async function HomePage() {
               <p className="mt-2 text-slate-600">
                 Tell us your preferred time — we will confirm shortly. Same-week slots often available.
               </p>
+              <div className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start">
+                <VoiceBookingTrigger
+                  services={services.map((s) => ({ id: s.id, name: s.name }))}
+                  label="Voice assistant"
+                />
+              </div>
             </div>
             <AppointmentForm
               services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
