@@ -18,5 +18,12 @@ assert.ok(parseDateFromSpeech("kal"));
 assert.equal(parseTimeFromSpeech("subah das baje"), "10:00");
 assert.equal(parseTimeFromSpeech("10 AM")?.startsWith("10"), true);
 assert.equal(isAffirmative(normalizeIntentSpeech("han ji yes book karna hai")), true);
+assert.equal(normalizeIntentSpeech("हं"), "haan");
+assert.equal(normalizeIntentSpeech("हाँ"), "haan");
+assert.equal(normalizeIntentSpeech("हां"), "haan");
+assert.equal(normalizeIntentSpeech("जी"), "haan");
+assert.equal(normalizeIntentSpeech("नहीं"), "nahi");
+assert.equal(isAffirmative(normalizeIntentSpeech("हं")), true);
+assert.equal(parsePhoneFromSpeech("९८७६५४३२१०"), "9876543210");
 
 console.log("voice-bilingual: all checks passed");

@@ -18,5 +18,6 @@ for (const s of noSamples) {
 
 assert.equal(isAffirmative(normalizeIntentSpeech("hot")), true, "hot -> haan");
 assert.equal(isAffirmative(normalizeIntentSpeech("heart")), true, "heart -> haan");
+assert.equal(isAffirmative(normalizeIntentSpeech("हं")), true, "devanagari ham");
 
 console.log("voice-intent: all checks passed");

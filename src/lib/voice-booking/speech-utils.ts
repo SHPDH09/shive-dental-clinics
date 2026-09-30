@@ -1,4 +1,8 @@
 import { addDays, format, parseISO, startOfDay } from "date-fns";
+import {
+  devanagariDigitsToLatin,
+  normalizeDevanagariIntent,
+} from "@/lib/voice-booking/devanagari-voice";
 import { isLikelyMaleVoice, pickFemaleTtsVoice } from "@/lib/voice-booking/pick-tts-voice";
 
 function delay(ms: number) {
@@ -118,7 +122,8 @@ const HI_WORD_DIGIT: Record<string, string> = {
 };
 
 export function expandSpokenDigits(text: string): string {
-  let t = ` ${text.toLowerCase()} `;
+  let t = devanagariDigitsToLatin(text);
+  t = ` ${t.toLowerCase()} `;
   for (const [word, digit] of Object.entries(EN_WORD_DIGIT)) {
     t = t.replaceAll(` ${word} `, ` ${digit} `);
   }
@@ -128,9 +133,13 @@ export function expandSpokenDigits(text: string): string {
   return t.replace(/\s+/g, " ").trim();
 }
 
-/** Map common STT mis-hears for haan / nahi. */
+/** Map common STT mis-hears for haan / nahi (Roman + Devanagari). */
 export function normalizeIntentSpeech(raw: string): string {
-  let t = normalizeTranscript(raw).toLowerCase();
+  let t = normalizeTranscript(raw);
+  const dev = normalizeDevanagariIntent(t);
+  if (dev === "haan" || dev === "nahi") return dev;
+
+  t = t.toLowerCase();
   t = t.replace(/[.,!?]/g, " ").replace(/\s+/g, " ").trim();
   if (/^(ha|haa|han|hann|hun|hum|ho|hot|heart|hut|hah)$/i.test(t)) return "haan";
   if (/^(ya|yaa|ye|yep|yeah|yes|y)$/i.test(t)) return "yes";
@@ -164,9 +173,10 @@ export function parseDateFromSpeech(text: string): string | null {
   const t = text.toLowerCase().trim();
   const today = startOfDay(new Date());
 
-  if (/aaj|today|now|आज/.test(t)) return format(today, "yyyy-MM-dd");
-  if (/parso|parson|day after tomorrow|परसों/.test(t)) return format(addDays(today, 2), "yyyy-MM-dd");
-  if (/kal|tomorrow|next day|कल/.test(t)) return format(addDays(today, 1), "yyyy-MM-dd");
+  const mixed = devanagariDigitsToLatin(t);
+  if (/aaj|today|now|आज/.test(mixed)) return format(today, "yyyy-MM-dd");
+  if (/parso|parson|day after tomorrow|परसों|परसो/.test(mixed)) return format(addDays(today, 2), "yyyy-MM-dd");
+  if (/kal|tomorrow|next day|कल/.test(mixed)) return format(addDays(today, 1), "yyyy-MM-dd");
 
   const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return iso[0];
