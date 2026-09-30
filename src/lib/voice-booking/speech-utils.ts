@@ -76,6 +76,13 @@ export function unmuteMicStream(stream: MediaStream | null | undefined): void {
   });
 }
 
+/** Mute mic between questions (stream stays open — no extra permission prompt). */
+export function muteMicStream(stream: MediaStream | null | undefined): void {
+  stream?.getAudioTracks().forEach((track) => {
+    track.enabled = false;
+  });
+}
+
 export function normalizeTranscript(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }

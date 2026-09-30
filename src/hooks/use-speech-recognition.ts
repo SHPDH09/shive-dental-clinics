@@ -269,7 +269,7 @@ export function useSpeechRecognition(lang = "hi-IN") {
             setListening(true);
             session.begin();
           }
-        }, 120);
+        }, 280);
       }
 
       return wrapped;
