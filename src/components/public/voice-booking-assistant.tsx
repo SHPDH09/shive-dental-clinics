@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Mic, MicOff, X } from "lucide-react";
+import { Loader2, Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
   isAffirmative,
   isNegative,
@@ -30,30 +31,7 @@ type Draft = {
   appointmentTime: string;
 };
 
-type StepId =
-  | "intro"
-  | "name"
-  | "phone"
-  | "email"
-  | "service"
-  | "date"
-  | "time"
-  | "confirm"
-  | "submitting"
-  | "done";
-
-const STEP_LABELS: Record<StepId, string> = {
-  intro: "Starting…",
-  name: "Your name",
-  phone: "Phone number",
-  email: "Email",
-  service: "Treatment / service",
-  date: "Preferred date",
-  time: "Preferred time",
-  confirm: "Confirm booking",
-  submitting: "Booking…",
-  done: "Done",
-};
+type StepId = keyof typeof STEP_LABELS_HI;
 
 type Props = {
   open: boolean;
@@ -62,12 +40,15 @@ type Props = {
 };
 
 export function VoiceBookingAssistant({ open, onClose, services: servicesProp }: Props) {
-  const { listenOnce, listening, stop, supported } = useSpeechRecognition("en-IN");
+  const { listenOnce, listening, stop, supported } = useSpeechRecognition("hi-IN");
   const [services, setServices] = useState<ServiceOption[]>(servicesProp ?? []);
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState<StepId>("intro");
   const [statusLine, setStatusLine] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
+  const [awaitingManualListen, setAwaitingManualListen] = useState(false);
+  const manualRetryRef = useRef<(() => void) | null>(null);
   const draftRef = useRef<Draft>({
     patientName: "",
     phone: "",
@@ -78,6 +59,9 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     appointmentTime: "",
   });
   const runningRef = useRef(false);
+  const openRef = useRef(open);
+
+  openRef.current = open;
 
   useEffect(() => {
     if (servicesProp?.length) setServices(servicesProp);
@@ -91,134 +75,155 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       .catch(() => setServices([]));
   }, [open, servicesProp]);
 
+  useEffect(() => {
+    if (!open) {
+      stop();
+      window.speechSynthesis?.cancel();
+      runningRef.current = false;
+      setStarted(false);
+      setStep("intro");
+      setError(null);
+      setStatusLine("");
+      setAwaitingManualListen(false);
+      manualRetryRef.current = null;
+    }
+  }, [open, stop]);
+
+  const listenForAnswer = useCallback(async (): Promise<string> => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      setAwaitingManualListen(false);
+      setStatusLine(HI.listening);
+      try {
+        const raw = await listenOnce({ maxMs: 18000 });
+        const t = normalizeTranscript(raw);
+        if (t.length > 0) {
+          setStatusLine(HI.youSaid(t));
+          return t;
+        }
+      } catch (e) {
+        const code = e instanceof Error ? e.message : "";
+        if (code === "not-allowed") throw new Error(HI.browserUnsupported);
+      }
+      setAwaitingManualListen(true);
+      setStatusLine(HI.tapToSpeak);
+      await new Promise<void>((resolve) => {
+        manualRetryRef.current = resolve;
+      });
+    }
+    return "";
+  }, [listenOnce]);
+
   const askAndListen = useCallback(
     async (prompt: string): Promise<string> => {
       setStatusLine(prompt);
-      await speakText(prompt);
-      const raw = await listenOnce();
-      const t = normalizeTranscript(raw);
-      setStatusLine(`You said: “${t}”`);
-      return t;
+      await speakText(prompt, "hi-IN");
+      return listenForAnswer();
     },
-    [listenOnce],
+    [listenForAnswer],
   );
 
   const runFlow = useCallback(async () => {
-    if (runningRef.current) return;
+    if (runningRef.current || !openRef.current) return;
     runningRef.current = true;
     setError(null);
     setReferenceId(null);
-    draftRef.current = {
-      patientName: "",
-      phone: "",
-      email: "",
-      treatmentName: "",
-      serviceId: "",
-      appointmentDate: "",
-      appointmentTime: "",
-    };
 
     try {
       if (supported === false) {
-        setError("Voice booking needs Chrome or Edge on Android/desktop. Please use the form instead.");
+        setError(HI.browserUnsupported);
         setStep("done");
         return;
       }
 
       setStep("intro");
-      await speakText(
-        "Welcome to Shiv Dental Clinic voice booking. I will ask a few questions. Please answer clearly after each beep.",
-      );
+      await speakText(HI.welcome, "hi-IN");
 
       setStep("name");
       let name = "";
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen("What is your full name?");
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askName : HI.retryName);
         if (t.length >= 2) {
           name = t;
           break;
         }
-        await speakText("Sorry, I did not catch your name. Please say your full name again.");
       }
-      if (name.length < 2) throw new Error("Name is required.");
+      if (name.length < 2) throw new Error("नाम ज़रूरी है।");
       draftRef.current.patientName = name;
 
       setStep("phone");
       let phone = "";
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen("Please say your ten digit mobile number.");
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askPhone : HI.retryPhone);
         phone = parsePhoneFromSpeech(t) ?? "";
         if (phone) break;
-        await speakText("Please say only your mobile number, ten digits.");
       }
-      if (!phone) throw new Error("Valid phone number is required.");
+      if (!phone) throw new Error("सही मोबाइल नंबर ज़रूरी है।");
       draftRef.current.phone = phone;
 
       setStep("email");
       let email = "";
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen("What is your email address for confirmation?");
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askEmail : HI.retryEmail);
         email = parseEmailFromSpeech(t) ?? (t.includes("@") ? t.replace(/\s/g, "") : "");
         if (email.includes("@")) break;
-        await speakText("Please say your email again, for example name at gmail dot com.");
       }
-      if (!email.includes("@")) throw new Error("Valid email is required.");
+      if (!email.includes("@")) throw new Error("सही ईमेल ज़रूरी है।");
       draftRef.current.email = email;
 
       setStep("service");
       const svcList = services.length > 0 ? services : [{ id: "", name: "General consultation" }];
       const serviceHint = svcList
-        .slice(0, 8)
-        .map((s, i) => `${i + 1} ${s.name}`)
+        .slice(0, 6)
+        .map((s, i) => `${i + 1}: ${s.name}`)
         .join(", ");
       let matched = svcList[0];
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen(
-          `Which treatment do you need? You can say the name or number. Options include: ${serviceHint}.`,
-        );
-        matched = matchServiceName(t, svcList) ?? matched;
-        if (matchServiceName(t, svcList)) break;
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askService(serviceHint) : HI.retryService);
+        const m = matchServiceName(t, svcList);
+        if (m) {
+          matched = m;
+          break;
+        }
       }
       draftRef.current.treatmentName = matched.name;
       draftRef.current.serviceId = matched.id;
 
       setStep("date");
       let dateIso = "";
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen("Which date do you prefer? You can say today, tomorrow, or a date.");
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askDate : HI.retryDate);
         dateIso = parseDateFromSpeech(t) ?? "";
         if (dateIso && isValidFutureDate(dateIso)) break;
-        await speakText("Please say a valid date from today onwards.");
       }
-      if (!dateIso) throw new Error("Appointment date is required.");
+      if (!dateIso) throw new Error("तारीख ज़रूरी है।");
       draftRef.current.appointmentDate = dateIso;
 
       setStep("time");
       let time = "";
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen("What time suits you? For example ten thirty AM or three PM.");
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(i === 0 ? HI.askTime : HI.retryTime);
         time = parseTimeFromSpeech(t) ?? "";
         if (time) break;
       }
-      if (!time) throw new Error("Appointment time is required.");
+      if (!time) throw new Error("समय ज़रूरी है।");
       draftRef.current.appointmentTime = time;
 
       setStep("confirm");
-      const summary = `${name}, ${matched.name}, on ${dateIso} at ${time}.`;
+      const summary = `${name}, ${matched.name}, तारीख ${dateIso}, समय ${time}`;
       let confirmed = false;
-      for (let i = 0; i < 2; i++) {
-        const t = await askAndListen(`Please confirm your booking. ${summary} Say yes to book or no to cancel.`);
+      for (let i = 0; i < 3; i++) {
+        const t = await askAndListen(HI.confirm(summary));
         if (isAffirmative(t)) {
           confirmed = true;
           break;
         }
         if (isNegative(t)) {
-          await speakText("Booking cancelled. You can try again anytime.");
+          await speakText(HI.cancelled, "hi-IN");
           onClose();
           return;
         }
       }
-      if (!confirmed) throw new Error("Booking was not confirmed.");
+      if (!confirmed) throw new Error("कन्फ़र्म नहीं हुआ।");
 
       setStep("submitting");
       const visitorId = getOrCreateVisitorId();
@@ -234,46 +239,39 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = (await res.json()) as { appointmentId?: string; error?: unknown };
-      if (!res.ok) throw new Error("Could not complete booking. Please use the form.");
+      const json = (await res.json()) as { appointmentId?: string };
+      if (!res.ok) throw new Error("बुकिंग नहीं हो सकी।");
 
-      void syncVisitorLead("/appointment", {
+      void syncVisitorLead("/", {
         name: payload.patientName,
         email: payload.email,
         phone: payload.phone,
       });
 
-      const ref = json.appointmentId ?? "submitted";
+      const ref = json.appointmentId ?? "OK";
       setReferenceId(String(ref));
       setStep("done");
-      await speakText(
-        `Thank you ${name}. Your appointment request is submitted. Reference ${ref}. Our team will confirm shortly.`,
-      );
+      await speakText(HI.success(name, String(ref)), "hi-IN");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Voice booking failed.";
+      const msg = e instanceof Error ? e.message : HI.failed;
       setError(msg);
       setStep("done");
-      await speakText("Sorry, we could not complete voice booking. Please use the booking form on this page.");
+      await speakText(HI.failed, "hi-IN");
     } finally {
       runningRef.current = false;
     }
   }, [askAndListen, onClose, services, supported]);
 
-  useEffect(() => {
-    if (open) {
-      void runFlow();
-    } else {
-      stop();
-      runningRef.current = false;
-      setStep("intro");
-      setError(null);
-      setStatusLine("");
-    }
-    return () => {
-      stop();
-      window.speechSynthesis?.cancel();
-    };
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- run once per open
+  const handleManualMic = () => {
+    setAwaitingManualListen(false);
+    manualRetryRef.current?.();
+    manualRetryRef.current = null;
+  };
+
+  const handleStart = () => {
+    setStarted(true);
+    void runFlow();
+  };
 
   if (!open) return null;
 
@@ -287,9 +285,9 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="voice-booking-title" className="text-lg font-bold text-slate-900">
-              Voice booking assistant
+              वॉइस बुकिंग असिस्टेंट
             </h2>
-            <p className="mt-1 text-xs text-slate-500">Shiv Dental Clinic · speak after each prompt</p>
+            <p className="mt-1 text-xs text-slate-500">शिव डेंटल क्लिनिक · हिंदी में बोलिए</p>
           </div>
           <button
             type="button"
@@ -305,33 +303,52 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
           </button>
         </div>
 
-        <div className="mt-6 flex flex-col items-center">
-          <div
-            className={`flex h-24 w-24 items-center justify-center rounded-full ${
-              listening ? "animate-pulse bg-red-100 text-red-600" : "bg-sky-100 text-[var(--primary)]"
-            }`}
-          >
-            {step === "submitting" ? (
-              <Loader2 className="h-10 w-10 animate-spin" />
-            ) : listening ? (
-              <Mic className="h-10 w-10" />
-            ) : (
-              <MicOff className="h-10 w-10 opacity-40" />
+        {!started ? (
+          <div className="mt-8 text-center">
+            <p className="text-sm text-slate-600">
+              माइक्रोफ़ोन की अनुमति दें, फिर &quot;शुरू करें&quot; दबाएँ। हर सवाल हिंदी में सुनाई देगा।
+            </p>
+            <Button type="button" className="mt-6 w-full rounded-full" onClick={handleStart}>
+              <Mic className="mr-2 h-4 w-4" />
+              शुरू करें
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col items-center">
+            <div
+              className={`flex h-24 w-24 items-center justify-center rounded-full ${
+                listening ? "animate-pulse bg-red-100 text-red-600 ring-4 ring-red-200" : "bg-violet-100 text-violet-700"
+              }`}
+            >
+              {step === "submitting" ? (
+                <Loader2 className="h-10 w-10 animate-spin" />
+              ) : (
+                <Mic className="h-10 w-10" />
+              )}
+            </div>
+            <p className="mt-4 text-sm font-semibold text-slate-800">{STEP_LABELS_HI[step]}</p>
+            {listening && <p className="mt-2 text-sm font-medium text-red-600">{HI.listening}</p>}
+            {statusLine && !listening && (
+              <p className="mt-2 text-center text-sm text-slate-600">{statusLine}</p>
+            )}
+            {awaitingManualListen && (
+              <Button type="button" className="mt-4 rounded-full" onClick={handleManualMic}>
+                <Mic className="mr-2 h-4 w-4" />
+                {HI.tapToSpeak}
+              </Button>
+            )}
+            {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
+            {referenceId && (
+              <p className="mt-3 rounded-xl bg-teal-50 px-4 py-2 text-sm font-medium text-teal-900">
+                रेफरेंस: {referenceId}
+              </p>
             )}
           </div>
-          <p className="mt-4 text-sm font-semibold text-slate-800">{STEP_LABELS[step]}</p>
-          {statusLine && <p className="mt-2 text-center text-sm text-slate-600">{statusLine}</p>}
-          {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
-          {referenceId && (
-            <p className="mt-3 rounded-xl bg-teal-50 px-4 py-2 text-sm font-medium text-teal-900">
-              Reference: {referenceId}
-            </p>
-          )}
-        </div>
+        )}
 
         <div className="mt-6 flex justify-center gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Close
+            बंद करें
           </Button>
         </div>
       </div>

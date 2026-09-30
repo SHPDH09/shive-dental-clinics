@@ -1,18 +1,37 @@
 import { addDays, format, parseISO, startOfDay } from "date-fns";
 
-export function speakText(text: string, lang = "en-IN"): Promise<void> {
+export function speakText(text: string, lang = "hi-IN"): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       resolve();
       return;
     }
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
-    u.rate = 0.95;
-    u.onend = () => resolve();
-    u.onerror = () => resolve();
-    window.speechSynthesis.speak(u);
+
+    const speak = () => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      u.rate = 0.92;
+      const voices = window.speechSynthesis.getVoices();
+      const hindi =
+        voices.find((v) => v.lang.startsWith("hi")) ??
+        voices.find((v) => v.lang.includes("IN")) ??
+        null;
+      if (hindi) u.voice = hindi;
+      u.onend = () => setTimeout(resolve, 350);
+      u.onerror = () => setTimeout(resolve, 350);
+      window.speechSynthesis.speak(u);
+    };
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        speak();
+      };
+      setTimeout(speak, 120);
+    } else {
+      speak();
+    }
   });
 }
 
@@ -40,8 +59,9 @@ export function parseDateFromSpeech(text: string): string | null {
   const t = text.toLowerCase().trim();
   const today = startOfDay(new Date());
 
-  if (/aaj|today|now/.test(t)) return format(today, "yyyy-MM-dd");
-  if (/kal|tomorrow|next day/.test(t)) return format(addDays(today, 1), "yyyy-MM-dd");
+  if (/aaj|today|now|आज/.test(t)) return format(today, "yyyy-MM-dd");
+  if (/parso|परसों/.test(t)) return format(addDays(today, 2), "yyyy-MM-dd");
+  if (/kal|tomorrow|next day|कल/.test(t)) return format(addDays(today, 1), "yyyy-MM-dd");
 
   const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return iso[0];
