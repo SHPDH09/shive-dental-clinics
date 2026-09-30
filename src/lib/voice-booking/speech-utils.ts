@@ -1,6 +1,21 @@
 import { addDays, format, parseISO, startOfDay } from "date-fns";
 import { isLikelyMaleVoice, pickFemaleTtsVoice } from "@/lib/voice-booking/pick-tts-voice";
 
+function delay(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Stop TTS and wait before opening the mic (avoids echo / instant no-speech). */
+export async function waitForMicHandoff(): Promise<void> {
+  if (typeof window === "undefined") return;
+  window.speechSynthesis?.cancel();
+  for (let i = 0; i < 80; i++) {
+    if (!window.speechSynthesis?.speaking) break;
+    await delay(50);
+  }
+  await delay(850);
+}
+
 export function speakText(text: string, lang = "hi-IN"): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {

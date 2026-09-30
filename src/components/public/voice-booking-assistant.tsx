@@ -20,6 +20,7 @@ import {
   parsePhoneFromSpeech,
   parseTimeFromSpeech,
   speakText,
+  waitForMicHandoff,
 } from "@/lib/voice-booking/speech-utils";
 import { getOrCreateVisitorId, setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
 
@@ -44,7 +45,8 @@ type Props = {
 };
 
 export function VoiceBookingAssistant({ open, onClose, services: servicesProp }: Props) {
-  const { listenOnce, listening, stop, supported } = useSpeechRecognition("hi-IN");
+  const { listenOnce, listening, stop, supported, interimText } = useSpeechRecognition("hi-IN");
+  const micStreamRef = useRef<MediaStream | null>(null);
   const [services, setServices] = useState<ServiceOption[]>(servicesProp ?? []);
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState<StepId>("intro");
@@ -83,6 +85,8 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     if (!open) {
       stop();
       window.speechSynthesis?.cancel();
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
       runningRef.current = false;
       setStarted(false);
       setStep("intro");
@@ -96,9 +100,22 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const listenForAnswer = useCallback(async (): Promise<string> => {
     for (let attempt = 0; attempt < 4; attempt++) {
       setAwaitingManualListen(false);
+
+      const session = listenOnce({ maxMs: 22000, deferStart: true });
+
+      setAwaitingManualListen(true);
+      setStatusLine(attempt === 0 ? HI.tapToSpeak : HI.tapToSpeakAgain);
+      await new Promise<void>((resolve) => {
+        manualRetryRef.current = () => {
+          session.begin?.();
+          resolve();
+        };
+      });
+      setAwaitingManualListen(false);
       setStatusLine(HI.listening);
+
       try {
-        const raw = await listenOnce({ maxMs: 18000 });
+        const raw = await session;
         const t = normalizeTranscript(raw);
         if (t.length > 0) {
           setStatusLine(HI.youSaid(t));
@@ -106,16 +123,12 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         }
       } catch (e) {
         const code = e instanceof Error ? e.message : "";
+        if (code === "cancelled") continue;
         if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
           throw new Error(HI.micDenied);
         }
         if (code === "unsupported") throw new Error(HI.browserUnsupported);
       }
-      setAwaitingManualListen(true);
-      setStatusLine(HI.tapToSpeak);
-      await new Promise<void>((resolve) => {
-        manualRetryRef.current = resolve;
-      });
     }
     return "";
   }, [listenOnce]);
@@ -124,6 +137,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     async (prompt: string): Promise<string> => {
       setStatusLine(prompt);
       await speakText(prompt, "hi-IN");
+      await waitForMicHandoff();
       return listenForAnswer();
     },
     [listenForAnswer],
@@ -286,7 +300,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     }
 
     try {
-      await ensureMicrophoneAccess();
+      await ensureMicrophoneAccess(micStreamRef);
     } catch {
       setError(HI.micDenied);
       setStep("done");
@@ -329,7 +343,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         {!started ? (
           <div className="mt-8 text-center">
             <p className="text-sm text-slate-600">
-              माइक्रोफ़ोन की अनुमति दें, फिर &quot;शुरू करें&quot; दबाएँ। हर सवाल हिंदी में सुनाई देगा।
+              माइक Allow करें। हर सवाल के बाद &quot;माइक दबाकर बोलिए&quot; दिखे तो पहले वही बटन दबाएँ, फिर बोलें।
             </p>
             <Button type="button" className="mt-6 w-full rounded-full" onClick={handleStart}>
               <Mic className="mr-2 h-4 w-4" />
@@ -351,6 +365,9 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             </div>
             <p className="mt-4 text-sm font-semibold text-slate-800">{STEP_LABELS_HI[step]}</p>
             {listening && <p className="mt-2 text-sm font-medium text-red-600">{HI.listening}</p>}
+            {listening && interimText && (
+              <p className="mt-2 text-center text-sm font-medium text-teal-700">{HI.hearing(interimText)}</p>
+            )}
             {statusLine && !listening && (
               <p className="mt-2 text-center text-sm text-slate-600">{statusLine}</p>
             )}

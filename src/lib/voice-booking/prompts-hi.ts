@@ -22,9 +22,11 @@ export const HI = {
   success: (name: string, ref: string) =>
     `धन्यवाद ${name} जी। आपकी अपॉइंटमेंट रिक्वेस्ट भेज दी गई है। रेफरेंस नंबर ${ref}। हम जल्द कन्फ़र्म करेंगे।`,
   failed: "माफ़ कीजिए, वॉइस बुकिंग पूरी नहीं हो सकी। नीचे फ़ॉर्म से बुक कर लीजिए।",
-  listening: "सुन रहा हूँ… अब बोलिए।",
+  listening: "सुन रही हूँ… अब बोलिए।",
+  hearing: (t: string) => `सुनाई दे रही है: ${t}`,
   youSaid: (t: string) => `आपने कहा: ${t}`,
   tapToSpeak: "माइक दबाकर बोलिए",
+  tapToSpeakAgain: "फिर से माइक दबाकर बोलिए",
   browserUnsupported:
     "इस ब्राउज़र में स्पीच रिकग्निशन उपलब्ध नहीं है। Chrome या Edge (Android/Desktop) इस्तेमाल करें, या नीचे फ़ॉर्म भरें।",
   micDenied:
