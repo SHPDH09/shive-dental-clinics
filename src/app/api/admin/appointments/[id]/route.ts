@@ -55,7 +55,7 @@ export async function GET(_req: Request, context: RouteContext) {
 
     const item = await prisma.appointment.findUnique({
       where: { id },
-      include: { patient: true, service: true },
+      include: { patient: true, service: true, branch: true, doctor: true },
     });
 
     if (!item) {
