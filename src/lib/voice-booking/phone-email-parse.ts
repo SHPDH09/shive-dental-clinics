@@ -1,5 +1,22 @@
 import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
 
+const INDIAN_MOBILE = /^[6-9]\d{9}$/;
+
+/** Valid 10-digit Indian mobile inside a longer digit string. */
+export function extractIndianMobileFromDigits(digits: string): string | null {
+  const d = digits.replace(/\D/g, "");
+  if (d.length === 10 && INDIAN_MOBILE.test(d)) return d;
+  for (let i = 0; i <= d.length - 10; i++) {
+    const sub = d.slice(i, i + 10);
+    if (INDIAN_MOBILE.test(sub)) return sub;
+  }
+  if (d.length > 10) {
+    const last = d.slice(-10);
+    if (INDIAN_MOBILE.test(last)) return last;
+  }
+  return null;
+}
+
 export function countPhoneDigits(text: string): number {
   return expandSpokenDigits(text).replace(/\D/g, "").length;
 }
@@ -8,7 +25,8 @@ export function mergeSpokenPhoneParts(...parts: string[]): string {
   const digits = parts
     .map((p) => expandSpokenDigits(p).replace(/\D/g, ""))
     .join("");
-  if (digits.length >= 10) return digits.slice(-10);
+  const mobile = extractIndianMobileFromDigits(digits);
+  if (mobile) return mobile;
   return digits;
 }
 

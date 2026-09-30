@@ -3,6 +3,7 @@ import {
   devanagariDigitsToLatin,
   normalizeDevanagariIntent,
 } from "@/lib/voice-booking/devanagari-voice";
+import { extractIndianMobileFromDigits } from "@/lib/voice-booking/phone-email-parse";
 import { isLikelyMaleVoice, pickFemaleTtsVoice } from "@/lib/voice-booking/pick-tts-voice";
 
 function delay(ms: number) {
@@ -153,8 +154,7 @@ export function normalizeIntentSpeech(raw: string): string {
 export function parsePhoneFromSpeech(text: string): string | null {
   const expanded = expandSpokenDigits(text);
   const digits = expanded.replace(/\D/g, "");
-  if (digits.length >= 10) return digits.slice(-10);
-  return null;
+  return extractIndianMobileFromDigits(digits);
 }
 
 export function parseEmailFromSpeech(text: string): string | null {
