@@ -360,7 +360,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     } finally {
       runningRef.current = false;
     }
-  }, [askAndListen, onClose, services, supported]);
+  }, [askAndListen, listenForFullEmail, listenForFullPhone, listenOnly, onClose, services, supported]);
 
   /** getUserMedia must start in this click handler (browser permission popup). */
   const handleAllowMicAndStart = () => {
