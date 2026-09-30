@@ -3,8 +3,8 @@ export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  /** Voice booking needs mic on this origin; camera stays disabled. */
-  "Permissions-Policy": "camera=(), microphone=(self), geolocation=()",
+  /** Do not list microphone here — omitting it keeps the browser default (prompt on this origin). */
+  "Permissions-Policy": "camera=(), geolocation=()",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Resource-Policy": "same-site",
 };

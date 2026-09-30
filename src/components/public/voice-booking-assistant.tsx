@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isSpeechRecognitionSupported, useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import {
-  ensureMicrophoneAccess,
-  isSpeechRecognitionSupported,
-  useSpeechRecognition,
-} from "@/hooks/use-speech-recognition";
+  errorToMicCode,
+  micErrorMessage,
+  requestMicrophoneStream,
+} from "@/lib/voice-booking/mic-permission";
 import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
@@ -56,6 +57,8 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const [statusLine, setStatusLine] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
+  const [micGranted, setMicGranted] = useState(false);
+  const [requestingMic, setRequestingMic] = useState(false);
   const [awaitingManualListen, setAwaitingManualListen] = useState(false);
   const manualRetryRef = useRef<(() => void) | null>(null);
   const draftRef = useRef<Draft>({
@@ -97,6 +100,8 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setStatusLine("");
       setAwaitingManualListen(false);
       manualRetryRef.current = null;
+      setMicGranted(false);
+      setRequestingMic(false);
     }
   }, [open, stop]);
 
@@ -317,31 +322,52 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   }, [askAndListen, onClose, services, supported]);
 
   const handleManualMic = () => {
-    setAwaitingManualListen(false);
-    manualRetryRef.current?.();
-    manualRetryRef.current = null;
+    void (async () => {
+      setError(null);
+      try {
+        if (!micStreamRef.current) {
+          await requestMicrophoneStream(micStreamRef);
+          setMicGranted(true);
+        }
+        unmuteMicStream(micStreamRef.current);
+      } catch (e) {
+        setError(micErrorMessage(errorToMicCode(e)));
+        return;
+      }
+      setAwaitingManualListen(false);
+      manualRetryRef.current?.();
+      manualRetryRef.current = null;
+    })();
   };
 
-  const handleStart = async () => {
-    setStarted(true);
-    setError(null);
+  /** Mic prompt must run immediately on this click (browser permission UI). */
+  const handleAllowMicAndStart = () => {
+    void (async () => {
+      setError(null);
+      setRequestingMic(true);
 
-    if (!isSpeechRecognitionSupported()) {
-      setError(HI.browserUnsupported);
-      setStep("done");
-      return;
-    }
+      try {
+        await requestMicrophoneStream(micStreamRef);
+        unmuteMicStream(micStreamRef.current);
+        setMicGranted(true);
+      } catch (e) {
+        setError(micErrorMessage(errorToMicCode(e)));
+        setRequestingMic(false);
+        return;
+      }
 
-    try {
-      await ensureMicrophoneAccess(micStreamRef);
-      unmuteMicStream(micStreamRef.current);
-    } catch {
-      setError(HI.micDenied);
-      setStep("done");
-      return;
-    }
+      setRequestingMic(false);
 
-    void runFlow();
+      if (!isSpeechRecognitionSupported()) {
+        setStarted(true);
+        setError(HI.browserUnsupported);
+        setStep("done");
+        return;
+      }
+
+      setStarted(true);
+      void runFlow();
+    })();
   };
 
   if (!open) return null;
@@ -377,11 +403,23 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         {!started ? (
           <div className="mt-8 text-center">
             <p className="text-sm text-slate-600">
-              Mic Allow karein aur Shuru karein dabayein. Har jawab ke baad mic apne aap khulega — bas boliye.
+              Pehle browser se mic Allow karein. Button dabate hi permission popup aayega — Allow choose karein.
             </p>
-            <Button type="button" className="mt-6 w-full rounded-full" onClick={handleStart}>
-              <Mic className="mr-2 h-4 w-4" />
-              शुरू करें
+            {micGranted && (
+              <p className="mt-2 text-sm font-medium text-teal-700">Mic allowed — booking shuru ho rahi hai…</p>
+            )}
+            <Button
+              type="button"
+              className="mt-6 w-full rounded-full"
+              disabled={requestingMic}
+              onClick={handleAllowMicAndStart}
+            >
+              {requestingMic ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mic className="mr-2 h-4 w-4" />
+              )}
+              Mic Allow karein &amp; Shuru karein
             </Button>
           </div>
         ) : (

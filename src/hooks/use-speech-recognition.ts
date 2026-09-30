@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
+
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
@@ -16,25 +18,10 @@ export function isSpeechRecognitionSupported(): boolean {
   return getSpeechRecognitionCtor() !== null;
 }
 
-/** Ask for mic permission; optionally keep the stream open for the booking session. */
 export async function ensureMicrophoneAccess(keepStream?: {
   current: MediaStream | null;
 }): Promise<void> {
-  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-    throw new Error("mic-unavailable");
-  }
-  if (keepStream?.current) {
-    for (const track of keepStream.current.getTracks()) track.stop();
-    keepStream.current = null;
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true },
-  });
-  if (keepStream) {
-    keepStream.current = stream;
-  } else {
-    for (const track of stream.getTracks()) track.stop();
-  }
+  await requestMicrophoneStream(keepStream);
 }
 
 function delay(ms: number) {
