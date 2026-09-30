@@ -1,16 +1,29 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
-function getRecognitionCtor(): SpeechRecognitionCtor | null {
+export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
   const w = window as Window & {
     SpeechRecognition?: SpeechRecognitionCtor;
     webkitSpeechRecognition?: SpeechRecognitionCtor;
   };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+export function isSpeechRecognitionSupported(): boolean {
+  return getSpeechRecognitionCtor() !== null;
+}
+
+/** Prompt for mic access while the user gesture is still active (before long TTS). */
+export async function ensureMicrophoneAccess(): Promise<void> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error("mic-unavailable");
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  for (const track of stream.getTracks()) track.stop();
 }
 
 function delay(ms: number) {
@@ -23,12 +36,16 @@ export function useSpeechRecognition(lang = "hi-IN") {
   const recRef = useRef<SpeechRecognition | null>(null);
   const activeRef = useRef(false);
 
+  useEffect(() => {
+    setSupported(isSpeechRecognitionSupported());
+  }, []);
+
   const listenOnce = useCallback(
     (options?: { maxMs?: number }): Promise<string> => {
       const maxMs = options?.maxMs ?? 14000;
 
       return new Promise(async (resolve, reject) => {
-        const Ctor = getRecognitionCtor();
+        const Ctor = getSpeechRecognitionCtor();
         if (!Ctor) {
           setSupported(false);
           reject(new Error("unsupported"));
@@ -44,7 +61,7 @@ export function useSpeechRecognition(lang = "hi-IN") {
           }
         }
 
-        await delay(500);
+        await delay(650);
 
         const rec = new Ctor();
         recRef.current = rec;

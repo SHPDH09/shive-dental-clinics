@@ -25,7 +25,10 @@ export const HI = {
   listening: "सुन रहा हूँ… अब बोलिए।",
   youSaid: (t: string) => `आपने कहा: ${t}`,
   tapToSpeak: "माइक दबाकर बोलिए",
-  browserUnsupported: "इस ब्राउज़र में वॉइस बुकिंग सीमित है। Chrome या Edge इस्तेमाल करें, या फ़ॉर्म भरें।",
+  browserUnsupported:
+    "इस ब्राउज़र में स्पीच रिकग्निशन उपलब्ध नहीं है। Chrome या Edge (Android/Desktop) इस्तेमाल करें, या नीचे फ़ॉर्म भरें।",
+  micDenied:
+    "माइक्रोफ़ोन की अनुमति नहीं मिली। ब्राउज़र में माइक Allow करें और दोबारा «शुरू करें» दबाएँ।",
 } as const;
 
 export const STEP_LABELS_HI = {

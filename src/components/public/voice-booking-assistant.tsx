@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import {
+  ensureMicrophoneAccess,
+  isSpeechRecognitionSupported,
+  useSpeechRecognition,
+} from "@/hooks/use-speech-recognition";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
   isAffirmative,
@@ -102,7 +106,10 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         }
       } catch (e) {
         const code = e instanceof Error ? e.message : "";
-        if (code === "not-allowed") throw new Error(HI.browserUnsupported);
+        if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+          throw new Error(HI.micDenied);
+        }
+        if (code === "unsupported") throw new Error(HI.browserUnsupported);
       }
       setAwaitingManualListen(true);
       setStatusLine(HI.tapToSpeak);
@@ -129,7 +136,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     setReferenceId(null);
 
     try {
-      if (supported === false) {
+      if (!isSpeechRecognitionSupported()) {
         setError(HI.browserUnsupported);
         setStep("done");
         return;
@@ -268,8 +275,24 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     manualRetryRef.current = null;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     setStarted(true);
+    setError(null);
+
+    if (!isSpeechRecognitionSupported()) {
+      setError(HI.browserUnsupported);
+      setStep("done");
+      return;
+    }
+
+    try {
+      await ensureMicrophoneAccess();
+    } catch {
+      setError(HI.micDenied);
+      setStep("done");
+      return;
+    }
+
     void runFlow();
   };
 
