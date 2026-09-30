@@ -87,28 +87,75 @@ export function normalizeTranscript(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }
 
+const EN_WORD_DIGIT: Record<string, string> = {
+  zero: "0",
+  one: "1",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  oh: "0",
+};
+
+const HI_WORD_DIGIT: Record<string, string> = {
+  shunya: "0",
+  ek: "1",
+  do: "2",
+  teen: "3",
+  char: "4",
+  paanch: "5",
+  panch: "5",
+  chhe: "6",
+  che: "6",
+  saat: "7",
+  aath: "8",
+  ath: "8",
+  nau: "9",
+};
+
+export function expandSpokenDigits(text: string): string {
+  let t = ` ${text.toLowerCase()} `;
+  for (const [word, digit] of Object.entries(EN_WORD_DIGIT)) {
+    t = t.replaceAll(` ${word} `, ` ${digit} `);
+  }
+  for (const [word, digit] of Object.entries(HI_WORD_DIGIT)) {
+    t = t.replaceAll(` ${word} `, ` ${digit} `);
+  }
+  return t.replace(/\s+/g, " ").trim();
+}
+
 /** Map common STT mis-hears for haan / nahi. */
 export function normalizeIntentSpeech(raw: string): string {
   let t = normalizeTranscript(raw).toLowerCase();
-  t = t.replace(/[.,!?]/g, "").trim();
+  t = t.replace(/[.,!?]/g, " ").replace(/\s+/g, " ").trim();
   if (/^(ha|haa|han|hann|hun|hum|ho|hot|heart|hut|hah)$/i.test(t)) return "haan";
   if (/^(ya|yaa|ye|yep|yeah|yes|y)$/i.test(t)) return "yes";
   if (/^(na|nahi|nah|no|nope|mat)$/i.test(t)) return "nahi";
+  if (/\b(nahi|nah|no|nope|mat|cancel|galat)\b/.test(t)) return "nahi";
+  if (/\b(haan|han|ha|yes|yeah|yep|ji|ok|okay|bilkul|theek|sahi|confirm|book|chahte|chahiye|chahie)\b/.test(t)) {
+    return "haan";
+  }
   return t;
 }
 
 export function parsePhoneFromSpeech(text: string): string | null {
-  const digits = text.replace(/\D/g, "");
-  if (digits.length >= 10) {
-    const ten = digits.slice(-10);
-    return ten;
-  }
+  const expanded = expandSpokenDigits(text);
+  const digits = expanded.replace(/\D/g, "");
+  if (digits.length >= 10) return digits.slice(-10);
   return null;
 }
 
 export function parseEmailFromSpeech(text: string): string | null {
-  let t = text.toLowerCase().replace(/\s+/g, "");
-  t = t.replace(/atthe/g, "@").replace(/at/g, "@").replace(/dot/g, ".");
+  let t = text.toLowerCase().replace(/\s+/g, " ").trim();
+  t = t
+    .replace(/\bemel\b|\bemail\b|\bee mail\b|\bmail\b/gi, " ")
+    .replace(/\bat the rate\b|\battherate\b|\bat\b/gi, "@")
+    .replace(/\bdot\b|\bpoint\b/gi, ".")
+    .replace(/\s+/g, "");
   const m = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
   return m ? m[0] : null;
 }
@@ -118,7 +165,7 @@ export function parseDateFromSpeech(text: string): string | null {
   const today = startOfDay(new Date());
 
   if (/aaj|today|now|आज/.test(t)) return format(today, "yyyy-MM-dd");
-  if (/parso|परसों/.test(t)) return format(addDays(today, 2), "yyyy-MM-dd");
+  if (/parso|parson|day after tomorrow|परसों/.test(t)) return format(addDays(today, 2), "yyyy-MM-dd");
   if (/kal|tomorrow|next day|कल/.test(t)) return format(addDays(today, 1), "yyyy-MM-dd");
 
   const iso = t.match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -164,8 +211,48 @@ export function parseDateFromSpeech(text: string): string | null {
   return null;
 }
 
+const HI_HOUR: Record<string, number> = {
+  ek: 1,
+  do: 2,
+  teen: 3,
+  char: 4,
+  paanch: 5,
+  panch: 5,
+  chhe: 6,
+  che: 6,
+  saat: 7,
+  aath: 8,
+  ath: 8,
+  nau: 9,
+  das: 10,
+  gyarah: 11,
+  barah: 12,
+};
+
+function hourFromHindiWord(word: string): number | null {
+  return HI_HOUR[word.toLowerCase()] ?? null;
+}
+
 export function parseTimeFromSpeech(text: string): string | null {
-  const t = text.toLowerCase().replace(/\s+/g, " ");
+  let t = expandSpokenDigits(text.toLowerCase()).replace(/\s+/g, " ");
+
+  const baje = t.match(/\b(\d{1,2}|ek|do|teen|char|paanch|panch|chhe|che|saat|aath|ath|nau|das|gyarah|barah)\s*baje\b/);
+  if (baje) {
+    let h = parseInt(baje[1], 10);
+    if (Number.isNaN(h)) h = hourFromHindiWord(baje[1]) ?? 10;
+    if (/dopahar|shaam|sham|evening|pm|night/.test(t) && h < 12) h += 12;
+    if (/subah|morning|am/.test(t) && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:00`;
+  }
+
+  const saadhe = t.match(/saadhe\s+(\d{1,2}|ek|do|teen|char|paanch|panch|chhe|che|saat|aath|ath|nau|das|gyarah|barah)/);
+  if (saadhe) {
+    let h = parseInt(saadhe[1], 10);
+    if (Number.isNaN(h)) h = hourFromHindiWord(saadhe[1]) ?? 10;
+    if (/dopahar|shaam|sham|evening|pm/.test(t) && h < 12) h += 12;
+    return `${String(h).padStart(2, "0")}:30`;
+  }
+
   const m24 = t.match(/\b(\d{1,2}):(\d{2})\b/);
   if (m24) {
     const h = Math.min(23, parseInt(m24[1], 10));
@@ -199,8 +286,8 @@ export function isAffirmative(text: string): boolean {
 }
 
 export function isNegative(text: string): boolean {
-  const t = text.toLowerCase();
-  return /^(no|nope|cancel|nahi|nah|mat|wrong|galat)/.test(t.trim());
+  const t = normalizeIntentSpeech(text);
+  return /^(no|nope|cancel|nahi|nah|mat|wrong|galat)/.test(t) || t === "nahi";
 }
 
 export function matchServiceName(transcript: string, services: { id: string; name: string }[]): {
@@ -218,8 +305,11 @@ export function matchServiceName(transcript: string, services: { id: string; nam
     const n = s.name.toLowerCase();
     if (t.includes(n) || n.includes(t)) return s;
     const words = n.split(/\s+/);
-    const score = words.filter((w) => w.length > 3 && t.includes(w)).length;
+    const score = words.filter((w) => w.length > 2 && t.includes(w)).length;
     if (score > 0 && (!best || score > best.score)) best = { ...s, score };
+  }
+  if (!best && t.trim().length >= 2) {
+    return { id: "", name: t.trim() };
   }
   return best;
 }

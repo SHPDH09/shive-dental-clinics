@@ -9,6 +9,7 @@ import {
   micErrorMessage,
   requestMicrophoneStream,
 } from "@/lib/voice-booking/mic-permission";
+import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
@@ -191,8 +192,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       let name = "";
       for (let i = 0; i < 3; i++) {
         const t = await askAndListen(i === 0 ? HI.askName : HI.retryName);
-        if (t.length >= 2) {
-          name = t;
+        const parsed = parseNameFromSpeech(t);
+        if (parsed.length >= 2) {
+          name = parsed;
+          break;
+        }
+        if (t.trim().length >= 2) {
+          name = t.trim();
           break;
         }
       }

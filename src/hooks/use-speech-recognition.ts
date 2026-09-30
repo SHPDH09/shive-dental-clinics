@@ -5,7 +5,8 @@ import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
-const LANGS_NORMAL = ["hi-IN", "en-IN", "en-US"] as const;
+/** English first — best for mixed Hindi/English speech in Chrome. */
+const LANGS_NORMAL = ["en-IN", "hi-IN", "en-US"] as const;
 const LANGS_SHORT = ["en-IN", "hi-IN", "en-US"] as const;
 
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
@@ -174,16 +175,18 @@ export async function listenForSpeech(
   const perLangMs = short ? Math.min(maxMs, 6500) : maxMs;
 
   let lastErr = "no-speech";
+  let best = "";
   for (const lang of langs) {
     try {
       const text = await listenWithLanguage(lang, perLangMs, short, onInterim);
-      if (text.trim()) return text;
+      if (text.trim().length > best.length) best = text.trim();
     } catch (e) {
       lastErr = e instanceof Error ? e.message : "listen_failed";
       if (lastErr === "not-allowed" || lastErr === "unsupported") throw e;
-      await delay(150);
+      await delay(120);
     }
   }
+  if (best) return best;
   throw new Error(lastErr);
 }
 

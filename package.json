@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:voice-intent": "tsx scripts/test-voice-intent.ts",
+    "test:voice-bilingual": "tsx scripts/test-voice-bilingual.ts",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",

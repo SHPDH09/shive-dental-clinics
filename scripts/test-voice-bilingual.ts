@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+import { parseNameFromSpeech } from "../src/lib/voice-booking/bilingual-input";
+import {
+  isAffirmative,
+  normalizeIntentSpeech,
+  parseDateFromSpeech,
+  parseEmailFromSpeech,
+  parsePhoneFromSpeech,
+  parseTimeFromSpeech,
+} from "../src/lib/voice-booking/speech-utils";
+
+assert.equal(parseNameFromSpeech("my name is Rahul Kumar"), "Rahul Kumar");
+assert.equal(parseNameFromSpeech("mera naam Priya hai"), "Priya");
+assert.equal(parsePhoneFromSpeech("nine eight seven six five four three two one zero"), "9876543210");
+assert.equal(parseEmailFromSpeech("rahul at gmail dot com")?.includes("@"), true);
+assert.ok(parseDateFromSpeech("tomorrow"));
+assert.ok(parseDateFromSpeech("kal"));
+assert.equal(parseTimeFromSpeech("subah das baje"), "10:00");
+assert.equal(parseTimeFromSpeech("10 AM")?.startsWith("10"), true);
+assert.equal(isAffirmative(normalizeIntentSpeech("han ji yes book karna hai")), true);
+
+console.log("voice-bilingual: all checks passed");

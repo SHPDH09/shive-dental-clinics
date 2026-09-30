@@ -3,18 +3,18 @@
 export const HI = {
   askIntentRetry:
     "Samajh nahi aaya ji. Dental appointment book karni hai? Please haan ya nahi boliye.",
-  askName: "Bahut badhiya. Please apna pura naam bata dijiye.",
+  askName: "Bahut badhiya. Apna pura naam Hindi ya English mein boliye.",
   retryName: "Naam thoda clear nahi aaya. Ek baar phir apna pura naam boliye ji.",
-  askPhone: "Dhanyavaad. Ab apna mobile number boliye, das digit.",
+  askPhone: "Dhanyavaad. Mobile number boliye — digits Hindi ya English mein chalega.",
   retryPhone: "Number clear nahi hua. Sirf mobile number, das ank boliye.",
-  askEmail: "Ab confirmation ke liye apna email boliye. Jaise naam at gmail dot com.",
+  askEmail: "Email boliye — naam at gmail dot com, Hindi ya English dono chalega.",
   retryEmail: "Email samajh nahi aaya. Thoda dheere, dubara email boliye.",
   askService: (options: string) =>
     `Kaun si treatment chahiye aapko? Naam bol sakte hain ya number. Options hain: ${options}`,
   retryService: "Treatment clear nahi hui. Dubara boliye ji.",
-  askDate: "Kis date ko aana convenient hoga? Aaj, kal, ya koi aur date boliye.",
+  askDate: "Date boliye — today, tomorrow, aaj, kal, ya koi date. Hindi English dono.",
   retryDate: "Date clear nahi hui. Aaj ke baad ki koi date boliye.",
-  askTime: "Kis time aana theek rahega? Jaise subah das baje, ya dopahar teen baje.",
+  askTime: "Time boliye — 10 AM, subah das baje, ya 3 PM. Hindi English dono.",
   retryTime: "Time samajh nahi aaya. Phir se time boliye.",
   confirm: (summary: string) =>
     `Main ek baar repeat karti hoon. ${summary}. Sab theek hai to haan boliye, warna nahi.`,

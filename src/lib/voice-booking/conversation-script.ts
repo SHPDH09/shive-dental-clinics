@@ -22,7 +22,7 @@ export function welcomeConversation(): string[] {
     hello,
     "Shiv Dental Clinic mein aapka swagat hai.",
     "Mujhe khushi hui ki aapne Shiv Dental Clinic choose kiya.",
-    "Kya aap dental se related appointment book karna chahte hain? Haan ya nahi boliye.",
+    "Kya aap dental appointment book karna chahte hain? Haan ya nahi boliye — Hindi ya English, jo aapko easy ho.",
   ];
 }
 
