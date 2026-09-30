@@ -8,6 +8,7 @@ import {
   isSpeechRecognitionSupported,
   useSpeechRecognition,
 } from "@/hooks/use-speech-recognition";
+import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
   isAffirmative,
@@ -19,7 +20,9 @@ import {
   parseEmailFromSpeech,
   parsePhoneFromSpeech,
   parseTimeFromSpeech,
+  speakConversation,
   speakText,
+  unmuteMicStream,
   waitForMicHandoff,
 } from "@/lib/voice-booking/speech-utils";
 import { getOrCreateVisitorId, setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
@@ -99,19 +102,26 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
   const listenForAnswer = useCallback(async (): Promise<string> => {
     for (let attempt = 0; attempt < 4; attempt++) {
+      unmuteMicStream(micStreamRef.current);
       setAwaitingManualListen(false);
 
-      const session = listenOnce({ maxMs: 22000, deferStart: true });
+      const needTap = attempt > 0;
+      const session = listenOnce({ maxMs: 24000, deferStart: needTap });
 
-      setAwaitingManualListen(true);
-      setStatusLine(attempt === 0 ? HI.tapToSpeak : HI.tapToSpeakAgain);
-      await new Promise<void>((resolve) => {
-        manualRetryRef.current = () => {
-          session.begin?.();
-          resolve();
-        };
-      });
-      setAwaitingManualListen(false);
+      if (needTap) {
+        setAwaitingManualListen(true);
+        setStatusLine(HI.tapToSpeakAgain);
+        await new Promise<void>((resolve) => {
+          manualRetryRef.current = () => {
+            session.begin?.();
+            resolve();
+          };
+        });
+        setAwaitingManualListen(false);
+      } else {
+        setStatusLine(HI.micOpening);
+      }
+
       setStatusLine(HI.listening);
 
       try {
@@ -125,6 +135,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         const code = e instanceof Error ? e.message : "";
         if (code === "cancelled") continue;
         if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+          if (attempt < 3) continue;
           throw new Error(HI.micDenied);
         }
         if (code === "unsupported") throw new Error(HI.browserUnsupported);
@@ -132,6 +143,11 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     }
     return "";
   }, [listenOnce]);
+
+  const listenOnly = useCallback(async (): Promise<string> => {
+    await waitForMicHandoff();
+    return listenForAnswer();
+  }, [listenForAnswer]);
 
   const askAndListen = useCallback(
     async (prompt: string): Promise<string> => {
@@ -157,7 +173,24 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       }
 
       setStep("intro");
-      await speakText(HI.welcome, "hi-IN");
+      await speakConversation(welcomeConversation());
+
+      setStep("intent");
+      let wantsBooking = false;
+      for (let i = 0; i < 3; i++) {
+        const t =
+          i === 0 ? await listenOnly() : await askAndListen(HI.askIntentRetry);
+        if (isAffirmative(t)) {
+          wantsBooking = true;
+          break;
+        }
+        if (isNegative(t)) {
+          await speakConversation([HI.declinedBooking, "Have a good day!"]);
+          onClose();
+          return;
+        }
+      }
+      if (!wantsBooking) throw new Error("Appointment confirm nahi hui. Dubara try karein.");
 
       setStep("name");
       let name = "";
@@ -272,7 +305,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       const ref = json.appointmentId ?? "OK";
       setReferenceId(String(ref));
       setStep("done");
-      await speakText(HI.success(name, String(ref)), "hi-IN");
+      await speakConversation(successConversation(name, String(ref)));
     } catch (e) {
       const msg = e instanceof Error ? e.message : HI.failed;
       setError(msg);
@@ -301,6 +334,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
     try {
       await ensureMicrophoneAccess(micStreamRef);
+      unmuteMicStream(micStreamRef.current);
     } catch {
       setError(HI.micDenied);
       setStep("done");
@@ -324,7 +358,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             <h2 id="voice-booking-title" className="text-lg font-bold text-slate-900">
               वॉइस बुकिंग असिस्टेंट
             </h2>
-            <p className="mt-1 text-xs text-slate-500">शिव डेंटल क्लिनिक · हिंदी में बोलिए</p>
+            <p className="mt-1 text-xs text-slate-500">Shiv Dental Clinic · natural voice assistant</p>
           </div>
           <button
             type="button"
@@ -343,7 +377,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         {!started ? (
           <div className="mt-8 text-center">
             <p className="text-sm text-slate-600">
-              माइक Allow करें। हर सवाल के बाद &quot;माइक दबाकर बोलिए&quot; दिखे तो पहले वही बटन दबाएँ, फिर बोलें।
+              Mic Allow karein aur Shuru karein dabayein. Har jawab ke baad mic apne aap khulega — bas boliye.
             </p>
             <Button type="button" className="mt-6 w-full rounded-full" onClick={handleStart}>
               <Mic className="mr-2 h-4 w-4" />

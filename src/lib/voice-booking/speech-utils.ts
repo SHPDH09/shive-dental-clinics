@@ -13,7 +13,23 @@ export async function waitForMicHandoff(): Promise<void> {
     if (!window.speechSynthesis?.speaking) break;
     await delay(50);
   }
-  await delay(850);
+  await delay(650);
+}
+
+function applyNaturalVoice(u: SpeechSynthesisUtterance, lang: string) {
+  u.lang = lang;
+  u.rate = 0.9;
+  const voices = window.speechSynthesis.getVoices();
+  const picked = pickFemaleTtsVoice(voices, lang);
+  if (picked) {
+    u.voice = picked;
+    u.lang = picked.lang || lang;
+  }
+  if (isLikelyMaleVoice(picked)) {
+    u.pitch = 1.08;
+  } else {
+    u.pitch = 0.98;
+  }
 }
 
 export function speakText(text: string, lang = "hi-IN"): Promise<void> {
@@ -26,21 +42,9 @@ export function speakText(text: string, lang = "hi-IN"): Promise<void> {
 
     const speak = () => {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang;
-      u.rate = 0.93;
-      const voices = window.speechSynthesis.getVoices();
-      const picked = pickFemaleTtsVoice(voices, lang);
-      if (picked) {
-        u.voice = picked;
-        u.lang = picked.lang || lang;
-      }
-      if (isLikelyMaleVoice(picked)) {
-        u.pitch = 1.12;
-      } else {
-        u.pitch = 1.02;
-      }
-      u.onend = () => setTimeout(resolve, 350);
-      u.onerror = () => setTimeout(resolve, 350);
+      applyNaturalVoice(u, lang);
+      u.onend = () => setTimeout(resolve, 280);
+      u.onerror = () => setTimeout(resolve, 280);
       window.speechSynthesis.speak(u);
     };
 
@@ -53,6 +57,22 @@ export function speakText(text: string, lang = "hi-IN"): Promise<void> {
     } else {
       speak();
     }
+  });
+}
+
+/** Speak like a person: short lines with brief pauses between them. */
+export async function speakConversation(parts: string[], lang = "hi-IN"): Promise<void> {
+  for (const line of parts) {
+    const t = line.trim();
+    if (!t) continue;
+    await speakText(t, lang);
+    await delay(380);
+  }
+}
+
+export function unmuteMicStream(stream: MediaStream | null | undefined): void {
+  stream?.getAudioTracks().forEach((track) => {
+    track.enabled = true;
   });
 }
 
@@ -152,8 +172,13 @@ export function parseTimeFromSpeech(text: string): string | null {
 }
 
 export function isAffirmative(text: string): boolean {
-  const t = text.toLowerCase();
-  return /^(yes|yeah|yep|ok|okay|confirm|book|ha|haan|han|ji|theek|thik|sahi|correct)/.test(t.trim());
+  const t = text.toLowerCase().trim();
+  if (!t) return false;
+  if (isNegative(text)) return false;
+  if (/^(yes|yeah|yep|ok|okay|confirm|book|ha|haan|han|ji|theek|thik|sahi|correct|bilkul|zaroor|please)/.test(t)) {
+    return true;
+  }
+  return /\b(haan|ha|han|ji|yes|book|appointment|chahte|chahiye|chahie|karna chahte|bilkul|theek hai)\b/.test(t);
 }
 
 export function isNegative(text: string): boolean {
