@@ -1,4 +1,5 @@
 import { addDays, format, parseISO, startOfDay } from "date-fns";
+import { isLikelyMaleVoice, pickFemaleTtsVoice } from "@/lib/voice-booking/pick-tts-voice";
 
 export function speakText(text: string, lang = "hi-IN"): Promise<void> {
   return new Promise((resolve) => {
@@ -11,13 +12,18 @@ export function speakText(text: string, lang = "hi-IN"): Promise<void> {
     const speak = () => {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang;
-      u.rate = 0.92;
+      u.rate = 0.93;
       const voices = window.speechSynthesis.getVoices();
-      const hindi =
-        voices.find((v) => v.lang.startsWith("hi")) ??
-        voices.find((v) => v.lang.includes("IN")) ??
-        null;
-      if (hindi) u.voice = hindi;
+      const picked = pickFemaleTtsVoice(voices, lang);
+      if (picked) {
+        u.voice = picked;
+        u.lang = picked.lang || lang;
+      }
+      if (isLikelyMaleVoice(picked)) {
+        u.pitch = 1.12;
+      } else {
+        u.pitch = 1.02;
+      }
       u.onend = () => setTimeout(resolve, 350);
       u.onerror = () => setTimeout(resolve, 350);
       window.speechSynthesis.speak(u);
