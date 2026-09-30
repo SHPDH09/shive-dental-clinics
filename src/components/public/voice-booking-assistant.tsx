@@ -23,8 +23,6 @@ import {
   parseTimeFromSpeech,
   speakConversation,
   speakText,
-  muteMicStream,
-  unmuteMicStream,
   waitForMicHandoff,
 } from "@/lib/voice-booking/speech-utils";
 import { getOrCreateVisitorId, setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
@@ -51,7 +49,6 @@ type Props = {
 
 export function VoiceBookingAssistant({ open, onClose, services: servicesProp }: Props) {
   const { listenOnce, listening, stop, supported, interimText } = useSpeechRecognition("hi-IN");
-  const micStreamRef = useRef<MediaStream | null>(null);
   const [services, setServices] = useState<ServiceOption[]>(servicesProp ?? []);
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState<StepId>("intro");
@@ -90,49 +87,44 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     if (!open) {
       stop();
       window.speechSynthesis?.cancel();
-      micStreamRef.current?.getTracks().forEach((t) => t.stop());
-      micStreamRef.current = null;
       runningRef.current = false;
       setStarted(false);
       setStep("intro");
       setError(null);
       setStatusLine("");
-      muteMicStream(micStreamRef.current);
       setMicGranted(false);
       setRequestingMic(false);
     }
   }, [open, stop]);
 
   const listenForAnswer = useCallback(async (): Promise<string> => {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      unmuteMicStream(micStreamRef.current);
-      setStatusLine(HI.micOpening);
-      await new Promise((r) => setTimeout(r, 220));
+    for (let attempt = 0; attempt < 3; attempt++) {
       setStatusLine(HI.listening);
 
       try {
-        const session = listenOnce({ maxMs: 26000, deferStart: false });
-        const raw = await session;
+        const raw = await listenOnce({ maxMs: 16000 });
         const t = normalizeTranscript(raw);
         if (t.length > 0) {
           setStatusLine(HI.youSaid(t));
+          await speakText(HI.gotIt, "hi-IN");
+          await waitForMicHandoff();
           return t;
         }
       } catch (e) {
         const code = e instanceof Error ? e.message : "";
-        if (code === "cancelled") continue;
         if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
-          if (attempt < 3) continue;
           throw new Error(HI.micDenied);
         }
         if (code === "unsupported") throw new Error(HI.browserUnsupported);
-      } finally {
-        stop();
-        muteMicStream(micStreamRef.current);
+        if (attempt < 2) {
+          setStatusLine(HI.retryListen);
+          await speakText(HI.retryListen, "hi-IN");
+          await waitForMicHandoff();
+        }
       }
     }
     return "";
-  }, [listenOnce, stop]);
+  }, [listenOnce]);
 
   const listenOnly = useCallback(async (): Promise<string> => {
     await waitForMicHandoff();
@@ -141,7 +133,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
   const askAndListen = useCallback(
     async (prompt: string): Promise<string> => {
-      muteMicStream(micStreamRef.current);
       setStatusLine(prompt);
       await speakText(prompt, "hi-IN");
       await waitForMicHandoff();
@@ -164,7 +155,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       }
 
       setStep("intro");
-      muteMicStream(micStreamRef.current);
       await speakConversation(welcomeConversation());
 
       setStep("intent");
@@ -313,9 +303,9 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     setError(null);
     setRequestingMic(true);
 
-    requestMicrophoneStream(micStreamRef)
-      .then(() => {
-        muteMicStream(micStreamRef.current);
+    requestMicrophoneStream()
+      .then((stream) => {
+        stream.getTracks().forEach((t) => t.stop());
         setMicGranted(true);
         setRequestingMic(false);
 

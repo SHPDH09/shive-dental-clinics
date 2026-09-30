@@ -13,7 +13,7 @@ export async function waitForMicHandoff(): Promise<void> {
     if (!window.speechSynthesis?.speaking) break;
     await delay(50);
   }
-  await delay(650);
+  await delay(520);
 }
 
 function applyNaturalVoice(u: SpeechSynthesisUtterance, lang: string) {
