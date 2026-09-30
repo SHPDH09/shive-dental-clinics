@@ -47,8 +47,8 @@ function listenWithLanguage(
     const rec = new Ctor();
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = false;
-    rec.maxAlternatives = 1;
+    rec.continuous = true;
+    rec.maxAlternatives = 3;
 
     let transcript = "";
     let settled = false;
@@ -117,8 +117,11 @@ function listenWithLanguage(
 
     rec.onend = () => {
       if (settled) return;
-      if (transcript.trim()) done(transcript);
-      else fail("no-speech");
+      window.setTimeout(() => {
+        if (settled) return;
+        if (transcript.trim()) done(transcript);
+        else fail("no-speech");
+      }, 120);
     };
 
     try {
