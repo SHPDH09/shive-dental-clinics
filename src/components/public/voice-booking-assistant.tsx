@@ -10,6 +10,7 @@ import {
   requestMicrophoneStream,
 } from "@/lib/voice-booking/mic-permission";
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
+import { isLikelyCompleteEmail, mergeSpokenPhoneParts } from "@/lib/voice-booking/phone-email-parse";
 import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
@@ -100,18 +101,21 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   }, [open, stop]);
 
   const listenForAnswer = useCallback(
-    async (options?: { short?: boolean }): Promise<string> => {
-      const short = options?.short ?? false;
+    async (options?: { short?: boolean; mode?: "phone" | "email" | "normal" | "short" }): Promise<string> => {
+      const mode = options?.mode ?? (options?.short ? "short" : "normal");
 
       for (let attempt = 0; attempt < 2; attempt++) {
         setStatusLine(HI.listening);
 
         try {
-          const raw = await listenOnce({ maxMs: short ? 8000 : 18000, short });
+          const raw = await listenOnce({
+            maxMs: mode === "phone" ? 38000 : mode === "email" ? 32000 : mode === "short" ? 8000 : 18000,
+            mode,
+          });
           const t = normalizeTranscript(raw);
           if (t.length > 0) {
             setStatusLine(HI.youSaid(t));
-            if (!short) {
+            if (mode === "normal") {
               await speakText(HI.gotIt, "hi-IN");
               await waitForMicHandoff();
             }
@@ -145,7 +149,10 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   );
 
   const askAndListen = useCallback(
-    async (prompt: string, options?: { short?: boolean }): Promise<string> => {
+    async (
+      prompt: string,
+      options?: { short?: boolean; mode?: "phone" | "email" | "normal" | "short" },
+    ): Promise<string> => {
       setStatusLine(prompt);
       await speakText(prompt, "hi-IN");
       await waitForMicHandoff();
@@ -153,6 +160,40 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     },
     [listenForAnswer],
   );
+
+  const listenForFullPhone = useCallback(async (): Promise<string> => {
+    const parts: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const chunk = await listenForAnswer({ mode: "phone" });
+      if (chunk) parts.push(chunk);
+      const merged = mergeSpokenPhoneParts(...parts);
+      const phone = parsePhoneFromSpeech(merged) ?? "";
+      if (phone.length === 10) return phone;
+      if (i < 2) {
+        await speakText(HI.phoneNeedMore, "hi-IN");
+        await waitForMicHandoff();
+      }
+    }
+    const last = mergeSpokenPhoneParts(...parts);
+    return parsePhoneFromSpeech(last) ?? "";
+  }, [listenForAnswer]);
+
+  const listenForFullEmail = useCallback(async (): Promise<string> => {
+    let buffer = "";
+    for (let i = 0; i < 3; i++) {
+      const chunk = await listenForAnswer({ mode: "email" });
+      buffer = `${buffer} ${chunk}`.trim();
+      const email =
+        parseEmailFromSpeech(buffer) ??
+        (buffer.includes("@") ? buffer.replace(/\s/g, "") : "");
+      if (email.includes("@") && isLikelyCompleteEmail(email)) return email;
+      if (i < 2) {
+        await speakText(HI.emailNeedMore, "hi-IN");
+        await waitForMicHandoff();
+      }
+    }
+    return parseEmailFromSpeech(buffer) ?? "";
+  }, [listenForAnswer]);
 
   const runFlow = useCallback(async () => {
     if (runningRef.current || !openRef.current) return;
@@ -206,23 +247,27 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       draftRef.current.patientName = name;
 
       setStep("phone");
-      let phone = "";
-      for (let i = 0; i < 3; i++) {
-        const t = await askAndListen(i === 0 ? HI.askPhone : HI.retryPhone);
-        phone = parsePhoneFromSpeech(t) ?? "";
-        if (phone) break;
+      await speakText(HI.askPhone, "hi-IN");
+      await waitForMicHandoff();
+      let phone = await listenForFullPhone();
+      if (!phone || phone.length !== 10) {
+        await speakText(HI.retryPhone, "hi-IN");
+        await waitForMicHandoff();
+        phone = await listenForFullPhone();
       }
-      if (!phone) throw new Error("सही मोबाइल नंबर ज़रूरी है।");
+      if (!phone || phone.length !== 10) throw new Error("Sahi 10 digit mobile number zaroori hai.");
       draftRef.current.phone = phone;
 
       setStep("email");
-      let email = "";
-      for (let i = 0; i < 3; i++) {
-        const t = await askAndListen(i === 0 ? HI.askEmail : HI.retryEmail);
-        email = parseEmailFromSpeech(t) ?? (t.includes("@") ? t.replace(/\s/g, "") : "");
-        if (email.includes("@")) break;
+      await speakText(HI.askEmail, "hi-IN");
+      await waitForMicHandoff();
+      let email = await listenForFullEmail();
+      if (!email.includes("@")) {
+        await speakText(HI.retryEmail, "hi-IN");
+        await waitForMicHandoff();
+        email = await listenForFullEmail();
       }
-      if (!email.includes("@")) throw new Error("सही ईमेल ज़रूरी है।");
+      if (!email.includes("@")) throw new Error("Sahi email zaroori hai.");
       draftRef.current.email = email;
 
       setStep("service");

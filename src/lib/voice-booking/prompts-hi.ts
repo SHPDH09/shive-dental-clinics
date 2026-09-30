@@ -5,10 +5,13 @@ export const HI = {
     "Samajh nahi aaya ji. Dental appointment book karni hai? Please haan ya nahi boliye.",
   askName: "Bahut badhiya. Apna pura naam Hindi ya English mein boliye.",
   retryName: "Naam thoda clear nahi aaya. Ek baar phir apna pura naam boliye ji.",
-  askPhone: "Dhanyavaad. Mobile number boliye — digits Hindi ya English mein chalega.",
-  retryPhone: "Number clear nahi hua. Sirf mobile number, das ank boliye.",
-  askEmail: "Email boliye — naam at gmail dot com, Hindi ya English dono chalega.",
-  retryEmail: "Email samajh nahi aaya. Thoda dheere, dubara email boliye.",
+  askPhone:
+    "Dhanyavaad. Pura das digit mobile number boliye — ek ek karke ya seedha, poora number sunna zaroori hai.",
+  retryPhone: "Das digit poora nahi mila. Phir se poora mobile number boliye.",
+  phoneNeedMore: "Thode aur digit boliye, das number complete karein.",
+  askEmail: "Poora email boliye — jaise rahul at gmail dot com, poora sunna hai.",
+  retryEmail: "Email poora clear nahi hua. Dubara poora email boliye.",
+  emailNeedMore: "Email ka baaki hissa boliye, at aur dot com tak poora.",
   askService: (options: string) =>
     `Kaun si treatment chahiye aapko? Naam bol sakte hain ya number. Options hain: ${options}`,
   retryService: "Treatment clear nahi hui. Dubara boliye ji.",

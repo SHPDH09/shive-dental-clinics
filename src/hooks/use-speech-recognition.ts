@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
+import { isLikelyCompleteEmail, isCompletePhone } from "@/lib/voice-booking/phone-email-parse";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
-/** English first — best for mixed Hindi/English speech in Chrome. */
+export type VoiceListenMode = "short" | "normal" | "phone" | "email";
+
 const LANGS_NORMAL = ["en-IN", "hi-IN", "en-US"] as const;
 const LANGS_SHORT = ["en-IN", "hi-IN", "en-US"] as const;
+const LANGS_DIGITS = ["en-IN", "hi-IN"] as const;
 
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
@@ -34,23 +37,27 @@ function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function bestTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
-  let best = "";
-  for (let i = ev.resultIndex; i < ev.results.length; i++) {
-    const result = ev.results[i];
-    if (!result) continue;
-    for (let j = 0; j < result.length; j++) {
-      const piece = result[j]?.transcript?.trim() ?? "";
-      if (piece.length > best.length) best = piece;
-    }
+function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
+  let finals = "";
+  let interim = "";
+  for (let i = 0; i < ev.results.length; i++) {
+    const piece = ev.results[i]?.[0]?.transcript ?? "";
+    if (ev.results[i]?.isFinal) finals += piece;
+    else interim += piece;
   }
-  return best;
+  return `${finals}${interim}`.replace(/\s+/g, " ").trim();
+}
+
+function silenceMsForMode(mode: VoiceListenMode): number {
+  if (mode === "phone" || mode === "email") return 2600;
+  if (mode === "short") return 400;
+  return 1400;
 }
 
 function listenWithLanguage(
   lang: string,
   maxMs: number,
-  short: boolean,
+  mode: VoiceListenMode,
   onInterim?: (text: string) => void,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -63,7 +70,7 @@ function listenWithLanguage(
     const rec = new Ctor();
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = !short;
+    rec.continuous = mode === "phone" || mode === "email" || mode === "normal";
     rec.maxAlternatives = 5;
 
     let transcript = "";
@@ -77,12 +84,19 @@ function listenWithLanguage(
       }
     };
 
+    const canCompleteEarly = (text: string): boolean => {
+      if (mode === "phone") return isCompletePhone(text);
+      if (mode === "email") return isLikelyCompleteEmail(text);
+      if (mode === "short") return text.trim().length > 0;
+      return false;
+    };
+
     const scheduleFinalize = () => {
       clearFinalize();
       if (!transcript.trim()) return;
       finalizeTimer = setTimeout(() => {
         if (!settled && transcript.trim()) done(transcript);
-      }, short ? 380 : 1200);
+      }, silenceMsForMode(mode));
     };
 
     const done = (text: string) => {
@@ -120,12 +134,18 @@ function listenWithLanguage(
     }, maxMs);
 
     rec.onresult = (ev: SpeechRecognitionEvent) => {
-      const chunk = bestTranscriptFromEvent(ev);
-      if (chunk) transcript = chunk;
+      const merged = mergeTranscriptFromEvent(ev);
+      if (merged) transcript = merged;
       if (transcript) onInterim?.(transcript);
 
+      if (canCompleteEarly(transcript)) {
+        clearFinalize();
+        done(transcript);
+        return;
+      }
+
       const last = ev.results[ev.results.length - 1];
-      if (last?.isFinal && transcript.length > 0) {
+      if (last?.isFinal && transcript.length > 0 && mode !== "phone" && mode !== "email") {
         done(transcript);
         return;
       }
@@ -154,7 +174,7 @@ function listenWithLanguage(
         if (settled) return;
         if (transcript.trim()) done(transcript);
         else fail("no-speech");
-      }, short ? 280 : 150);
+      }, mode === "phone" || mode === "email" ? 400 : 200);
     };
 
     try {
@@ -168,25 +188,34 @@ function listenWithLanguage(
 export async function listenForSpeech(
   maxMs: number,
   onInterim?: (text: string) => void,
-  options?: { short?: boolean },
+  options?: { mode?: VoiceListenMode },
 ): Promise<string> {
-  const short = options?.short ?? false;
-  const langs = short ? LANGS_SHORT : LANGS_NORMAL;
-  const perLangMs = short ? Math.min(maxMs, 6500) : maxMs;
+  const mode = options?.mode ?? "normal";
+  const short = mode === "short";
+  const langs =
+    mode === "phone" || mode === "email" ? LANGS_DIGITS : short ? LANGS_SHORT : LANGS_NORMAL;
+  const perLangMs =
+    mode === "phone" ? Math.max(maxMs, 38000) : mode === "email" ? Math.max(maxMs, 32000) : maxMs;
 
   let lastErr = "no-speech";
-  let best = "";
+  let combined = "";
+
   for (const lang of langs) {
     try {
-      const text = await listenWithLanguage(lang, perLangMs, short, onInterim);
-      if (text.trim().length > best.length) best = text.trim();
+      const text = await listenWithLanguage(lang, perLangMs, mode, onInterim);
+      combined = `${combined} ${text}`.trim();
+      if (mode === "phone" && isCompletePhone(combined)) return combined;
+      if (mode === "email" && isLikelyCompleteEmail(combined)) return combined;
+      if (mode !== "phone" && mode !== "email" && text.trim()) return text.trim();
     } catch (e) {
       lastErr = e instanceof Error ? e.message : "listen_failed";
       if (lastErr === "not-allowed" || lastErr === "unsupported") throw e;
+      if (combined.trim()) return combined;
       await delay(120);
     }
   }
-  if (best) return best;
+
+  if (combined.trim()) return combined;
   throw new Error(lastErr);
 }
 
@@ -201,20 +230,17 @@ export function useSpeechRecognition(_lang = "hi-IN") {
   }, []);
 
   const listenOnce = useCallback(
-    (options?: { maxMs?: number; short?: boolean }): Promise<string> => {
-      const maxMs = options?.maxMs ?? 18000;
-      const short = options?.short ?? false;
+    (options?: { maxMs?: number; short?: boolean; mode?: VoiceListenMode }): Promise<string> => {
+      const mode: VoiceListenMode =
+        options?.mode ?? (options?.short ? "short" : "normal");
+      const maxMs = options?.maxMs ?? (mode === "phone" ? 38000 : mode === "email" ? 32000 : 18000);
       cancelRef.current = false;
       setInterimText("");
       setListening(true);
 
-      const task = listenForSpeech(
-        maxMs,
-        (t) => {
-          if (!cancelRef.current) setInterimText(t);
-        },
-        { short },
-      );
+      const task = listenForSpeech(maxMs, (t) => {
+        if (!cancelRef.current) setInterimText(t);
+      }, { mode });
 
       return task.finally(() => {
         setListening(false);

@@ -122,13 +122,12 @@ const HI_WORD_DIGIT: Record<string, string> = {
 };
 
 export function expandSpokenDigits(text: string): string {
-  let t = devanagariDigitsToLatin(text);
-  t = ` ${t.toLowerCase()} `;
+  let t = devanagariDigitsToLatin(text).toLowerCase();
   for (const [word, digit] of Object.entries(EN_WORD_DIGIT)) {
-    t = t.replaceAll(` ${word} `, ` ${digit} `);
+    t = t.replace(new RegExp(`\\b${word}\\b`, "g"), digit);
   }
   for (const [word, digit] of Object.entries(HI_WORD_DIGIT)) {
-    t = t.replaceAll(` ${word} `, ` ${digit} `);
+    t = t.replace(new RegExp(`\\b${word}\\b`, "g"), digit);
   }
   return t.replace(/\s+/g, " ").trim();
 }
@@ -161,12 +160,23 @@ export function parsePhoneFromSpeech(text: string): string | null {
 export function parseEmailFromSpeech(text: string): string | null {
   let t = text.toLowerCase().replace(/\s+/g, " ").trim();
   t = t
-    .replace(/\bemel\b|\bemail\b|\bee mail\b|\bmail\b/gi, " ")
-    .replace(/\bat the rate\b|\battherate\b|\bat\b/gi, "@")
+    .replace(/\bg\s*mail\b/gi, "gmail")
+    .replace(/\by\s*mail\b/gi, "ymail")
+    .replace(/\boutlook\b/gi, "outlook")
+    .replace(/\byahoo\b/gi, "yahoo")
+    .replace(/\bemel\b|\bemail\b|\bee mail\b|\bmail id\b|\bmail\b/gi, " ")
+    .replace(/\bat the rate\b|\battherate\b|\bat rate\b|\bat\b/gi, "@")
+    .replace(/\bdot com\b/gi, ".com")
+    .replace(/\bdot in\b/gi, ".in")
+    .replace(/\bdot co\b/gi, ".co")
     .replace(/\bdot\b|\bpoint\b/gi, ".")
+    .replace(/\bunderscore\b/gi, "_")
     .replace(/\s+/g, "");
   const m = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-  return m ? m[0] : null;
+  if (m) return m[0];
+  const loose = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+/i);
+  if (loose && /\.(com|in|co|org|net)$/i.test(t)) return loose[0];
+  return null;
 }
 
 export function parseDateFromSpeech(text: string): string | null {
