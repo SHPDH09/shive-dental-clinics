@@ -1,16 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 import type { PublicHeroSlide } from "@/lib/hero-slides";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { HeroCarousel } from "@/components/public/hero-carousel";
+import { HeroBookingActions } from "@/components/public/hero-booking-actions";
 
 type Stat = { label: string; value: string };
+
+type VoiceService = { id: string; name: string };
 
 type HeroProps = {
   clinicName: string;
   stats: Stat[];
   slides?: PublicHeroSlide[];
   backgroundImageUrl?: string;
+  voiceBookingServices?: VoiceService[];
 };
 
 export function HeroSection({
@@ -18,6 +22,7 @@ export function HeroSection({
   stats,
   slides = [],
   backgroundImageUrl = CLINIC_STOREFRONT_BG,
+  voiceBookingServices = [],
 }: HeroProps) {
   const bgUrl = backgroundImageUrl.trim() || CLINIC_STOREFRONT_BG;
 
@@ -47,15 +52,18 @@ export function HeroSection({
             Trusted dentists for implants, root canal, teeth whitening, braces & family dentistry — book online or
             walk in for compassionate, modern care.
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link href="/appointment" className="btn-primary gap-2">
-              Book appointment
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/#services" className="btn-secondary">
-              Explore services
-            </Link>
-          </div>
+          {voiceBookingServices.length > 0 ? (
+            <HeroBookingActions services={voiceBookingServices} />
+          ) : (
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link href="/appointment" className="btn-primary gap-2">
+                Book appointment
+              </Link>
+              <Link href="/#services" className="btn-secondary">
+                Explore services
+              </Link>
+            </div>
+          )}
           <p className="mt-6 flex items-center gap-2 text-sm text-slate-600">
             <ShieldCheck className="h-4 w-4 text-[var(--cta)]" />
             Sterile, modern equipment & painless care protocols

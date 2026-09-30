@@ -12,6 +12,7 @@ import { BranchesSection } from "@/components/public/branches-section";
 import { ContactSection } from "@/components/public/contact-section";
 import { AppointmentForm } from "@/components/public/appointment-form";
 import { VoiceBookingTrigger } from "@/components/public/voice-booking-trigger";
+import { HomeVoiceFab } from "@/components/public/home-voice-fab";
 import { HomeTrustStrip } from "@/components/public/home-trust-strip";
 import { HomeQuickLinks } from "@/components/public/home-quick-links";
 import { HomeCtaBand } from "@/components/public/home-cta-band";
@@ -66,6 +67,7 @@ export default async function HomePage() {
   const beforeAfter = featuredCases.length >= 3 ? featuredCases.slice(0, 6) : beforeAfterCases.slice(0, 6);
 
   const openingHours = settings.openingHours as { weekdays?: string; sunday?: string } | null;
+  const voiceServices = services.map((s) => ({ id: s.id, name: s.name }));
 
   return (
     <>
@@ -75,7 +77,9 @@ export default async function HomePage() {
         stats={stats}
         slides={heroSlides}
         backgroundImageUrl={CLINIC_STOREFRONT_BG}
+        voiceBookingServices={voiceServices}
       />
+      <HomeVoiceFab services={voiceServices} />
       <HomeTrustStrip />
       <section id="book" className="-mt-2 pb-10 md:pb-12">
         <div className="mx-auto max-w-4xl px-4 md:px-6">
@@ -86,10 +90,7 @@ export default async function HomePage() {
                 Tell us your preferred time — we will confirm shortly. Same-week slots often available.
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start">
-                <VoiceBookingTrigger
-                  services={services.map((s) => ({ id: s.id, name: s.name }))}
-                  label="Voice assistant"
-                />
+                <VoiceBookingTrigger services={voiceServices} variant="primary" label="Book with voice" />
               </div>
             </div>
             <AppointmentForm
