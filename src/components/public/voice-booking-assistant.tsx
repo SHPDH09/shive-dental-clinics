@@ -16,6 +16,7 @@ import {
   isNegative,
   isValidFutureDate,
   matchServiceName,
+  normalizeIntentSpeech,
   normalizeTranscript,
   parseDateFromSpeech,
   parseEmailFromSpeech,
@@ -97,46 +98,57 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     }
   }, [open, stop]);
 
-  const listenForAnswer = useCallback(async (): Promise<string> => {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      setStatusLine(HI.listening);
+  const listenForAnswer = useCallback(
+    async (options?: { short?: boolean }): Promise<string> => {
+      const short = options?.short ?? false;
 
-      try {
-        const raw = await listenOnce({ maxMs: 16000 });
-        const t = normalizeTranscript(raw);
-        if (t.length > 0) {
-          setStatusLine(HI.youSaid(t));
-          await speakText(HI.gotIt, "hi-IN");
-          await waitForMicHandoff();
-          return t;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        setStatusLine(HI.listening);
+
+        try {
+          const raw = await listenOnce({ maxMs: short ? 8000 : 18000, short });
+          const t = normalizeTranscript(raw);
+          if (t.length > 0) {
+            setStatusLine(HI.youSaid(t));
+            if (!short) {
+              await speakText(HI.gotIt, "hi-IN");
+              await waitForMicHandoff();
+            }
+            return t;
+          }
+        } catch (e) {
+          const code = e instanceof Error ? e.message : "";
+          if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
+            throw new Error(HI.micDenied);
+          }
+          if (code === "unsupported") throw new Error(HI.browserUnsupported);
         }
-      } catch (e) {
-        const code = e instanceof Error ? e.message : "";
-        if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
-          throw new Error(HI.micDenied);
-        }
-        if (code === "unsupported") throw new Error(HI.browserUnsupported);
-        if (attempt < 2) {
+
+        if (attempt === 0) {
           setStatusLine(HI.retryListen);
-          await speakText(HI.retryListen, "hi-IN");
+          await speakText(HI.retryListenShort, "hi-IN");
           await waitForMicHandoff();
         }
       }
-    }
-    return "";
-  }, [listenOnce]);
+      return "";
+    },
+    [listenOnce],
+  );
 
-  const listenOnly = useCallback(async (): Promise<string> => {
-    await waitForMicHandoff();
-    return listenForAnswer();
-  }, [listenForAnswer]);
+  const listenOnly = useCallback(
+    async (short = false): Promise<string> => {
+      await waitForMicHandoff();
+      return listenForAnswer({ short });
+    },
+    [listenForAnswer],
+  );
 
   const askAndListen = useCallback(
-    async (prompt: string): Promise<string> => {
+    async (prompt: string, options?: { short?: boolean }): Promise<string> => {
       setStatusLine(prompt);
       await speakText(prompt, "hi-IN");
       await waitForMicHandoff();
-      return listenForAnswer();
+      return listenForAnswer(options);
     },
     [listenForAnswer],
   );
@@ -161,12 +173,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       let wantsBooking = false;
       for (let i = 0; i < 3; i++) {
         const t =
-          i === 0 ? await listenOnly() : await askAndListen(HI.askIntentRetry);
-        if (isAffirmative(t)) {
+          i === 0 ? await listenOnly(true) : await askAndListen(HI.askIntentRetry, { short: true });
+        const intent = normalizeIntentSpeech(t);
+        if (isAffirmative(intent)) {
           wantsBooking = true;
           break;
         }
-        if (isNegative(t)) {
+        if (isNegative(intent)) {
           await speakConversation([HI.declinedBooking, "Have a good day!"]);
           onClose();
           return;
@@ -248,12 +261,12 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       const summary = `${name}, ${matched.name}, तारीख ${dateIso}, समय ${time}`;
       let confirmed = false;
       for (let i = 0; i < 3; i++) {
-        const t = await askAndListen(HI.confirm(summary));
-        if (isAffirmative(t)) {
+        const t = await askAndListen(HI.confirm(summary), { short: true });
+        if (isAffirmative(normalizeIntentSpeech(t))) {
           confirmed = true;
           break;
         }
-        if (isNegative(t)) {
+        if (isNegative(normalizeIntentSpeech(t))) {
           await speakText(HI.cancelled, "hi-IN");
           onClose();
           return;

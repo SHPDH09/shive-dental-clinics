@@ -87,6 +87,16 @@ export function normalizeTranscript(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
 }
 
+/** Map common STT mis-hears for haan / nahi. */
+export function normalizeIntentSpeech(raw: string): string {
+  let t = normalizeTranscript(raw).toLowerCase();
+  t = t.replace(/[.,!?]/g, "").trim();
+  if (/^(ha|haa|han|hann|hun|hum|ho|hot|heart|hut|hah)$/i.test(t)) return "haan";
+  if (/^(ya|yaa|ye|yep|yeah|yes|y)$/i.test(t)) return "yes";
+  if (/^(na|nahi|nah|no|nope|mat)$/i.test(t)) return "nahi";
+  return t;
+}
+
 export function parsePhoneFromSpeech(text: string): string | null {
   const digits = text.replace(/\D/g, "");
   if (digits.length >= 10) {
@@ -179,13 +189,13 @@ export function parseTimeFromSpeech(text: string): string | null {
 }
 
 export function isAffirmative(text: string): boolean {
-  const t = text.toLowerCase().trim();
+  const t = normalizeIntentSpeech(text);
   if (!t) return false;
-  if (isNegative(text)) return false;
-  if (/^(yes|yeah|yep|ok|okay|confirm|book|ha|haan|han|ji|theek|thik|sahi|correct|bilkul|zaroor|please)/.test(t)) {
+  if (isNegative(t)) return false;
+  if (/^(yes|yeah|yep|ok|okay|confirm|book|haan|han|ji|theek|thik|sahi|correct|bilkul|zaroor|please|ha)/.test(t)) {
     return true;
   }
-  return /\b(haan|ha|han|ji|yes|book|appointment|chahte|chahiye|chahie|karna chahte|bilkul|theek hai)\b/.test(t);
+  return /\b(haan|ha|han|ji|yes|book|appointment|chahte|chahiye|chahie|karna chahte|bilkul|theek hai|kar|karna)\b/.test(t);
 }
 
 export function isNegative(text: string): boolean {

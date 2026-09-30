@@ -25,6 +25,7 @@ export const HI = {
   listening: "Main sun rahi hoon… ab boliye ji.",
   gotIt: "Ji, samajh gayi. Ek second.",
   retryListen: "Kuch clear nahi aaya. Phir se boliye ji.",
+  retryListenShort: "Sirf haan ya nahi boliye.",
   hearing: (t: string) => `Sun rahi hoon: ${t}`,
   youSaid: (t: string) => `Ji, aapne kaha: ${t}`,
   tapToSpeak: "Mic dabakar boliye",
