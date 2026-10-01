@@ -186,14 +186,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     [listenOnce],
   );
 
-  const listenOnly = useCallback(
-    async (short = false): Promise<string> => {
-      await waitForMicHandoff();
-      return listenForAnswer({ short });
-    },
-    [listenForAnswer],
-  );
-
   const askAndListen = useCallback(
     async (
       prompt: string,
@@ -371,37 +363,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
       setStep("intro");
       await speakConversation(welcomeConversation());
-
-      setStep("intent");
-      let wantsBooking = false;
-      for (let i = 0; i < 3; i++) {
-        const t =
-          i === 0 ? await listenOnly(true) : await askAndListen(HI.askIntentRetry, { short: true });
-        const intent = normalizeIntentSpeech(t);
-        const aiIntent = await resolveVoiceField(
-          "intent",
-          t,
-          isAffirmative(intent) ? "yes" : isNegative(intent) ? "no" : null,
-          aiEnabledRef.current,
-        );
-        await speakAiLine(aiIntent.say);
-        const finalIntent =
-          aiIntent.intent === "yes" || aiIntent.value === "yes"
-            ? "haan"
-            : aiIntent.intent === "no" || aiIntent.value === "no"
-              ? "nahi"
-              : intent;
-        if (isAffirmative(finalIntent)) {
-          wantsBooking = true;
-          break;
-        }
-        if (isNegative(finalIntent)) {
-          await speakConversation([HI.declinedBooking, "Have a good day!"]);
-          onClose();
-          return;
-        }
-      }
-      if (!wantsBooking) throw new Error("Appointment confirm nahi hui. Dubara try karein.");
 
       setStep("name");
       let name = "";
@@ -587,7 +548,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     confirmContactValue,
     listenForFullEmail,
     listenForFullPhone,
-    listenOnly,
     onClose,
     services,
     supported,
@@ -632,13 +592,11 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="voice-booking-title" className="text-lg font-bold text-slate-900">
-              वॉइस बुकिंग असिस्टेंट
+              Virtual Assistant
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Shiv Dental Clinic · {aiAssistant ? "AI voice assistant" : "voice assistant"}
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Shiv Dental Clinic · Virtual Assistant</p>
             {aiAssistant && started && (
-              <p className="mt-1 text-xs font-medium text-violet-600">AI cleanup ON — fast &amp; accurate input</p>
+              <p className="mt-1 text-xs font-medium text-violet-600">Smart voice — saaf details, tez booking</p>
             )}
           </div>
           <button

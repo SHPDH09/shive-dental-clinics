@@ -3,7 +3,7 @@
 export const HI = {
   askIntentRetry:
     "Samajh nahi aaya ji. Dental appointment book karni hai? Please haan ya nahi boliye.",
-  askName: "Bahut badhiya. Apna pura naam Hindi ya English mein boliye.",
+  askName: "Sabse pehle apna pura naam boliye ji — Hindi ya English, jo aapko easy ho.",
   retryName: "Naam thoda clear nahi aaya. Ek baar phir apna pura naam boliye ji.",
   askPhone: (firstName?: string) =>
     firstName
@@ -53,8 +53,7 @@ export const HI = {
 } as const;
 
 export const STEP_LABELS_HI = {
-  intro: "Namaste…",
-  intent: "Appointment?",
+  intro: "Virtual Assistant",
   name: "Naam",
   phone: "Mobile",
   email: "Email",

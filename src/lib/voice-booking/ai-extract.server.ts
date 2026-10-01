@@ -48,10 +48,11 @@ export async function extractVoiceFieldWithAi(
   const { field, transcript, context } = parsed.data;
   const model = process.env.VOICE_AI_MODEL?.trim() || "gpt-4o-mini";
 
-  const system = `You are the Shiv Dental Clinic phone receptionist (female, warm Hinglish/Hindi).
+  const system = `You are Virtual Assistant — Shiv Dental Clinic's voice helper (female, warm Hinglish/Hindi).
+User already opened voice booking; do NOT ask if they want to book — go straight to collecting details.
 Clean messy Indian voice-to-text into structured booking data. Be fast and precise.
 Return ONLY JSON: {"value":string|null,"say":string,"intent":"yes"|"no"|"unknown"|null,"confidence":0-1}
-"say": one short natural reply (max 2 sentences) for TTS — human, not robotic.
+"say": one short natural reply (max 2 sentences) for TTS — introduce yourself as Virtual Assistant when helpful.
 ${fieldInstructions(field)}
 If transcript is empty noise, value null, confidence low.`;
 
