@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
-import { isLikelyCompleteEmail, isCompletePhone } from "@/lib/voice-booking/phone-email-parse";
+import {
+  countPhoneDigits,
+  isLikelyCompleteEmail,
+  isCompletePhone,
+  parseIndianMobileFromSpeech,
+} from "@/lib/voice-booking/phone-email-parse";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
@@ -49,7 +54,8 @@ function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
 }
 
 function silenceMsForMode(mode: VoiceListenMode): number {
-  if (mode === "phone" || mode === "email") return 2600;
+  if (mode === "phone") return 3800;
+  if (mode === "email") return 3200;
   if (mode === "short") return 400;
   return 1400;
 }
@@ -204,8 +210,16 @@ export async function listenForSpeech(
     try {
       const text = await listenWithLanguage(lang, perLangMs, mode, onInterim);
       combined = `${combined} ${text}`.trim();
-      if (mode === "phone" && isCompletePhone(combined)) return combined;
-      if (mode === "email" && isLikelyCompleteEmail(combined)) return combined;
+      if (mode === "phone") {
+        if (parseIndianMobileFromSpeech(combined)) return combined;
+        if (combined.trim() && countPhoneDigits(combined) >= 4) return combined;
+        if (text.trim()) continue;
+      }
+      if (mode === "email") {
+        if (isLikelyCompleteEmail(combined.replace(/\s+/g, ""))) return combined;
+        if (combined.trim() && combined.includes("@")) return combined;
+        if (text.trim()) continue;
+      }
       if (mode !== "phone" && mode !== "email" && text.trim()) return text.trim();
     } catch (e) {
       lastErr = e instanceof Error ? e.message : "listen_failed";

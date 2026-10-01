@@ -7,24 +7,24 @@ export const HI = {
   retryName: "Naam thoda clear nahi aaya. Ek baar phir apna pura naam boliye ji.",
   askPhone: (firstName?: string) =>
     firstName
-      ? `${firstName} ji, bahut achha. Ab aapka das digit mobile number suniye — ek ek digit ya seedha poora number bol sakte hain.`
-      : "Dhanyavaad ji. Pura das digit mobile number boliye — ek ek karke ya seedha, poora number sunna zaroori hai.",
-  confirmPhone: (readback: string) =>
-    `Main repeat karti hoon — aapka mobile number hai: ${readback}. Kya yeh bilkul sahi hai? Haan boliye agar theek hai, warna nahi bol kar dubara batayein.`,
-  retryPhone: "Valid Indian mobile nahi mila — 10 digit, 6 se 9 se shuru. Phir se poora number boliye ji.",
-  phoneNeedMore: "Thode aur digit boliye, das number complete karein.",
+      ? `${firstName} ji, ab mobile number batayein — poora das digit ek saath ya do hisson mein, araam se boliye.`
+      : "Ji, apna mobile number batayein — das digit, ek saath ya thoda thoda karke.",
+  confirmPhone: () =>
+    "Ji, number screen par aa gaya hai. Sahi hai to haan boliye, galat ho to nahi — phir dubara number bol dena.",
+  retryPhone: "Number poora clear nahi aaya. Phir se araam se das digit mobile boliye ji.",
+  retryPhoneListen: "Sun nahi payi number. Ek baar phir mobile number boliye.",
+  phoneNeedMore: "Thik hai, ab baaki digit boliye — number complete karna hai.",
+  phoneGotPartial: (digitsSoFar: string) =>
+    `Ji, ab tak ${digitsSoFar} sun liya. Baaki digit boliye ya poora number ek saath repeat kar dijiye.`,
   askEmail: (firstName?: string) =>
     firstName
       ? `${firstName} ji, ab appointment confirmation ke liye poora email boliye — jaise naam at gmail dot com.`
       : "Poora email boliye — jaise rahul at gmail dot com, poora sunna hai.",
-  confirmEmail: (readback: string) =>
-    `Email main yeh sun rahi hoon: ${readback}. Kya yeh sahi hai? Haan ya nahi boliye ji.`,
-  retryEmail: "Email sahi format mein nahi aaya. Dubara poora email boliye — at aur dot com clear boliye.",
-  emailNeedMore: "Email ka baaki hissa boliye, at aur dot com tak poora.",
-  useSavedPhone: (readback: string) =>
-    `Pehle se saved number mila: ${readback}. Kya isi number par call chahiye? Haan boliye use karne ke liye.`,
-  useSavedEmail: (readback: string) =>
-    `Saved email hai: ${readback}. Kya isi par confirmation bhejein? Haan ya nahi.`,
+  confirmEmail: () =>
+    "Email screen par likhi hai. Sahi hai to haan, warna nahi bol kar dubara poora email boliye.",
+  retryEmail: "Email clear nahi hui. Jaise rahul at gmail dot com — aise phir se boliye.",
+  retryEmailListen: "Email sun nahi payi. Dubara boliye — naam at gmail dot com.",
+  emailNeedMore: "Theek hai, ab email ka baaki hissa boliye — at aur dot com tak.",
   askService: (options: string) =>
     `Kaun si treatment chahiye aapko? Naam bol sakte hain ya number. Options hain: ${options}`,
   retryService: "Treatment clear nahi hui. Dubara boliye ji.",

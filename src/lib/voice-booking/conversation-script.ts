@@ -20,10 +20,9 @@ export function welcomeConversation(): string[] {
   const hello = getTimeGreeting();
   return [
     hello,
-    "Main Shiv Dental Clinic ki virtual reception hoon — aap se baat karke khushi ho rahi hai.",
-    "Shiv Dental Clinic mein aapka dil se swagat hai.",
-    "Aaj main aapki madad se appointment book karungi — step by step, bilkul clinic jaisa.",
-    "Pehle batayein — kya aap dental appointment book karna chahte hain? Haan ya nahi, jo aapko comfortable ho.",
+    "Shiv Dental Clinic se baat ho rahi hai — main reception se hoon.",
+    "Chaliye appointment book karte hain, bilkul aaram se.",
+    "Pehle batayein, appointment book karni hai? Haan ya nahi boliye.",
   ];
 }
 

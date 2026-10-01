@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { parseNameFromSpeech } from "../src/lib/voice-booking/bilingual-input";
-import { extractIndianMobileFromDigits, mergeSpokenPhoneParts } from "../src/lib/voice-booking/phone-email-parse";
+import {
+  extractIndianMobileFromDigits,
+  isCompletePhone,
+  mergeSpokenPhoneParts,
+  parseIndianMobileFromSpeech,
+} from "../src/lib/voice-booking/phone-email-parse";
 import {
   normalizeIndianMobile,
   normalizeVoiceEmail,
@@ -35,6 +40,9 @@ assert.equal(isAffirmative(normalizeIntentSpeech("हं")), true);
 assert.equal(parsePhoneFromSpeech("९८७६५४३२१०"), "9876543210");
 assert.equal(parsePhoneFromSpeech("5876543210 extra noise"), null);
 assert.equal(extractIndianMobileFromDigits("919876543210"), "9876543210");
+assert.equal(parseIndianMobileFromSpeech("plus nine one nine eight seven six five four three two one zero"), "9876543210");
+assert.equal(parseIndianMobileFromSpeech("mera mobile nine eight seven six five four three two one zero"), "9876543210");
+assert.equal(isCompletePhone("nine eight seven six five four three two one"), false);
 assert.equal(normalizeIndianMobile("98 76 54 32 10"), "9876543210");
 assert.equal(normalizeIndianMobile("5876543210"), null);
 assert.equal(normalizeVoiceEmail("rahul at gmail dot com"), "rahul@gmail.com");

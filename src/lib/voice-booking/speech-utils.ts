@@ -124,6 +124,12 @@ const HI_WORD_DIGIT: Record<string, string> = {
 
 export function expandSpokenDigits(text: string): string {
   let t = devanagariDigitsToLatin(text).toLowerCase();
+  t = t
+    .replace(/\b(plus|country code)\s*(nine one|91|nine\s*one)\b/gi, "91 ")
+    .replace(/\b(mobile|phone|number|no\.?|mera|meri)\b/gi, " ")
+    .replace(/\b(double|dubble)\s+(\w+)\b/gi, (_, w) => `${w} ${w}`)
+    .replace(/\b(triple|treble)\s+(\w+)\b/gi, (_, w) => `${w} ${w} ${w}`)
+    .replace(/\bzero\b|\bsifar\b|\bsifra\b|\bshunya\b/gi, "0");
   for (const [word, digit] of Object.entries(EN_WORD_DIGIT)) {
     t = t.replace(new RegExp(`\\b${word}\\b`, "g"), digit);
   }
@@ -160,12 +166,14 @@ export function parsePhoneFromSpeech(text: string): string | null {
 export function parseEmailFromSpeech(text: string): string | null {
   let t = text.toLowerCase().replace(/\s+/g, " ").trim();
   t = t
-    .replace(/\bg\s*mail\b/gi, "gmail")
+    .replace(/\bg\s*mail\b|\bji\s*mail\b|\bjeemel\b/gi, "gmail")
     .replace(/\by\s*mail\b/gi, "ymail")
     .replace(/\boutlook\b/gi, "outlook")
     .replace(/\byahoo\b/gi, "yahoo")
-    .replace(/\bemel\b|\bemail\b|\bee mail\b|\bmail id\b|\bmail\b/gi, " ")
-    .replace(/\bat the rate\b|\battherate\b|\bat rate\b|\bat\b/gi, "@")
+    .replace(/\bhotmail\b/gi, "hotmail")
+    .replace(/\brediff\s*mail\b/gi, "rediffmail")
+    .replace(/\bemel\b|\be\s*mail\b|\bemail\b|\bee mail\b|\bmail id\b/gi, " ")
+    .replace(/\bat the rate\b|\battherate\b|\bat rate\b|\baterate\b|\bat\b/gi, "@")
     .replace(/\bdot com\b/gi, ".com")
     .replace(/\bdot in\b/gi, ".in")
     .replace(/\bdot co\b/gi, ".co")

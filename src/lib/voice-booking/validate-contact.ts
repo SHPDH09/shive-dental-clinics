@@ -1,9 +1,18 @@
 import { z } from "zod";
-import { extractIndianMobileFromDigits } from "@/lib/voice-booking/phone-email-parse";
-import { parseEmailFromSpeech } from "@/lib/voice-booking/speech-utils";
+import {
+  extractIndianMobileFromDigits,
+  parseIndianMobileFromSpeech,
+} from "@/lib/voice-booking/phone-email-parse";
+import { expandSpokenDigits, parseEmailFromSpeech } from "@/lib/voice-booking/speech-utils";
 
 export function normalizeIndianMobile(input: string): string | null {
-  return extractIndianMobileFromDigits(input);
+  return parseIndianMobileFromSpeech(input) ?? extractIndianMobileFromDigits(expandSpokenDigits(input));
+}
+
+export function formatIndianMobileForDisplay(phone: string): string {
+  const d = phone.replace(/\D/g, "").slice(-10);
+  if (d.length !== 10) return phone;
+  return `${d.slice(0, 5)} ${d.slice(5)}`;
 }
 
 export function isValidIndianMobile(phone: string): boolean {
