@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Mic, X } from "lucide-react";
+import { CheckCircle2, Loader2, Mic, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VoiceAssistantOrb } from "@/components/public/voice-assistant-orb";
 import { isSpeechRecognitionSupported, useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import {
   errorToMicCode,
@@ -100,8 +101,23 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   });
   const runningRef = useRef(false);
   const openRef = useRef(open);
+  const verifyResolveRef = useRef<((ok: boolean) => void) | null>(null);
+  const [verifySnapshot, setVerifySnapshot] = useState<Draft | null>(null);
+  const [liveCaption, setLiveCaption] = useState("");
 
   openRef.current = open;
+
+  const resolveVerify = useCallback((ok: boolean) => {
+    const fn = verifyResolveRef.current;
+    verifyResolveRef.current = null;
+    fn?.(ok);
+  }, []);
+
+  const waitForUserVerify = useCallback(() => {
+    return new Promise<boolean>((resolve) => {
+      verifyResolveRef.current = resolve;
+    });
+  }, []);
 
   useEffect(() => {
     if (servicesProp?.length) setServices(servicesProp);
@@ -138,24 +154,61 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setCapturedEmail("");
       setCapturedDate("");
       setCapturedTime("");
+      setVerifySnapshot(null);
+      setLiveCaption("");
+      verifyResolveRef.current = null;
     }
   }, [open, stop]);
 
+  useEffect(() => {
+    if (step !== "verify" || !started) return;
+    let cancelled = false;
+    void (async () => {
+      await waitForMicHandoff();
+      try {
+        const raw = await listenOnce({ short: true, maxMs: 14000, mode: "short" });
+        if (cancelled || !verifyResolveRef.current) return;
+        const intent = normalizeIntentSpeech(raw);
+        if (isAffirmative(intent)) resolveVerify(true);
+        else if (isNegative(intent)) resolveVerify(false);
+      } catch {
+        /* user can tap Confirm */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, started, listenOnce, resolveVerify]);
+
   const listenForAnswer = useCallback(
-    async (options?: { short?: boolean; mode?: "phone" | "email" | "normal" | "short" }): Promise<string> => {
+    async (options?: {
+      short?: boolean;
+      mode?: "phone" | "email" | "normal" | "short" | "date";
+    }): Promise<string> => {
       const mode = options?.mode ?? (options?.short ? "short" : "normal");
 
       for (let attempt = 0; attempt < 2; attempt++) {
         setStatusLine(HI.listening);
+        setLiveCaption(HI.listening);
 
         try {
           const raw = await listenOnce({
-            maxMs: mode === "phone" ? 48000 : mode === "email" ? 45000 : mode === "short" ? 8000 : 18000,
+            maxMs:
+              mode === "phone"
+                ? 48000
+                : mode === "email"
+                  ? 45000
+                  : mode === "date"
+                    ? 42000
+                    : mode === "short"
+                      ? 8000
+                      : 18000,
             mode,
           });
           const t = normalizeTranscript(raw);
           if (t.length > 0) {
             setStatusLine(HI.youSaid(t));
+            setLiveCaption(HI.youSaid(t));
             if (mode === "normal") {
               await speakText(HI.gotIt, "hi-IN");
               await waitForMicHandoff();
@@ -192,9 +245,10 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const askAndListen = useCallback(
     async (
       prompt: string,
-      options?: { short?: boolean; mode?: "phone" | "email" | "normal" | "short" },
+      options?: { short?: boolean; mode?: "phone" | "email" | "normal" | "short" | "date" },
     ): Promise<string> => {
       setStatusLine(prompt);
+      setLiveCaption(prompt);
       await speakText(prompt, "hi-IN");
       await waitForMicHandoff();
       return listenForAnswer(options);
@@ -391,7 +445,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setCapturedDate("");
       let dateIso = "";
       for (let i = 0; i < 3; i++) {
-        const t = await askAndListen(i === 0 ? HI.askDate : HI.retryDate);
+        const t = await askAndListen(i === 0 ? HI.askDate : HI.retryDate, { mode: "date" });
         const localDate = parseDateFromSpeech(t) ?? "";
         const aiDate = await resolveVoiceField(
           "date",
@@ -401,7 +455,9 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
           { firstName, draft: draftRef.current },
         );
         await speakAiLine(aiDate.say);
-        dateIso = aiDate.value ?? localDate;
+        const aiIso =
+          aiDate.value && /^\d{4}-\d{2}-\d{2}$/.test(aiDate.value) ? aiDate.value : null;
+        dateIso = aiIso ?? (localDate && isValidFutureDate(localDate) ? localDate : "");
         if (dateIso && isValidFutureDate(dateIso)) {
           setCapturedDate(formatDateForSpeech(dateIso));
           break;
@@ -433,18 +489,21 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       if (!time) throw new Error("समय ज़रूरी है — 10 AM ya 3 PM boliye.");
       draftRef.current.appointmentTime = time;
 
-      setStep("confirm");
       const dateSay = formatDateForSpeech(dateIso);
       const timeSay = formatTime12Hour(time);
       const summary = `${name} ji, ${matched.name}, ${dateSay}, ${timeSay}. Mobile aur email screen par hain.`;
-      const confirmT = await askAndListen(HI.confirm(summary), { short: true });
-      if (isNegative(normalizeIntentSpeech(confirmT))) {
+      setVerifySnapshot({ ...draftRef.current });
+      setStep("verify");
+      setLiveCaption(summary);
+      await speakText(HI.confirm(summary), "hi-IN");
+      await speakText(HI.verifyIntro, "hi-IN");
+      await waitForMicHandoff();
+
+      const verified = await waitForUserVerify();
+      if (!verified) {
         await speakText(HI.cancelled, "hi-IN");
         onClose();
         return;
-      }
-      if (!isAffirmative(normalizeIntentSpeech(confirmT))) {
-        throw new Error("Ek baar haan boliye confirm karne ke liye, ya nahi cancel ke liye.");
       }
 
       setStep("submitting");
@@ -493,7 +552,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     listenForFullPhone,
     onClose,
     services,
-    supported,
+    waitForUserVerify,
   ]);
 
   /** getUserMedia must start in this click handler (browser permission popup). */
@@ -523,50 +582,60 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       });
   };
 
+  const caption =
+    listening && interimText
+      ? HI.hearing(interimText)
+      : liveCaption || statusLine;
+
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center">
-      <div
-        className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"
-        role="dialog"
-        aria-labelledby="voice-booking-title"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 id="voice-booking-title" className="text-lg font-bold text-slate-900">
-              Virtual Assistant
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">Shiv Dental Clinic · Virtual Assistant</p>
-            {aiAssistant && started && (
-              <p className="mt-1 text-xs font-medium text-violet-600">Smart voice — saaf details, tez booking</p>
-            )}
-          </div>
-          <button
-            type="button"
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"
-            aria-label="Close"
-            onClick={() => {
-              stop();
-              window.speechSynthesis?.cancel();
-              onClose();
-            }}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  const showVerifyForm = step === "verify" && verifySnapshot;
 
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex flex-col bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-900 text-white"
+      role="dialog"
+      aria-labelledby="voice-booking-title"
+    >
+      <header className="flex shrink-0 items-start justify-between gap-3 px-5 pb-2 pt-5 sm:px-8">
+        <div>
+          <h2 id="voice-booking-title" className="text-xl font-bold tracking-tight">
+            Virtual Assistant
+          </h2>
+          <p className="mt-1 text-xs text-white/60">Shiv Dental Clinic</p>
+          {aiAssistant && started && (
+            <p className="mt-1 text-xs font-medium text-violet-300">Smart voice booking</p>
+          )}
+        </div>
+        <button
+          type="button"
+          className="rounded-xl p-2 text-white/70 hover:bg-white/10"
+          aria-label="Close"
+          onClick={() => {
+            resolveVerify(false);
+            stop();
+            window.speechSynthesis?.cancel();
+            onClose();
+          }}
+        >
+          <X className="h-6 w-6" />
+        </button>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 pb-6 sm:px-8">
         {!started ? (
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-600">
-              Ek baar Mic Allow karein. Uske baad har jawab par mic apne aap on hoga, bolne ke baad band ho jayega — dubara mic button nahi dabana.
+          <div className="flex w-full max-w-lg flex-1 flex-col items-center justify-center text-center">
+            <VoiceAssistantOrb active={false} listening={false} className="mb-8" />
+            <p className="text-sm leading-relaxed text-white/80">
+              Ek baar Mic Allow karein. Uske baad har jawab par mic apne aap on hoga — poora sentence boliye,
+              jaise &quot;10 October&quot; ya &quot;5 September&quot;.
             </p>
             {micGranted && (
-              <p className="mt-2 text-sm font-medium text-teal-700">Mic allowed — booking shuru ho rahi hai…</p>
+              <p className="mt-3 text-sm font-medium text-teal-300">Mic allowed — booking shuru ho rahi hai…</p>
             )}
             <Button
               type="button"
-              className="mt-6 w-full rounded-full"
+              className="mt-8 w-full max-w-sm rounded-full bg-violet-500 hover:bg-violet-400"
               disabled={requestingMic}
               onClick={handleAllowMicAndStart}
             >
@@ -579,71 +648,145 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             </Button>
           </div>
         ) : (
-          <div className="mt-6 flex flex-col items-center">
-            <div
-              className={`flex h-24 w-24 items-center justify-center rounded-full ${
-                listening ? "animate-pulse bg-red-100 text-red-600 ring-4 ring-red-200" : "bg-violet-100 text-violet-700"
-              }`}
-            >
-              {step === "submitting" ? (
-                <Loader2 className="h-10 w-10 animate-spin" />
-              ) : (
-                <Mic className="h-10 w-10" />
+          <>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-200/90">
+              {STEP_LABELS_HI[step]}
+            </p>
+            {step === "submitting" ? (
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <Loader2 className="h-14 w-14 animate-spin text-violet-300" />
+              </div>
+            ) : (
+              <VoiceAssistantOrb active={started} listening={listening} className="my-2 shrink-0" />
+            )}
+
+            <div className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-black/30 px-4 py-3 backdrop-blur-md">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">Live text</p>
+              <p className="mt-2 min-h-[3rem] text-center text-sm leading-relaxed text-white/95">{caption || "…"}</p>
+              {listening && step === "phone" && interimText && (
+                <p className="mt-2 text-center text-lg font-bold tracking-widest text-teal-200">
+                  {formatIndianMobileForDisplay(previewPhoneDigitsFromSpeech(interimText)) || "…"}
+                </p>
+              )}
+              {listening && step === "email" && interimText && (
+                <p className="mt-2 text-center text-sm font-medium text-violet-200 break-all">
+                  {previewEmailFromSpeech(interimText) || "…"}
+                </p>
+              )}
+              {listening && step === "date" && interimText && (
+                <p className="mt-2 text-center text-sm font-medium text-amber-200">
+                  {parseDateFromSpeech(interimText)
+                    ? formatDateForSpeech(parseDateFromSpeech(interimText)!)
+                    : interimText}
+                </p>
               )}
             </div>
-            <p className="mt-4 text-sm font-semibold text-slate-800">{STEP_LABELS_HI[step]}</p>
-            {listening && <p className="mt-2 text-sm font-medium text-red-600">{HI.listening}</p>}
-            {listening && interimText && (
-              <p className="mt-2 text-center text-sm font-medium text-teal-700">{HI.hearing(interimText)}</p>
+
+            {showVerifyForm ? (
+              <div className="mt-5 w-full max-w-xl rounded-2xl border border-emerald-400/30 bg-white/95 p-5 text-slate-900 shadow-xl">
+                <p className="text-center text-sm font-bold text-slate-800">Final verification</p>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                    <dt className="text-slate-500">Naam</dt>
+                    <dd className="font-semibold text-right">{verifySnapshot.patientName}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                    <dt className="text-slate-500">Mobile</dt>
+                    <dd className="font-semibold text-right">
+                      {formatIndianMobileForDisplay(verifySnapshot.phone)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                    <dt className="text-slate-500">Email</dt>
+                    <dd className="max-w-[58%] text-right font-medium break-all">{verifySnapshot.email}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                    <dt className="text-slate-500">Treatment</dt>
+                    <dd className="font-semibold text-right">{verifySnapshot.treatmentName}</dd>
+                  </div>
+                  <div className="flex justify-between gap-3 border-b border-slate-100 pb-2">
+                    <dt className="text-slate-500">Date</dt>
+                    <dd className="font-semibold text-right">
+                      {formatDateForSpeech(verifySnapshot.appointmentDate)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-slate-500">Time</dt>
+                    <dd className="font-semibold text-right">
+                      {formatTime12Hour(verifySnapshot.appointmentTime)}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    className="flex-1 rounded-full bg-emerald-600 hover:bg-emerald-500"
+                    onClick={() => resolveVerify(true)}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Confirm &amp; Book
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1 rounded-full"
+                    onClick={() => resolveVerify(false)}
+                  >
+                    Galat hai / Cancel
+                  </Button>
+                </div>
+                <p className="mt-3 text-center text-xs text-slate-500">Ya &quot;haan&quot; bol kar confirm karein</p>
+              </div>
+            ) : (
+              <div className="mt-4 flex w-full max-w-xl flex-wrap justify-center gap-2">
+                {capturedPhone && (step === "phone" || step === "time" || step === "date") && (
+                  <span className="rounded-full border border-teal-400/40 bg-teal-950/50 px-3 py-1 text-xs text-teal-100">
+                    {capturedPhone}
+                  </span>
+                )}
+                {capturedEmail && step !== "phone" && step !== "name" && (
+                  <span className="rounded-full border border-violet-400/40 bg-violet-950/50 px-3 py-1 text-xs text-violet-100 break-all">
+                    {capturedEmail}
+                  </span>
+                )}
+                {capturedDate && (step === "date" || step === "time") && (
+                  <span className="rounded-full border border-amber-400/40 bg-amber-950/50 px-3 py-1 text-xs text-amber-100">
+                    {capturedDate}
+                  </span>
+                )}
+                {capturedTime && step === "time" && (
+                  <span className="rounded-full border border-sky-400/40 bg-sky-950/50 px-3 py-1 text-xs text-sky-100">
+                    {capturedTime}
+                  </span>
+                )}
+              </div>
             )}
-            {listening && step === "phone" && interimText && (
-              <p className="mt-2 text-center text-lg font-bold tracking-widest text-slate-800">
-                {formatIndianMobileForDisplay(previewPhoneDigitsFromSpeech(interimText)) || "…"}
-              </p>
+
+            {error && (
+              <p className="mt-4 max-w-xl text-center text-sm text-red-300">{error}</p>
             )}
-            {listening && step === "email" && interimText && (
-              <p className="mt-2 max-w-full px-2 text-center text-sm font-medium text-violet-900 break-all">
-                {previewEmailFromSpeech(interimText) || "…"}
-              </p>
-            )}
-            {statusLine && !listening && (
-              <p className="mt-2 text-center text-sm text-slate-600">{statusLine}</p>
-            )}
-            {(step === "phone" || step === "confirm") && capturedPhone && (
-              <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-center text-base font-semibold tracking-wide text-teal-900">
-                Mobile: {capturedPhone}
-              </p>
-            )}
-            {(step === "email" || step === "confirm") && capturedEmail && (
-              <p className="mt-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-center text-sm font-medium text-violet-900 break-all">
-                Email: {capturedEmail}
-              </p>
-            )}
-            {(step === "date" || step === "confirm") && capturedDate && (
-              <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900">
-                Date: {capturedDate}
-              </p>
-            )}
-            {(step === "time" || step === "confirm") && capturedTime && (
-              <p className="mt-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-center text-sm font-medium text-sky-900">
-                Time: {capturedTime}
-              </p>
-            )}
-            {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
             {referenceId && (
-              <p className="mt-3 rounded-xl bg-teal-50 px-4 py-2 text-sm font-medium text-teal-900">
+              <p className="mt-4 rounded-xl bg-emerald-500/20 px-4 py-3 text-sm font-medium text-emerald-100">
                 रेफरेंस: {referenceId}
               </p>
             )}
-          </div>
+          </>
         )}
-
-        <div className="mt-6 flex justify-center gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            बंद करें
-          </Button>
-        </div>
       </div>
+
+      <footer className="shrink-0 border-t border-white/10 px-5 py-4 text-center sm:px-8">
+        <Button
+          type="button"
+          variant="secondary"
+          className="rounded-full border-white/20 bg-white/10 text-white hover:bg-white/20"
+          onClick={() => {
+            resolveVerify(false);
+            onClose();
+          }}
+        >
+          बंद करें
+        </Button>
+      </footer>
     </div>
   );
 }

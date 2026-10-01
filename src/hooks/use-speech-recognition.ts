@@ -10,11 +10,12 @@ import {
   isCompletePhone,
   parseIndianMobileFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
-import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
+import { isCompleteDateSpeech } from "@/lib/voice-booking/date-voice-parse";
+import { expandSpokenDigits, isValidFutureDate, parseDateFromSpeech } from "@/lib/voice-booking/speech-utils";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
-export type VoiceListenMode = "short" | "normal" | "phone" | "email";
+export type VoiceListenMode = "short" | "normal" | "phone" | "email" | "date";
 
 const LANGS_NORMAL = ["en-IN", "hi-IN", "en-US"] as const;
 const LANGS_SHORT = ["en-IN", "hi-IN", "en-US"] as const;
@@ -50,9 +51,9 @@ function delay(ms: number) {
 function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent, mode?: VoiceListenMode): string {
   if (ev.results.length === 0) return "";
 
-  if (mode === "email" || mode === "phone") {
+  if (mode === "email" || mode === "phone" || mode === "date") {
     let best = "";
-    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+    for (let i = 0; i < ev.results.length; i++) {
       const piece = ev.results[i]?.[0]?.transcript ?? "";
       if (piece.length >= best.length) best = piece;
     }
@@ -72,8 +73,15 @@ function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent, mode?: VoiceListen
 function silenceMsForMode(mode: VoiceListenMode): number {
   if (mode === "phone") return 5600;
   if (mode === "email") return 5600;
+  if (mode === "date") return 5200;
   if (mode === "short") return 400;
   return 1400;
+}
+
+function dateIsoFromSpeech(text: string): string | null {
+  const iso = parseDateFromSpeech(text);
+  if (!iso || !isValidFutureDate(iso)) return null;
+  return iso;
 }
 
 function listenWithLanguage(
@@ -92,7 +100,7 @@ function listenWithLanguage(
     const rec = new Ctor();
     rec.lang = lang;
     rec.interimResults = true;
-    rec.continuous = mode === "phone" || mode === "email" || mode === "normal";
+    rec.continuous = mode === "phone" || mode === "email" || mode === "date" || mode === "normal";
     rec.maxAlternatives = 5;
 
     let transcript = "";
@@ -112,6 +120,7 @@ function listenWithLanguage(
         return d.length === 10 && isCompletePhone(text);
       }
       if (mode === "email") return pickBestEmailFromSpeech(text) !== null;
+      if (mode === "date") return dateIsoFromSpeech(text) !== null;
       if (mode === "short") return text.trim().length > 0;
       return false;
     };
@@ -170,7 +179,13 @@ function listenWithLanguage(
       }
 
       const last = ev.results[ev.results.length - 1];
-      if (last?.isFinal && transcript.length > 0 && mode !== "phone" && mode !== "email") {
+      if (
+        last?.isFinal &&
+        transcript.length > 0 &&
+        mode !== "phone" &&
+        mode !== "email" &&
+        mode !== "date"
+      ) {
         done(transcript);
         return;
       }
@@ -199,7 +214,7 @@ function listenWithLanguage(
         if (settled) return;
         if (transcript.trim()) done(transcript);
         else fail("no-speech");
-      }, mode === "phone" || mode === "email" ? 400 : 200);
+      }, mode === "phone" || mode === "email" || mode === "date" ? 400 : 200);
     };
 
     try {
@@ -220,7 +235,13 @@ export async function listenForSpeech(
   const langs =
     mode === "phone" ? LANGS_PHONE : mode === "email" ? LANGS_EMAIL : short ? LANGS_SHORT : LANGS_NORMAL;
   const perLangMs =
-    mode === "phone" ? Math.max(maxMs, 48000) : mode === "email" ? Math.max(maxMs, 45000) : maxMs;
+    mode === "phone"
+      ? Math.max(maxMs, 48000)
+      : mode === "email"
+        ? Math.max(maxMs, 45000)
+        : mode === "date"
+          ? Math.max(maxMs, 42000)
+          : maxMs;
 
   let lastErr = "no-speech";
   let combined = "";
@@ -243,7 +264,15 @@ export async function listenForSpeech(
         if (combined.trim() && (combined.includes("@") || /gmail|dot com|\bat\b/i.test(combined))) break;
         if (text.trim()) break;
       }
-      if (mode !== "phone" && mode !== "email" && text.trim()) return text.trim();
+      if (mode === "date") {
+        if (dateIsoFromSpeech(text)) return text.trim();
+        if (dateIsoFromSpeech(combined)) return combined;
+        if (isCompleteDateSpeech(combined) || isCompleteDateSpeech(text)) {
+          return (combined.trim() ? combined : text).trim();
+        }
+        if (text.trim()) break;
+      }
+      if (mode !== "phone" && mode !== "email" && mode !== "date" && text.trim()) return text.trim();
     } catch (e) {
       lastErr = e instanceof Error ? e.message : "listen_failed";
       if (lastErr === "not-allowed" || lastErr === "unsupported") throw e;
@@ -270,7 +299,9 @@ export function useSpeechRecognition(_lang = "hi-IN") {
     (options?: { maxMs?: number; short?: boolean; mode?: VoiceListenMode }): Promise<string> => {
       const mode: VoiceListenMode =
         options?.mode ?? (options?.short ? "short" : "normal");
-      const maxMs = options?.maxMs ?? (mode === "phone" ? 38000 : mode === "email" ? 32000 : 18000);
+      const maxMs =
+        options?.maxMs ??
+        (mode === "phone" ? 38000 : mode === "email" ? 32000 : mode === "date" ? 36000 : 18000);
       cancelRef.current = false;
       setInterimText("");
       setListening(true);

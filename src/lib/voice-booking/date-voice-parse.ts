@@ -12,15 +12,51 @@ const EN_NUM: Record<string, string> = {
   seven: "7",
   eight: "8",
   nine: "9",
+  ten: "10",
+  eleven: "11",
+  twelve: "12",
+  thirteen: "13",
+  fourteen: "14",
+  fifteen: "15",
+  sixteen: "16",
+  seventeen: "17",
+  eighteen: "18",
+  nineteen: "19",
+  twenty: "20",
+  thirty: "30",
+  thirtyone: "31",
+  "thirty-one": "31",
+};
+
+const HI_NUM: Record<string, string> = {
+  das: "10",
+  gyarah: "11",
+  barah: "12",
+  terah: "13",
+  chaudah: "14",
+  pandrah: "15",
+  solah: "16",
+  satrah: "17",
+  atharah: "18",
+  unnis: "19",
+  bees: "20",
+  teis: "23",
+  chabbis: "26",
+  untis: "29",
+  tees: "30",
+  ikattis: "31",
 };
 
 function expandSpokenDigitsLite(text: string): string {
   let t = devanagariDigitsToLatin(text).toLowerCase();
-  for (const [w, d] of Object.entries(EN_NUM)) {
-    t = t.replace(new RegExp(`\\b${w}\\b`, "g"), d);
+  for (const [w, d] of Object.entries({ ...EN_NUM, ...HI_NUM })) {
+    t = t.replace(new RegExp(`\\b${w.replace(/-/g, "\\-")}\\b`, "g"), d);
   }
   return t.replace(/\s+/g, " ").trim();
 }
+
+const MONTH_NAME_RE =
+  /january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec/i;
 
 const MONTHS: Record<string, number> = {
   jan: 0,
@@ -52,7 +88,8 @@ const MONTHS: Record<string, number> = {
 function normalizeDateSpeech(text: string): string {
   return expandSpokenDigitsLite(text)
     .toLowerCase()
-    .replace(/tarikh|tareek|tareh|date|ko|ki|ke|the|on/gi, " ")
+    .replace(/\b(tarikh|tareek|tareh|date)\b/gi, " ")
+    .replace(/\b(on|the|ko)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -86,7 +123,7 @@ export function parseDateFromSpeech(text: string): string | null {
   const iso = mixed.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) return iso[0];
 
-  const dmySlash = mixed.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const dmySlash = mixed.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
   if (dmySlash) {
     const d = parseInt(dmySlash[1]!, 10);
     const m = parseInt(dmySlash[2]!, 10) - 1;
@@ -129,7 +166,7 @@ export function parseDateFromSpeech(text: string): string | null {
     if (mon !== undefined) return toIso(y, mon, day);
   }
 
-  const dmOnly = mixed.match(/\b(\d{1,2})\s+(\d{1,2})\b/);
+  const dmOnly = !MONTH_NAME_RE.test(mixed) ? mixed.match(/\b(\d{1,2})\s+(\d{1,2})\b/) : null;
   if (dmOnly) {
     const d = parseInt(dmOnly[1]!, 10);
     const m = parseInt(dmOnly[2]!, 10) - 1;
@@ -142,6 +179,10 @@ export function parseDateFromSpeech(text: string): string | null {
   }
 
   return null;
+}
+
+export function isCompleteDateSpeech(text: string): boolean {
+  return parseDateFromSpeech(text) !== null;
 }
 
 export function formatDateForSpeech(isoDate: string): string {

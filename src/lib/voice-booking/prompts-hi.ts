@@ -34,7 +34,9 @@ export const HI = {
   askTime: "Time boliye — clear AM ya PM ke saath, jaise 10 AM, 3 PM, ya shaam 5 baje.",
   retryTime: "Time clear nahi hua. 10 AM ya 3 PM aise boliye — AM ya PM zaroor boliye.",
   confirm: (summary: string) =>
-    `Bas ek baar confirm. ${summary} Sab theek hai to sirf haan boliye, warna nahi.`,
+    `Bas ek baar confirm. ${summary} Neeche details dekhein — Confirm dabayein ya haan boliye.`,
+  verifyIntro:
+    "Saari details screen par hain. Sab sahi ho to Confirm & Book dabayein, ya haan boliye. Galat ho to nahi boliye.",
   declinedBooking:
     "Koi baat nahi ji. Jab chahe dubara call kar sakte hain. Shiv Dental Clinic aapka intezar karega.",
   cancelled: "Theek hai ji, booking cancel kar di. Kabhi bhi dubara try kar sakte hain.",
@@ -62,6 +64,7 @@ export const STEP_LABELS_HI = {
   date: "Date",
   time: "Time",
   confirm: "Confirm",
+  verify: "Verify details",
   submitting: "Book ho rahi hai…",
   done: "Ho gaya",
 } as const;
