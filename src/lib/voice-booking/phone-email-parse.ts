@@ -1,3 +1,4 @@
+import { isCompleteEmailSpeech } from "@/lib/voice-booking/email-voice-parse";
 import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
 
 const INDIAN_MOBILE = /^[6-9]\d{9}$/;
@@ -106,8 +107,7 @@ export function isCompletePhone(text: string): boolean {
 }
 
 export function isLikelyCompleteEmail(text: string): boolean {
-  const t = text.toLowerCase().replace(/\s+/g, "");
-  return /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(t);
+  return isCompleteEmailSpeech(text);
 }
 
 /** Live preview while user is speaking (may be partial). */

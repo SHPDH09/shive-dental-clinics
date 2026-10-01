@@ -9,6 +9,10 @@ import {
   parseIndianMobileFromSpeech,
 } from "../src/lib/voice-booking/phone-email-parse";
 import {
+  mergeSpokenEmailParts,
+  pickBestEmailFromSpeech,
+} from "../src/lib/voice-booking/email-voice-parse";
+import {
   normalizeIndianMobile,
   normalizeVoiceEmail,
 } from "../src/lib/voice-booking/validate-contact";
@@ -56,5 +60,18 @@ assert.equal(
   "9876543210",
 );
 assert.equal(mergeSpokenPhoneParts("9876543210", "9876543210"), "9876543210");
+assert.equal(pickBestEmailFromSpeech("rahul at gmail dot com"), "rahul@gmail.com");
+assert.equal(
+  mergeSpokenEmailParts("rahul at", "gmail dot com"),
+  "rahul@gmail.com",
+);
+assert.equal(
+  mergeSpokenEmailParts("rahul at gmail dot com", "rahul at gmail dot com"),
+  "rahul@gmail.com",
+);
+assert.equal(
+  pickBestEmailFromSpeech("wrong text priya at yahoo dot com extra"),
+  "priya@yahoo.com",
+);
 
 console.log("voice-bilingual: all checks passed");

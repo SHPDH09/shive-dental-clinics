@@ -18,8 +18,8 @@ export const HI = {
     `Ji, ab tak ${digitsSoFar} sun liya. Baaki digit boliye ya poora number ek saath repeat kar dijiye.`,
   askEmail: (firstName?: string) =>
     firstName
-      ? `${firstName} ji, ab appointment confirmation ke liye poora email boliye — jaise naam at gmail dot com.`
-      : "Poora email boliye — jaise rahul at gmail dot com, poora sunna hai.",
+      ? `${firstName} ji, email boliye — ruk ruk kar ya ek saath, screen par likhti jaaungi. Jaise naam at gmail dot com.`
+      : "Email boliye — screen par dikhegi. Naam at gmail dot com, araam se ya fast.",
   confirmEmail: () =>
     "Email screen par likhi hai. Sahi hai to haan, warna nahi bol kar dubara poora email boliye.",
   retryEmail: "Email clear nahi hui. Jaise rahul at gmail dot com — aise phir se boliye.",

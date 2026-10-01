@@ -11,8 +11,13 @@ import {
 } from "@/lib/voice-booking/mic-permission";
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import {
+  hasEmailSpeechIntent,
+  mergeSpokenEmailParts,
+  pickBestEmailFromSpeech,
+  previewEmailFromSpeech,
+} from "@/lib/voice-booking/email-voice-parse";
+import {
   hasEnoughPhoneDigitsInSpeech,
-  isLikelyCompleteEmail,
   mergeSpokenPhoneParts,
   parseIndianMobileFromSpeech,
   previewPhoneDigitsFromSpeech,
@@ -125,7 +130,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
         try {
           const raw = await listenOnce({
-            maxMs: mode === "phone" ? 48000 : mode === "email" ? 32000 : mode === "short" ? 8000 : 18000,
+            maxMs: mode === "phone" ? 48000 : mode === "email" ? 45000 : mode === "short" ? 8000 : 18000,
             mode,
           });
           const t = normalizeTranscript(raw);
@@ -224,20 +229,36 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     [listenForAnswer],
   );
 
-  const listenForFullEmail = useCallback(async (): Promise<string> => {
-    let buffer = "";
-    for (let i = 0; i < 3; i++) {
-      const chunk = await listenForAnswer({ mode: "email" });
-      buffer = `${buffer} ${chunk}`.trim();
-      const email = normalizeVoiceEmail(buffer) ?? "";
-      if (email && isLikelyCompleteEmail(email)) return email;
-      if (i < 2) {
-        await speakText(HI.emailNeedMore, "hi-IN");
-        await waitForMicHandoff();
+  const listenForFullEmail = useCallback(
+    async (onPartial?: (display: string) => void): Promise<string> => {
+      const parts: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        if (i > 0) {
+          await speakText(i === 1 ? HI.emailNeedMore : HI.retryEmailListen, "hi-IN");
+          await waitForMicHandoff();
+        }
+        const chunk = await listenForAnswer({ mode: "email" });
+        if (chunk) parts.push(chunk);
+
+        const solo = pickBestEmailFromSpeech(chunk);
+        if (solo) {
+          onPartial?.(solo);
+          return solo;
+        }
+
+        const merged = mergeSpokenEmailParts(...parts);
+        const email = normalizeVoiceEmail(merged) ?? pickBestEmailFromSpeech(merged) ?? "";
+        if (email && normalizeVoiceEmail(email)) {
+          onPartial?.(email);
+          return normalizeVoiceEmail(email)!;
+        }
+        if (merged.trim()) onPartial?.(previewEmailFromSpeech(merged));
       }
-    }
-    return normalizeVoiceEmail(buffer) ?? "";
-  }, [listenForAnswer]);
+      const last = mergeSpokenEmailParts(...parts);
+      return normalizeVoiceEmail(last) ?? pickBestEmailFromSpeech(last) ?? "";
+    },
+    [listenForAnswer],
+  );
 
   const confirmContactValue = useCallback(
     async (
@@ -258,8 +279,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
           const t = await listenForAnswer({ short: true });
           const intent = normalizeIntentSpeech(t);
           const userSpokeNewPhone = contactKind === "phone" && hasEnoughPhoneDigitsInSpeech(t, 8);
-          const userSpokeNewEmail =
-            contactKind === "email" && (t.includes("@") || /gmail|dot com|at /i.test(t));
+          const userSpokeNewEmail = contactKind === "email" && hasEmailSpeechIntent(t);
           if (isAffirmative(intent) && !userSpokeNewPhone && !userSpokeNewEmail) {
             const ok = normalize(value);
             if (ok) return ok;
@@ -291,7 +311,12 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
               break;
             }
           } else if (t.trim()) {
-            await speakText("Haan ya nahi boliye — ya sahi number dubara bol dijiye.", "hi-IN");
+            await speakText(
+              contactKind === "phone"
+                ? "Haan ya nahi boliye — ya sahi number dubara bol dijiye."
+                : "Haan ya nahi boliye — ya poori email dubara bol dijiye.",
+              "hi-IN",
+            );
             await waitForMicHandoff();
           }
         }
@@ -379,17 +404,17 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setCapturedEmail("");
       await speakText(HI.askEmail(firstName), "hi-IN");
       await waitForMicHandoff();
-      let email = await listenForFullEmail();
+      let email = await listenForFullEmail(setCapturedEmail);
       if (!email) {
         await speakText(HI.retryEmail, "hi-IN");
         await waitForMicHandoff();
-        email = await listenForFullEmail();
+        email = await listenForFullEmail(setCapturedEmail);
       }
       if (!normalizeVoiceEmail(email)) throw new Error("Sahi email zaroori hai.");
       setCapturedEmail(email);
       email = await confirmContactValue(
         HI.confirmEmail,
-        listenForFullEmail,
+        () => listenForFullEmail(setCapturedEmail),
         normalizeVoiceEmail,
         email,
         setCapturedEmail,
@@ -603,6 +628,11 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             {listening && step === "phone" && interimText && (
               <p className="mt-2 text-center text-lg font-bold tracking-widest text-slate-800">
                 {formatIndianMobileForDisplay(previewPhoneDigitsFromSpeech(interimText)) || "…"}
+              </p>
+            )}
+            {listening && step === "email" && interimText && (
+              <p className="mt-2 max-w-full px-2 text-center text-sm font-medium text-violet-900 break-all">
+                {previewEmailFromSpeech(interimText) || "…"}
               </p>
             )}
             {statusLine && !listening && (

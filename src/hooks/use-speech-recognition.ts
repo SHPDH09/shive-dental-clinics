@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
+import { pickBestEmailFromSpeech } from "@/lib/voice-booking/email-voice-parse";
 import {
   countPhoneDigits,
   dedupeRepeatedPhoneDigits,
@@ -19,7 +20,7 @@ const LANGS_NORMAL = ["en-IN", "hi-IN", "en-US"] as const;
 const LANGS_SHORT = ["en-IN", "hi-IN", "en-US"] as const;
 /** Single locale per phone listen — avoids hearing the same digits twice (en + hi). */
 const LANGS_PHONE = ["hi-IN", "en-IN"] as const;
-const LANGS_EMAIL = ["en-IN", "hi-IN"] as const;
+const LANGS_EMAIL = ["en-IN"] as const;
 
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
@@ -59,7 +60,7 @@ function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
 
 function silenceMsForMode(mode: VoiceListenMode): number {
   if (mode === "phone") return 5600;
-  if (mode === "email") return 3200;
+  if (mode === "email") return 5600;
   if (mode === "short") return 400;
   return 1400;
 }
@@ -99,7 +100,7 @@ function listenWithLanguage(
         const d = dedupeRepeatedPhoneDigits(expandSpokenDigits(text).replace(/\D/g, ""));
         return d.length === 10 && isCompletePhone(text);
       }
-      if (mode === "email") return isLikelyCompleteEmail(text);
+      if (mode === "email") return pickBestEmailFromSpeech(text) !== null;
       if (mode === "short") return text.trim().length > 0;
       return false;
     };
@@ -208,7 +209,7 @@ export async function listenForSpeech(
   const langs =
     mode === "phone" ? LANGS_PHONE : mode === "email" ? LANGS_EMAIL : short ? LANGS_SHORT : LANGS_NORMAL;
   const perLangMs =
-    mode === "phone" ? Math.max(maxMs, 48000) : mode === "email" ? Math.max(maxMs, 32000) : maxMs;
+    mode === "phone" ? Math.max(maxMs, 48000) : mode === "email" ? Math.max(maxMs, 45000) : maxMs;
 
   let lastErr = "no-speech";
   let combined = "";
@@ -225,9 +226,11 @@ export async function listenForSpeech(
         if (text.trim()) break;
       }
       if (mode === "email") {
-        if (isLikelyCompleteEmail(combined.replace(/\s+/g, ""))) return combined;
-        if (combined.trim() && combined.includes("@")) return combined;
-        if (text.trim()) continue;
+        const solo = pickBestEmailFromSpeech(text);
+        if (solo) return text.trim();
+        if (pickBestEmailFromSpeech(combined)) return combined;
+        if (combined.trim() && (combined.includes("@") || /gmail|dot com|\bat\b/i.test(combined))) break;
+        if (text.trim()) break;
       }
       if (mode !== "phone" && mode !== "email" && text.trim()) return text.trim();
     } catch (e) {

@@ -3,7 +3,8 @@ import {
   extractIndianMobileFromDigits,
   parseIndianMobileFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
-import { expandSpokenDigits, parseEmailFromSpeech } from "@/lib/voice-booking/speech-utils";
+import { mergeSpokenEmailParts, pickBestEmailFromSpeech } from "@/lib/voice-booking/email-voice-parse";
+import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
 
 export function normalizeIndianMobile(input: string): string | null {
   return parseIndianMobileFromSpeech(input) ?? extractIndianMobileFromDigits(expandSpokenDigits(input));
@@ -21,11 +22,11 @@ export function isValidIndianMobile(phone: string): boolean {
 }
 
 export function normalizeVoiceEmail(raw: string): string | null {
-  const parsed = parseEmailFromSpeech(raw);
+  const merged = mergeSpokenEmailParts(raw);
+  const parsed = pickBestEmailFromSpeech(merged) ?? pickBestEmailFromSpeech(raw);
   if (!parsed) return null;
-  const cleaned = parsed.toLowerCase().trim();
-  const ok = z.string().email().safeParse(cleaned);
-  return ok.success ? cleaned : null;
+  const ok = z.string().email().safeParse(parsed);
+  return ok.success ? parsed : null;
 }
 
 /** Slow, clear TTS read-back for mobile (digit by digit). */
