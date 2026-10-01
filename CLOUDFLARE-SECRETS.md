@@ -34,6 +34,15 @@ Optional: `DATABASE_URL` — full Postgres URL if not using `SUPABASE_DB_PASSWOR
 
 Uses `smtp.gmail.com:587` and IMAP `imap.gmail.com:993` for inbox sync in **Admin → Communications**.
 
+### Voice booking AI (optional — cleaner phone/email from speech)
+
+| Name | Purpose |
+|------|---------|
+| `OPENAI_API_KEY` | OpenAI API key for `/api/public/voice-booking/extract` (gpt-4o-mini) |
+| `VOICE_AI_MODEL` | Optional override model name |
+
+Without `OPENAI_API_KEY`, voice booking still works with local parsers only.
+
 ## CLI (your PC, after `wrangler login` or valid `CLOUDFLARE_API_TOKEN`)
 
 ```bash

@@ -34,6 +34,10 @@ import { getOrCreateVisitorId, setStoredVisitorContact, syncVisitorLead } from "
 import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
+  fetchVoiceAiConfig,
+  resolveVoiceField,
+} from "@/lib/voice-booking/ai-client";
+import {
   isAffirmative,
   isNegative,
   isValidFutureDate,
@@ -79,6 +83,10 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const [requestingMic, setRequestingMic] = useState(false);
   const [capturedPhone, setCapturedPhone] = useState("");
   const [capturedEmail, setCapturedEmail] = useState("");
+  const [aiAssistant, setAiAssistant] = useState(false);
+  const aiEnabledRef = useRef(false);
+  const lastPhoneTranscriptRef = useRef("");
+  const lastEmailTranscriptRef = useRef("");
   const draftRef = useRef<Draft>({
     patientName: "",
     phone: "",
@@ -104,6 +112,14 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       .then((j: { items?: ServiceOption[] }) => setServices(j.items ?? []))
       .catch(() => setServices([]));
   }, [open, servicesProp]);
+
+  useEffect(() => {
+    if (!open) return;
+    void fetchVoiceAiConfig().then((on) => {
+      aiEnabledRef.current = on;
+      setAiAssistant(on);
+    });
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -190,6 +206,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     [listenForAnswer],
   );
 
+  const speakAiLine = useCallback(async (say?: string) => {
+    if (!say?.trim()) return;
+    setStatusLine(say);
+    await speakText(say, "hi-IN");
+    await waitForMicHandoff();
+  }, []);
+
   const listenForFullPhone = useCallback(
     async (onPartial?: (display: string) => void): Promise<string> => {
       const parts: string[] = [];
@@ -208,11 +231,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
         const solo = parseIndianMobileFromSpeech(chunk);
         if (solo) {
+          lastPhoneTranscriptRef.current = parts.join(" ").trim() || chunk;
           onPartial?.(solo);
           return solo;
         }
 
         const merged = mergeSpokenPhoneParts(...parts);
+        lastPhoneTranscriptRef.current = parts.join(" ").trim();
         const phone = parseIndianMobileFromSpeech(merged) ?? normalizeIndianMobile(merged) ?? "";
         const digitLen = merged.replace(/\D/g, "").length;
         if (phone.length === 10 && digitLen <= 11) {
@@ -224,6 +249,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         }
       }
       const last = mergeSpokenPhoneParts(...parts);
+      lastPhoneTranscriptRef.current = parts.join(" ").trim();
       return parseIndianMobileFromSpeech(last) ?? normalizeIndianMobile(last) ?? "";
     },
     [listenForAnswer],
@@ -242,11 +268,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
         const solo = pickBestEmailFromSpeech(chunk);
         if (solo) {
+          lastEmailTranscriptRef.current = parts.join(" ").trim() || chunk;
           onPartial?.(solo);
           return solo;
         }
 
         const merged = mergeSpokenEmailParts(...parts);
+        lastEmailTranscriptRef.current = parts.join(" ").trim();
         const email = normalizeVoiceEmail(merged) ?? pickBestEmailFromSpeech(merged) ?? "";
         if (email && normalizeVoiceEmail(email)) {
           onPartial?.(email);
@@ -255,6 +283,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         if (merged.trim()) onPartial?.(previewEmailFromSpeech(merged));
       }
       const last = mergeSpokenEmailParts(...parts);
+      lastEmailTranscriptRef.current = parts.join(" ").trim();
       return normalizeVoiceEmail(last) ?? pickBestEmailFromSpeech(last) ?? "";
     },
     [listenForAnswer],
@@ -348,11 +377,24 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         const t =
           i === 0 ? await listenOnly(true) : await askAndListen(HI.askIntentRetry, { short: true });
         const intent = normalizeIntentSpeech(t);
-        if (isAffirmative(intent)) {
+        const aiIntent = await resolveVoiceField(
+          "intent",
+          t,
+          isAffirmative(intent) ? "yes" : isNegative(intent) ? "no" : null,
+          aiEnabledRef.current,
+        );
+        await speakAiLine(aiIntent.say);
+        const finalIntent =
+          aiIntent.intent === "yes" || aiIntent.value === "yes"
+            ? "haan"
+            : aiIntent.intent === "no" || aiIntent.value === "no"
+              ? "nahi"
+              : intent;
+        if (isAffirmative(finalIntent)) {
           wantsBooking = true;
           break;
         }
-        if (isNegative(intent)) {
+        if (isNegative(finalIntent)) {
           await speakConversation([HI.declinedBooking, "Have a good day!"]);
           onClose();
           return;
@@ -365,12 +407,16 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       for (let i = 0; i < 3; i++) {
         const t = await askAndListen(i === 0 ? HI.askName : HI.retryName);
         const parsed = parseNameFromSpeech(t);
-        if (parsed.length >= 2) {
-          name = parsed;
-          break;
-        }
-        if (t.trim().length >= 2) {
-          name = t.trim();
+        const aiName = await resolveVoiceField(
+          "name",
+          t,
+          parsed.length >= 2 ? parsed : t.trim().length >= 2 ? t.trim() : null,
+          aiEnabledRef.current,
+        );
+        await speakAiLine(aiName.say);
+        const candidate = aiName.value ?? (parsed.length >= 2 ? parsed : t.trim());
+        if (candidate.length >= 2) {
+          name = candidate;
           break;
         }
       }
@@ -388,6 +434,15 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         await waitForMicHandoff();
         phone = await listenForFullPhone((p) => setCapturedPhone(formatIndianMobileForDisplay(p)));
       }
+      const aiPhone = await resolveVoiceField(
+        "phone",
+        lastPhoneTranscriptRef.current || phone,
+        normalizeIndianMobile(phone),
+        aiEnabledRef.current,
+        { firstName, draft: draftRef.current },
+      );
+      if (aiPhone.value) phone = aiPhone.value;
+      await speakAiLine(aiPhone.say);
       if (!normalizeIndianMobile(phone)) throw new Error("Sahi 10 digit mobile zaroori hai — 6 se 9 se shuru.");
       setCapturedPhone(formatIndianMobileForDisplay(phone));
       phone = await confirmContactValue(
@@ -410,6 +465,15 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         await waitForMicHandoff();
         email = await listenForFullEmail(setCapturedEmail);
       }
+      const aiEmail = await resolveVoiceField(
+        "email",
+        lastEmailTranscriptRef.current || email,
+        normalizeVoiceEmail(email),
+        aiEnabledRef.current,
+        { firstName, draft: draftRef.current },
+      );
+      if (aiEmail.value) email = aiEmail.value;
+      await speakAiLine(aiEmail.say);
       if (!normalizeVoiceEmail(email)) throw new Error("Sahi email zaroori hai.");
       setCapturedEmail(email);
       email = await confirmContactValue(
@@ -569,7 +633,12 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             <h2 id="voice-booking-title" className="text-lg font-bold text-slate-900">
               वॉइस बुकिंग असिस्टेंट
             </h2>
-            <p className="mt-1 text-xs text-slate-500">Shiv Dental Clinic · natural voice assistant</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Shiv Dental Clinic · {aiAssistant ? "AI voice assistant" : "voice assistant"}
+            </p>
+            {aiAssistant && started && (
+              <p className="mt-1 text-xs font-medium text-violet-600">AI cleanup ON — fast &amp; accurate input</p>
+            )}
           </div>
           <button
             type="button"
