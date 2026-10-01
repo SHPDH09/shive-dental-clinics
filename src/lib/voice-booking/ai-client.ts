@@ -52,6 +52,8 @@ export function sanitizeAiValue(field: VoiceAiField, value: string | null): stri
   const v = value.trim();
   if (field === "phone") return normalizeIndianMobile(v);
   if (field === "email") return normalizeVoiceEmail(v);
+  if (field === "date" && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  if (field === "time" && /^\d{2}:\d{2}$/.test(v)) return v;
   if (field === "intent" || field === "confirm") return v.toLowerCase();
   return v;
 }

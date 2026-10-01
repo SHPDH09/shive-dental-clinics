@@ -37,7 +37,11 @@ assert.equal(parseEmailFromSpeech("rahul at gmail dot com")?.includes("@"), true
 assert.ok(parseDateFromSpeech("tomorrow"));
 assert.ok(parseDateFromSpeech("kal"));
 assert.equal(parseTimeFromSpeech("subah das baje"), "10:00");
-assert.equal(parseTimeFromSpeech("10 AM")?.startsWith("10"), true);
+assert.equal(parseTimeFromSpeech("10 AM"), "10:00");
+assert.equal(parseTimeFromSpeech("3 PM"), "15:00");
+assert.equal(parseTimeFromSpeech("3 p.m."), "15:00");
+assert.ok(parseDateFromSpeech("5 october"));
+assert.ok(parseDateFromSpeech("05/10/2025"));
 assert.equal(isAffirmative(normalizeIntentSpeech("han ji yes book karna hai")), true);
 assert.equal(normalizeIntentSpeech("हं"), "haan");
 assert.equal(normalizeIntentSpeech("हाँ"), "haan");

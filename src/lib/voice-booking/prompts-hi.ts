@@ -28,12 +28,13 @@ export const HI = {
   askService: (options: string) =>
     `Kaun si treatment chahiye aapko? Naam bol sakte hain ya number. Options hain: ${options}`,
   retryService: "Treatment clear nahi hui. Dubara boliye ji.",
-  askDate: "Date boliye — today, tomorrow, aaj, kal, ya koi date. Hindi English dono.",
-  retryDate: "Date clear nahi hui. Aaj ke baad ki koi date boliye.",
-  askTime: "Time boliye — 10 AM, subah das baje, ya 3 PM. Hindi English dono.",
-  retryTime: "Time samajh nahi aaya. Phir se time boliye.",
+  askDate:
+    "Appointment date boliye — aaj, kal, 5 October, ya 05/10/2025. Hindi English dono chalega.",
+  retryDate: "Date samajh nahi aayi. Aaj ke baad ki date boliye — jaise kal ya 5 October.",
+  askTime: "Time boliye — clear AM ya PM ke saath, jaise 10 AM, 3 PM, ya shaam 5 baje.",
+  retryTime: "Time clear nahi hua. 10 AM ya 3 PM aise boliye — AM ya PM zaroor boliye.",
   confirm: (summary: string) =>
-    `Theek hai ji, main poori booking ek baar sunati hoon. ${summary}. Sab sahi hai to haan boliye, kuch badalna ho to nahi boliye.`,
+    `Bas ek baar confirm. ${summary} Sab theek hai to sirf haan boliye, warna nahi.`,
   declinedBooking:
     "Koi baat nahi ji. Jab chahe dubara call kar sakte hain. Shiv Dental Clinic aapka intezar karega.",
   cancelled: "Theek hai ji, booking cancel kar di. Kabhi bhi dubara try kar sakte hain.",

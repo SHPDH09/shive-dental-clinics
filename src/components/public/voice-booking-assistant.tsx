@@ -11,18 +11,17 @@ import {
 } from "@/lib/voice-booking/mic-permission";
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import {
-  hasEmailSpeechIntent,
-  isPlausibleVoiceEmail,
   mergeSpokenEmailParts,
   pickBestEmailFromSpeech,
   previewEmailFromSpeech,
 } from "@/lib/voice-booking/email-voice-parse";
 import {
-  hasEnoughPhoneDigitsInSpeech,
   mergeSpokenPhoneParts,
   parseIndianMobileFromSpeech,
   previewPhoneDigitsFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
+import { formatDateForSpeech } from "@/lib/voice-booking/date-voice-parse";
+import { formatTime12Hour } from "@/lib/voice-booking/time-voice-parse";
 import {
   formatEmailForReadback,
   formatIndianMobileForDisplay,
@@ -84,6 +83,8 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const [requestingMic, setRequestingMic] = useState(false);
   const [capturedPhone, setCapturedPhone] = useState("");
   const [capturedEmail, setCapturedEmail] = useState("");
+  const [capturedDate, setCapturedDate] = useState("");
+  const [capturedTime, setCapturedTime] = useState("");
   const [aiAssistant, setAiAssistant] = useState(false);
   const aiEnabledRef = useRef(false);
   const lastPhoneTranscriptRef = useRef("");
@@ -135,6 +136,8 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setRequestingMic(false);
       setCapturedPhone("");
       setCapturedEmail("");
+      setCapturedDate("");
+      setCapturedTime("");
     }
   }, [open, stop]);
 
@@ -282,72 +285,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     [listenForAnswer],
   );
 
-  const confirmContactValue = useCallback(
-    async (
-      voicePrompt: () => string,
-      collectFresh: () => Promise<string>,
-      normalize: (raw: string) => string | null,
-      initial: string,
-      setPreview: (v: string) => void,
-      contactKind: "phone" | "email",
-    ): Promise<string> => {
-      let value = normalize(initial) ?? initial;
-      setPreview(value);
-      for (let round = 0; round < 5; round++) {
-        for (let attempt = 0; attempt < 3; attempt++) {
-          setStatusLine(voicePrompt());
-          await speakText(voicePrompt(), "hi-IN");
-          await waitForMicHandoff();
-          const t = await listenForAnswer({ short: true });
-          const intent = normalizeIntentSpeech(t);
-          const userSpokeNewPhone = contactKind === "phone" && hasEnoughPhoneDigitsInSpeech(t, 8);
-          const userSpokeNewEmail = contactKind === "email" && hasEmailSpeechIntent(t);
-          if (isAffirmative(intent) && !userSpokeNewPhone && !userSpokeNewEmail) {
-            const ok = normalize(value);
-            if (ok) return ok;
-          }
-          const spokenAgain = normalize(t);
-          if (spokenAgain && (userSpokeNewPhone || userSpokeNewEmail) && !isNegative(intent)) {
-            value = spokenAgain;
-            setPreview(value);
-            await speakText(
-              contactKind === "phone"
-                ? "Ji, naya number note kar liya. Sahi hai to haan boliye."
-                : "Ji, nayi email note kar li. Sahi hai to haan boliye.",
-              "hi-IN",
-            );
-            await waitForMicHandoff();
-            continue;
-          }
-          if (isAffirmative(intent)) {
-            const ok = normalize(value);
-            if (ok) return ok;
-          }
-          if (isNegative(intent)) {
-            await speakText("Theek hai ji, dubara boliye.", "hi-IN");
-            await waitForMicHandoff();
-            const fresh = normalize(await collectFresh());
-            if (fresh) {
-              value = fresh;
-              setPreview(value);
-              break;
-            }
-          } else if (t.trim()) {
-            await speakText(
-              contactKind === "phone"
-                ? "Haan ya nahi boliye — ya sahi number dubara bol dijiye."
-                : "Haan ya nahi boliye — ya poori email dubara bol dijiye.",
-              "hi-IN",
-            );
-            await waitForMicHandoff();
-          }
-        }
-      }
-      throw new Error("Contact confirm nahi hua.");
-    },
-    [listenForAnswer],
-  );
-
   const runFlow = useCallback(async () => {
     if (runningRef.current || !openRef.current) return;
     runningRef.current = true;
@@ -407,14 +344,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       await speakAiLine(aiPhone.say);
       if (!normalizeIndianMobile(phone)) throw new Error("Sahi 10 digit mobile zaroori hai — 6 se 9 se shuru.");
       setCapturedPhone(formatIndianMobileForDisplay(phone));
-      phone = await confirmContactValue(
-        HI.confirmPhone,
-        () => listenForFullPhone((p) => setCapturedPhone(formatIndianMobileForDisplay(p))),
-        normalizeIndianMobile,
-        phone,
-        (v) => setCapturedPhone(formatIndianMobileForDisplay(v)),
-        "phone",
-      );
       draftRef.current.phone = phone;
 
       setStep("email");
@@ -438,14 +367,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       await speakAiLine(aiEmail.say);
       if (!normalizeVoiceEmail(email)) throw new Error("Sahi email zaroori hai.");
       setCapturedEmail(email);
-      email = await confirmContactValue(
-        HI.confirmEmail,
-        () => listenForFullEmail(setCapturedEmail),
-        normalizeVoiceEmail,
-        email,
-        setCapturedEmail,
-        "email",
-      );
       draftRef.current.email = email;
 
       setStep("service");
@@ -467,41 +388,64 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       draftRef.current.serviceId = matched.id;
 
       setStep("date");
+      setCapturedDate("");
       let dateIso = "";
       for (let i = 0; i < 3; i++) {
         const t = await askAndListen(i === 0 ? HI.askDate : HI.retryDate);
-        dateIso = parseDateFromSpeech(t) ?? "";
-        if (dateIso && isValidFutureDate(dateIso)) break;
+        const localDate = parseDateFromSpeech(t) ?? "";
+        const aiDate = await resolveVoiceField(
+          "date",
+          t,
+          localDate && isValidFutureDate(localDate) ? localDate : null,
+          aiEnabledRef.current,
+          { firstName, draft: draftRef.current },
+        );
+        await speakAiLine(aiDate.say);
+        dateIso = aiDate.value ?? localDate;
+        if (dateIso && isValidFutureDate(dateIso)) {
+          setCapturedDate(formatDateForSpeech(dateIso));
+          break;
+        }
       }
-      if (!dateIso) throw new Error("तारीख ज़रूरी है।");
+      if (!dateIso || !isValidFutureDate(dateIso)) throw new Error("तारीख ज़रूरी है — aaj, kal, ya 5 October boliye.");
       draftRef.current.appointmentDate = dateIso;
 
       setStep("time");
+      setCapturedTime("");
       let time = "";
       for (let i = 0; i < 3; i++) {
         const t = await askAndListen(i === 0 ? HI.askTime : HI.retryTime);
-        time = parseTimeFromSpeech(t) ?? "";
-        if (time) break;
+        const localTime = parseTimeFromSpeech(t) ?? "";
+        const aiTime = await resolveVoiceField(
+          "time",
+          t,
+          localTime,
+          aiEnabledRef.current,
+          { firstName, draft: draftRef.current },
+        );
+        await speakAiLine(aiTime.say);
+        time = aiTime.value ?? localTime;
+        if (time) {
+          setCapturedTime(formatTime12Hour(time));
+          break;
+        }
       }
-      if (!time) throw new Error("समय ज़रूरी है।");
+      if (!time) throw new Error("समय ज़रूरी है — 10 AM ya 3 PM boliye.");
       draftRef.current.appointmentTime = time;
 
       setStep("confirm");
-      const summary = `${name} ji, mobile ${formatIndianMobileForReadback(phone)}, email ${formatEmailForReadback(email)}, treatment ${matched.name}, date ${dateIso}, time ${time}`;
-      let confirmed = false;
-      for (let i = 0; i < 3; i++) {
-        const t = await askAndListen(HI.confirm(summary), { short: true });
-        if (isAffirmative(normalizeIntentSpeech(t))) {
-          confirmed = true;
-          break;
-        }
-        if (isNegative(normalizeIntentSpeech(t))) {
-          await speakText(HI.cancelled, "hi-IN");
-          onClose();
-          return;
-        }
+      const dateSay = formatDateForSpeech(dateIso);
+      const timeSay = formatTime12Hour(time);
+      const summary = `${name} ji, ${matched.name}, ${dateSay}, ${timeSay}. Mobile aur email screen par hain.`;
+      const confirmT = await askAndListen(HI.confirm(summary), { short: true });
+      if (isNegative(normalizeIntentSpeech(confirmT))) {
+        await speakText(HI.cancelled, "hi-IN");
+        onClose();
+        return;
       }
-      if (!confirmed) throw new Error("कन्फ़र्म नहीं हुआ।");
+      if (!isAffirmative(normalizeIntentSpeech(confirmT))) {
+        throw new Error("Ek baar haan boliye confirm karne ke liye, ya nahi cancel ke liye.");
+      }
 
       setStep("submitting");
       const visitorId = getOrCreateVisitorId();
@@ -545,7 +489,6 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     }
   }, [
     askAndListen,
-    confirmContactValue,
     listenForFullEmail,
     listenForFullPhone,
     onClose,
@@ -674,6 +617,16 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             {(step === "email" || step === "confirm") && capturedEmail && (
               <p className="mt-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 text-center text-sm font-medium text-violet-900 break-all">
                 Email: {capturedEmail}
+              </p>
+            )}
+            {(step === "date" || step === "confirm") && capturedDate && (
+              <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900">
+                Date: {capturedDate}
+              </p>
+            )}
+            {(step === "time" || step === "confirm") && capturedTime && (
+              <p className="mt-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-center text-sm font-medium text-sky-900">
+                Time: {capturedTime}
               </p>
             )}
             {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
