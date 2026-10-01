@@ -1,8 +1,33 @@
 import { z } from "zod";
+import { collapseConsecutiveRepeats, repairStutteredEmailCompact } from "@/lib/voice-booking/email-stutter";
 import { parseEmailFromSpeech } from "@/lib/voice-booking/speech-utils";
+
+export function cleanEmailSpeechBuffer(text: string): string {
+  const t = text.trim().replace(/\s+/g, " ");
+  if (t.includes("@")) {
+    return repairStutteredEmailCompact(t.toLowerCase().replace(/\s+/g, ""));
+  }
+  return t;
+}
+
+const VOICE_EMAIL_TLD = /\.(com|in|co|org|net|edu|io)$/i;
 
 export function isValidEmailAddress(email: string): boolean {
   return z.string().email().safeParse(email.toLowerCase().trim()).success;
+}
+
+/** Stricter check for STT (reject wrongtextpriya@yahoo.comextra etc.). */
+export function isPlausibleVoiceEmail(email: string): boolean {
+  const e = email.toLowerCase().trim();
+  if (!isValidEmailAddress(e)) return false;
+  const at = e.lastIndexOf("@");
+  if (at <= 0) return false;
+  const local = e.slice(0, at);
+  const domain = e.slice(at + 1);
+  if (local.length > 40 || domain.length > 48) return false;
+  if (!VOICE_EMAIL_TLD.test(domain)) return false;
+  if (/(.{2,8})\1{2,}/.test(local)) return false;
+  return true;
 }
 
 /** User is clearly dictating an email (not just saying haan). */
@@ -16,25 +41,24 @@ function findAllParsedEmails(text: string): string[] {
   const found: string[] = [];
   const seen = new Set<string>();
 
-  const whole = parseEmailFromSpeech(text);
-  if (whole) {
-    const e = whole.toLowerCase();
-    if (!seen.has(e)) {
-      seen.add(e);
-      found.push(e);
-    }
+  const tryAdd = (raw: string) => {
+    const e = parseEmailFromSpeech(raw);
+    if (!e) return;
+    const low = e.toLowerCase();
+    if (seen.has(low)) return;
+    seen.add(low);
+    found.push(low);
+  };
+
+  tryAdd(text);
+  if (text.includes("@")) {
+    tryAdd(cleanEmailSpeechBuffer(text));
   }
 
   const chunks = text.split(/[,;]|(?:\s{2,})/);
   for (const chunk of chunks) {
-    const e = parseEmailFromSpeech(chunk);
-    if (e) {
-      const low = e.toLowerCase();
-      if (!seen.has(low)) {
-        seen.add(low);
-        found.push(low);
-      }
-    }
+    tryAdd(chunk);
+    if (chunk.includes("@")) tryAdd(cleanEmailSpeechBuffer(chunk));
   }
 
   return found;
@@ -42,13 +66,18 @@ function findAllParsedEmails(text: string): string[] {
 
 /** Best single email from one STT utterance (prefer last complete). */
 export function pickBestEmailFromSpeech(text: string): string | null {
-  const candidates = findAllParsedEmails(text).filter(isValidEmailAddress);
+  let candidates = findAllParsedEmails(text).filter(isPlausibleVoiceEmail);
+  if (candidates.length === 0) {
+    candidates = findAllParsedEmails(text).filter(isValidEmailAddress);
+  }
   if (candidates.length === 0) return null;
-  return candidates[candidates.length - 1] ?? null;
+  candidates.sort((a, b) => a.length - b.length);
+  return candidates[0] ?? null;
 }
 
 export function isCompleteEmailSpeech(text: string): boolean {
-  return pickBestEmailFromSpeech(text) !== null;
+  const e = pickBestEmailFromSpeech(text);
+  return e !== null && isPlausibleVoiceEmail(e);
 }
 
 /** Merge email fragments without duplicating repeated halves. */
@@ -95,5 +124,12 @@ export function mergeSpokenEmailParts(...parts: string[]): string {
 export function previewEmailFromSpeech(text: string): string {
   const best = pickBestEmailFromSpeech(text);
   if (best) return best;
-  return text.trim().replace(/\s+/g, " ").slice(0, 64);
+  const partial = cleanEmailSpeechBuffer(text);
+  if (partial.includes("@")) {
+    const maybe = parseEmailFromSpeech(partial);
+    if (maybe && isValidEmailAddress(maybe)) return maybe;
+    const [local, domain] = partial.split("@");
+    if (domain) return `${local?.slice(0, 32) ?? ""}@${domain.slice(0, 24)}`;
+  }
+  return partial.slice(0, 36) + (partial.length > 36 ? "…" : "");
 }

@@ -3,6 +3,7 @@ import {
   devanagariDigitsToLatin,
   normalizeDevanagariIntent,
 } from "@/lib/voice-booking/devanagari-voice";
+import { repairStutteredEmailCompact } from "@/lib/voice-booking/email-stutter";
 import { extractIndianMobileFromDigits } from "@/lib/voice-booking/phone-email-parse";
 import { isLikelyMaleVoice, pickFemaleTtsVoice } from "@/lib/voice-booking/pick-tts-voice";
 
@@ -172,6 +173,7 @@ export function parseEmailFromSpeech(text: string): string | null {
     .replace(/\byahoo\b/gi, "yahoo")
     .replace(/\bhotmail\b/gi, "hotmail")
     .replace(/\brediff\s*mail\b/gi, "rediffmail")
+    .replace(/\b(wrong|text|extra|noise|hello|hi|ji|please|bol|bolo|mera|meri)\b/gi, " ")
     .replace(/\bemel\b|\be\s*mail\b|\bemail\b|\bee mail\b|\bmail id\b/gi, " ")
     .replace(/\bat the rate\b|\battherate\b|\bat rate\b|\baterate\b/gi, "@")
     .replace(/\s+at\s+/gi, "@")
@@ -181,10 +183,14 @@ export function parseEmailFromSpeech(text: string): string | null {
     .replace(/\bdot\b|\bpoint\b/gi, ".")
     .replace(/\bunderscore\b/gi, "_")
     .replace(/\s+/g, "");
-  const m = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-  if (m) return m[0];
-  const loose = t.match(/[a-z0-9._%+-]+@[a-z0-9.-]+/i);
-  if (loose && /\.(com|in|co|org|net)$/i.test(t)) return loose[0];
+  t = repairStutteredEmailCompact(t);
+  const matches = [
+    ...t.matchAll(/[a-z0-9._%+-]+@[a-z0-9.-]+\.(?:com|in|co|org|net|edu|io)\b/gi),
+  ].map((m) => m[0]);
+  if (matches.length > 0) {
+    matches.sort((a, b) => a.length - b.length);
+    return matches[0] ?? null;
+  }
   return null;
 }
 

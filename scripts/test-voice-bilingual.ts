@@ -8,7 +8,9 @@ import {
   mergeSpokenPhoneParts,
   parseIndianMobileFromSpeech,
 } from "../src/lib/voice-booking/phone-email-parse";
+import { collapseConsecutiveRepeats } from "../src/lib/voice-booking/email-stutter";
 import {
+  cleanEmailSpeechBuffer,
   mergeSpokenEmailParts,
   pickBestEmailFromSpeech,
 } from "../src/lib/voice-booking/email-voice-parse";
@@ -72,6 +74,15 @@ assert.equal(
 assert.equal(
   pickBestEmailFromSpeech("wrong text priya at yahoo dot com extra"),
   "priya@yahoo.com",
+);
+const stutter =
+  "raunakraunakkumarraunakkumarjobraunakkumarraunakkumarraunakkumarraunakkumarjob@gmail.com";
+assert.ok(collapseConsecutiveRepeats(stutter.split("@")[0]!).length < 30);
+const fixed = pickBestEmailFromSpeech(stutter);
+assert.ok(fixed && fixed.includes("@gmail.com") && fixed.length < 40, fixed ?? "null");
+assert.equal(
+  pickBestEmailFromSpeech("raunak kumar job at gmail dot com"),
+  "raunakkumarjob@gmail.com",
 );
 
 console.log("voice-bilingual: all checks passed");

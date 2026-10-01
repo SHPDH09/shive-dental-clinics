@@ -12,6 +12,7 @@ import {
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import {
   hasEmailSpeechIntent,
+  isPlausibleVoiceEmail,
   mergeSpokenEmailParts,
   pickBestEmailFromSpeech,
   previewEmailFromSpeech,

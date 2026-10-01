@@ -47,7 +47,18 @@ function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
+function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent, mode?: VoiceListenMode): string {
+  if (ev.results.length === 0) return "";
+
+  if (mode === "email" || mode === "phone") {
+    let best = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const piece = ev.results[i]?.[0]?.transcript ?? "";
+      if (piece.length >= best.length) best = piece;
+    }
+    return best.replace(/\s+/g, " ").trim();
+  }
+
   let finals = "";
   let interim = "";
   for (let i = 0; i < ev.results.length; i++) {
@@ -148,7 +159,7 @@ function listenWithLanguage(
     }, maxMs);
 
     rec.onresult = (ev: SpeechRecognitionEvent) => {
-      const merged = mergeTranscriptFromEvent(ev);
+      const merged = mergeTranscriptFromEvent(ev, mode);
       if (merged) transcript = merged;
       if (transcript) onInterim?.(transcript);
 

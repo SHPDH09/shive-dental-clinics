@@ -3,7 +3,11 @@ import {
   extractIndianMobileFromDigits,
   parseIndianMobileFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
-import { mergeSpokenEmailParts, pickBestEmailFromSpeech } from "@/lib/voice-booking/email-voice-parse";
+import {
+  cleanEmailSpeechBuffer,
+  mergeSpokenEmailParts,
+  pickBestEmailFromSpeech,
+} from "@/lib/voice-booking/email-voice-parse";
 import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
 
 export function normalizeIndianMobile(input: string): string | null {
@@ -22,8 +26,10 @@ export function isValidIndianMobile(phone: string): boolean {
 }
 
 export function normalizeVoiceEmail(raw: string): string | null {
-  const merged = mergeSpokenEmailParts(raw);
-  const parsed = pickBestEmailFromSpeech(merged) ?? pickBestEmailFromSpeech(raw);
+  const merged = mergeSpokenEmailParts(cleanEmailSpeechBuffer(raw));
+  const parsed =
+    pickBestEmailFromSpeech(merged) ??
+    pickBestEmailFromSpeech(cleanEmailSpeechBuffer(raw));
   if (!parsed) return null;
   const ok = z.string().email().safeParse(parsed);
   return ok.success ? parsed : null;
