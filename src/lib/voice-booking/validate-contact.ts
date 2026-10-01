@@ -10,8 +10,9 @@ export function normalizeIndianMobile(input: string): string | null {
 }
 
 export function formatIndianMobileForDisplay(phone: string): string {
-  const d = phone.replace(/\D/g, "").slice(-10);
-  if (d.length !== 10) return phone;
+  const d = phone.replace(/\D/g, "").slice(0, 10);
+  if (d.length === 0) return "";
+  if (d.length <= 5) return d;
   return `${d.slice(0, 5)} ${d.slice(5)}`;
 }
 

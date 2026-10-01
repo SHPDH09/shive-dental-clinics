@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { requestMicrophoneStream } from "@/lib/voice-booking/mic-permission";
 import {
   countPhoneDigits,
+  dedupeRepeatedPhoneDigits,
   isLikelyCompleteEmail,
   isCompletePhone,
   parseIndianMobileFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
+import { expandSpokenDigits } from "@/lib/voice-booking/speech-utils";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
@@ -15,7 +17,9 @@ export type VoiceListenMode = "short" | "normal" | "phone" | "email";
 
 const LANGS_NORMAL = ["en-IN", "hi-IN", "en-US"] as const;
 const LANGS_SHORT = ["en-IN", "hi-IN", "en-US"] as const;
-const LANGS_DIGITS = ["en-IN", "hi-IN"] as const;
+/** Single locale per phone listen — avoids hearing the same digits twice (en + hi). */
+const LANGS_PHONE = ["hi-IN", "en-IN"] as const;
+const LANGS_EMAIL = ["en-IN", "hi-IN"] as const;
 
 export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
@@ -54,7 +58,7 @@ function mergeTranscriptFromEvent(ev: SpeechRecognitionEvent): string {
 }
 
 function silenceMsForMode(mode: VoiceListenMode): number {
-  if (mode === "phone") return 3800;
+  if (mode === "phone") return 5600;
   if (mode === "email") return 3200;
   if (mode === "short") return 400;
   return 1400;
@@ -91,7 +95,10 @@ function listenWithLanguage(
     };
 
     const canCompleteEarly = (text: string): boolean => {
-      if (mode === "phone") return isCompletePhone(text);
+      if (mode === "phone") {
+        const d = dedupeRepeatedPhoneDigits(expandSpokenDigits(text).replace(/\D/g, ""));
+        return d.length === 10 && isCompletePhone(text);
+      }
       if (mode === "email") return isLikelyCompleteEmail(text);
       if (mode === "short") return text.trim().length > 0;
       return false;
@@ -199,9 +206,9 @@ export async function listenForSpeech(
   const mode = options?.mode ?? "normal";
   const short = mode === "short";
   const langs =
-    mode === "phone" || mode === "email" ? LANGS_DIGITS : short ? LANGS_SHORT : LANGS_NORMAL;
+    mode === "phone" ? LANGS_PHONE : mode === "email" ? LANGS_EMAIL : short ? LANGS_SHORT : LANGS_NORMAL;
   const perLangMs =
-    mode === "phone" ? Math.max(maxMs, 38000) : mode === "email" ? Math.max(maxMs, 32000) : maxMs;
+    mode === "phone" ? Math.max(maxMs, 48000) : mode === "email" ? Math.max(maxMs, 32000) : maxMs;
 
   let lastErr = "no-speech";
   let combined = "";
@@ -211,9 +218,11 @@ export async function listenForSpeech(
       const text = await listenWithLanguage(lang, perLangMs, mode, onInterim);
       combined = `${combined} ${text}`.trim();
       if (mode === "phone") {
+        const solo = parseIndianMobileFromSpeech(text);
+        if (solo) return text.trim();
         if (parseIndianMobileFromSpeech(combined)) return combined;
         if (combined.trim() && countPhoneDigits(combined) >= 4) return combined;
-        if (text.trim()) continue;
+        if (text.trim()) break;
       }
       if (mode === "email") {
         if (isLikelyCompleteEmail(combined.replace(/\s+/g, ""))) return combined;

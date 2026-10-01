@@ -7,8 +7,8 @@ export const HI = {
   retryName: "Naam thoda clear nahi aaya. Ek baar phir apna pura naam boliye ji.",
   askPhone: (firstName?: string) =>
     firstName
-      ? `${firstName} ji, ab mobile number batayein — poora das digit ek saath ya do hisson mein, araam se boliye.`
-      : "Ji, apna mobile number batayein — das digit, ek saath ya thoda thoda karke.",
+      ? `${firstName} ji, mobile number boliye — fast ya ruk ruk kar, screen par digit dikhengi. Das digit poora hone do.`
+      : "Ji, mobile number boliye — speed se ya pause ke saath. Screen par digits dikhti rahengi.",
   confirmPhone: () =>
     "Ji, number screen par aa gaya hai. Sahi hai to haan boliye, galat ho to nahi — phir dubara number bol dena.",
   retryPhone: "Number poora clear nahi aaya. Phir se araam se das digit mobile boliye ji.",

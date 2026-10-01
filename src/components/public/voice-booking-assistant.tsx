@@ -11,9 +11,11 @@ import {
 } from "@/lib/voice-booking/mic-permission";
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import {
+  hasEnoughPhoneDigitsInSpeech,
   isLikelyCompleteEmail,
   mergeSpokenPhoneParts,
   parseIndianMobileFromSpeech,
+  previewPhoneDigitsFromSpeech,
 } from "@/lib/voice-booking/phone-email-parse";
 import {
   formatEmailForReadback,
@@ -123,7 +125,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
 
         try {
           const raw = await listenOnce({
-            maxMs: mode === "phone" ? 38000 : mode === "email" ? 32000 : mode === "short" ? 8000 : 18000,
+            maxMs: mode === "phone" ? 48000 : mode === "email" ? 32000 : mode === "short" ? 8000 : 18000,
             mode,
           });
           const t = normalizeTranscript(raw);
@@ -186,26 +188,34 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
   const listenForFullPhone = useCallback(
     async (onPartial?: (display: string) => void): Promise<string> => {
       const parts: string[] = [];
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 3; i++) {
         if (i > 0) {
-          const mergedRaw = mergeSpokenPhoneParts(...parts);
-          const partialDigits = mergedRaw.replace(/\D/g, "");
-          if (partialDigits.length > 0 && partialDigits.length < 10) {
-            onPartial?.(partialDigits);
-            await speakText(HI.phoneGotPartial(partialDigits), "hi-IN");
-          } else {
-            await speakText(HI.phoneNeedMore, "hi-IN");
-          }
+          await speakText(
+            parts.length
+              ? HI.phoneNeedMore
+              : HI.retryPhoneListen,
+            "hi-IN",
+          );
           await waitForMicHandoff();
         }
         const chunk = await listenForAnswer({ mode: "phone" });
         if (chunk) parts.push(chunk);
+
+        const solo = parseIndianMobileFromSpeech(chunk);
+        if (solo) {
+          onPartial?.(solo);
+          return solo;
+        }
+
         const merged = mergeSpokenPhoneParts(...parts);
-        const phone =
-          parseIndianMobileFromSpeech(merged) ?? normalizeIndianMobile(merged) ?? "";
-        if (phone.length === 10) {
+        const phone = parseIndianMobileFromSpeech(merged) ?? normalizeIndianMobile(merged) ?? "";
+        const digitLen = merged.replace(/\D/g, "").length;
+        if (phone.length === 10 && digitLen <= 11) {
           onPartial?.(phone);
           return phone;
+        }
+        if (digitLen > 0 && digitLen < 10) {
+          onPartial?.(merged.replace(/\D/g, "").slice(0, 10));
         }
       }
       const last = mergeSpokenPhoneParts(...parts);
@@ -236,6 +246,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       normalize: (raw: string) => string | null,
       initial: string,
       setPreview: (v: string) => void,
+      contactKind: "phone" | "email",
     ): Promise<string> => {
       let value = normalize(initial) ?? initial;
       setPreview(value);
@@ -246,12 +257,23 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
           await waitForMicHandoff();
           const t = await listenForAnswer({ short: true });
           const intent = normalizeIntentSpeech(t);
+          const userSpokeNewPhone = contactKind === "phone" && hasEnoughPhoneDigitsInSpeech(t, 8);
+          const userSpokeNewEmail =
+            contactKind === "email" && (t.includes("@") || /gmail|dot com|at /i.test(t));
+          if (isAffirmative(intent) && !userSpokeNewPhone && !userSpokeNewEmail) {
+            const ok = normalize(value);
+            if (ok) return ok;
+          }
           const spokenAgain = normalize(t);
-          if (spokenAgain && !isNegative(intent)) {
+          if (spokenAgain && (userSpokeNewPhone || userSpokeNewEmail) && !isNegative(intent)) {
             value = spokenAgain;
             setPreview(value);
-            if (isAffirmative(intent)) return value;
-            await speakText("Ji, note kar liya. Sahi hai to haan boliye.", "hi-IN");
+            await speakText(
+              contactKind === "phone"
+                ? "Ji, naya number note kar liya. Sahi hai to haan boliye."
+                : "Ji, nayi email note kar li. Sahi hai to haan boliye.",
+              "hi-IN",
+            );
             await waitForMicHandoff();
             continue;
           }
@@ -349,6 +371,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         normalizeIndianMobile,
         phone,
         (v) => setCapturedPhone(formatIndianMobileForDisplay(v)),
+        "phone",
       );
       draftRef.current.phone = phone;
 
@@ -370,6 +393,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
         normalizeVoiceEmail,
         email,
         setCapturedEmail,
+        "email",
       );
       draftRef.current.email = email;
 
@@ -575,6 +599,11 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             {listening && <p className="mt-2 text-sm font-medium text-red-600">{HI.listening}</p>}
             {listening && interimText && (
               <p className="mt-2 text-center text-sm font-medium text-teal-700">{HI.hearing(interimText)}</p>
+            )}
+            {listening && step === "phone" && interimText && (
+              <p className="mt-2 text-center text-lg font-bold tracking-widest text-slate-800">
+                {formatIndianMobileForDisplay(previewPhoneDigitsFromSpeech(interimText)) || "…"}
+              </p>
             )}
             {statusLine && !listening && (
               <p className="mt-2 text-center text-sm text-slate-600">{statusLine}</p>

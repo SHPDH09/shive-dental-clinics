@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { parseNameFromSpeech } from "../src/lib/voice-booking/bilingual-input";
 import {
+  dedupeRepeatedPhoneDigits,
   extractIndianMobileFromDigits,
   isCompletePhone,
+  mergePhoneDigitStrings,
   mergeSpokenPhoneParts,
   parseIndianMobileFromSpeech,
 } from "../src/lib/voice-booking/phone-email-parse";
@@ -47,5 +49,12 @@ assert.equal(normalizeIndianMobile("98 76 54 32 10"), "9876543210");
 assert.equal(normalizeIndianMobile("5876543210"), null);
 assert.equal(normalizeVoiceEmail("rahul at gmail dot com"), "rahul@gmail.com");
 assert.equal(normalizeVoiceEmail("not an email"), null);
+assert.equal(dedupeRepeatedPhoneDigits("98765432109876543210"), "9876543210");
+assert.equal(mergePhoneDigitStrings("98765", "43210"), "9876543210");
+assert.equal(
+  mergeSpokenPhoneParts("62066 wrong", "nine eight seven six five four three two one zero"),
+  "9876543210",
+);
+assert.equal(mergeSpokenPhoneParts("9876543210", "9876543210"), "9876543210");
 
 console.log("voice-bilingual: all checks passed");
