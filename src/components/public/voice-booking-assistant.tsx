@@ -11,6 +11,14 @@ import {
 } from "@/lib/voice-booking/mic-permission";
 import { parseNameFromSpeech } from "@/lib/voice-booking/bilingual-input";
 import { isLikelyCompleteEmail, mergeSpokenPhoneParts } from "@/lib/voice-booking/phone-email-parse";
+import {
+  formatEmailForReadback,
+  formatIndianMobileForReadback,
+  normalizeIndianMobile,
+  normalizeVoiceEmail,
+} from "@/lib/voice-booking/validate-contact";
+import { appointmentPublicSchema } from "@/lib/validations";
+import { getOrCreateVisitorId, getStoredVisitorContact, setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
 import { successConversation, welcomeConversation } from "@/lib/voice-booking/conversation-script";
 import { HI, STEP_LABELS_HI } from "@/lib/voice-booking/prompts-hi";
 import {
@@ -21,14 +29,12 @@ import {
   normalizeIntentSpeech,
   normalizeTranscript,
   parseDateFromSpeech,
-  parseEmailFromSpeech,
   parsePhoneFromSpeech,
   parseTimeFromSpeech,
   speakConversation,
   speakText,
   waitForMicHandoff,
 } from "@/lib/voice-booking/speech-utils";
-import { getOrCreateVisitorId, setStoredVisitorContact, syncVisitorLead } from "@/lib/visitor-contact";
 
 type ServiceOption = { id: string; name: string };
 
@@ -167,7 +173,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       const chunk = await listenForAnswer({ mode: "phone" });
       if (chunk) parts.push(chunk);
       const merged = mergeSpokenPhoneParts(...parts);
-      const phone = parsePhoneFromSpeech(merged) ?? "";
+      const phone = normalizeIndianMobile(merged) ?? normalizeIndianMobile(parsePhoneFromSpeech(merged) ?? "") ?? "";
       if (phone.length === 10) return phone;
       if (i < 2) {
         await speakText(HI.phoneNeedMore, "hi-IN");
@@ -175,7 +181,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       }
     }
     const last = mergeSpokenPhoneParts(...parts);
-    return parsePhoneFromSpeech(last) ?? "";
+    return normalizeIndianMobile(last) ?? "";
   }, [listenForAnswer]);
 
   const listenForFullEmail = useCallback(async (): Promise<string> => {
@@ -183,17 +189,51 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     for (let i = 0; i < 3; i++) {
       const chunk = await listenForAnswer({ mode: "email" });
       buffer = `${buffer} ${chunk}`.trim();
-      const email =
-        parseEmailFromSpeech(buffer) ??
-        (buffer.includes("@") ? buffer.replace(/\s/g, "") : "");
-      if (email.includes("@") && isLikelyCompleteEmail(email)) return email;
+      const email = normalizeVoiceEmail(buffer) ?? "";
+      if (email && isLikelyCompleteEmail(email)) return email;
       if (i < 2) {
         await speakText(HI.emailNeedMore, "hi-IN");
         await waitForMicHandoff();
       }
     }
-    return parseEmailFromSpeech(buffer) ?? "";
+    return normalizeVoiceEmail(buffer) ?? "";
   }, [listenForAnswer]);
+
+  const confirmContactValue = useCallback(
+    async (
+      promptFor: (readback: string) => string,
+      formatReadback: (value: string) => string,
+      collectFresh: () => Promise<string>,
+      normalize: (raw: string) => string | null,
+      initial: string,
+    ): Promise<string> => {
+      let value = normalize(initial) ?? initial;
+      for (let round = 0; round < 5; round++) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const t = await askAndListen(promptFor(formatReadback(value)), { short: true });
+          const intent = normalizeIntentSpeech(t);
+          if (isAffirmative(intent)) {
+            const ok = normalize(value);
+            if (ok) return ok;
+          }
+          if (isNegative(intent)) {
+            await speakText("Theek hai ji, phir se sahi detail boliye.", "hi-IN");
+            await waitForMicHandoff();
+            const fresh = normalize(await collectFresh());
+            if (fresh) {
+              value = fresh;
+              break;
+            }
+          } else {
+            await speakText("Sirf haan ya nahi boliye ji.", "hi-IN");
+            await waitForMicHandoff();
+          }
+        }
+      }
+      throw new Error("Contact confirm nahi hua.");
+    },
+    [askAndListen],
+  );
 
   const runFlow = useCallback(async () => {
     if (runningRef.current || !openRef.current) return;
@@ -245,29 +285,67 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       }
       if (name.length < 2) throw new Error("नाम ज़रूरी है।");
       draftRef.current.patientName = name;
+      const firstName = name.trim().split(/\s+/)[0] ?? name;
 
       setStep("phone");
-      await speakText(HI.askPhone, "hi-IN");
-      await waitForMicHandoff();
-      let phone = await listenForFullPhone();
-      if (!phone || phone.length !== 10) {
-        await speakText(HI.retryPhone, "hi-IN");
+      let phone = "";
+      const stored = getStoredVisitorContact();
+      const savedPhone = stored?.phone ? normalizeIndianMobile(stored.phone) : null;
+      if (savedPhone) {
+        const useSaved = await askAndListen(HI.useSavedPhone(formatIndianMobileForReadback(savedPhone)), {
+          short: true,
+        });
+        if (isAffirmative(normalizeIntentSpeech(useSaved))) {
+          phone = savedPhone;
+        }
+      }
+      if (!phone) {
+        await speakText(HI.askPhone(firstName), "hi-IN");
         await waitForMicHandoff();
         phone = await listenForFullPhone();
+        if (!phone) {
+          await speakText(HI.retryPhone, "hi-IN");
+          await waitForMicHandoff();
+          phone = await listenForFullPhone();
+        }
       }
-      if (!phone || phone.length !== 10) throw new Error("Sahi 10 digit mobile number zaroori hai.");
+      if (!normalizeIndianMobile(phone)) throw new Error("Sahi 10 digit Indian mobile zaroori hai.");
+      phone = await confirmContactValue(
+        HI.confirmPhone,
+        formatIndianMobileForReadback,
+        listenForFullPhone,
+        normalizeIndianMobile,
+        phone,
+      );
       draftRef.current.phone = phone;
 
       setStep("email");
-      await speakText(HI.askEmail, "hi-IN");
-      await waitForMicHandoff();
-      let email = await listenForFullEmail();
-      if (!email.includes("@")) {
-        await speakText(HI.retryEmail, "hi-IN");
+      let email = "";
+      const savedEmail = stored?.email ? normalizeVoiceEmail(stored.email) : null;
+      if (savedEmail) {
+        const useSaved = await askAndListen(HI.useSavedEmail(formatEmailForReadback(savedEmail)), { short: true });
+        if (isAffirmative(normalizeIntentSpeech(useSaved))) {
+          email = savedEmail;
+        }
+      }
+      if (!email) {
+        await speakText(HI.askEmail(firstName), "hi-IN");
         await waitForMicHandoff();
         email = await listenForFullEmail();
+        if (!email) {
+          await speakText(HI.retryEmail, "hi-IN");
+          await waitForMicHandoff();
+          email = await listenForFullEmail();
+        }
       }
-      if (!email.includes("@")) throw new Error("Sahi email zaroori hai.");
+      if (!normalizeVoiceEmail(email)) throw new Error("Sahi email zaroori hai.");
+      email = await confirmContactValue(
+        HI.confirmEmail,
+        formatEmailForReadback,
+        listenForFullEmail,
+        normalizeVoiceEmail,
+        email,
+      );
       draftRef.current.email = email;
 
       setStep("service");
@@ -309,7 +387,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       draftRef.current.appointmentTime = time;
 
       setStep("confirm");
-      const summary = `${name}, ${matched.name}, तारीख ${dateIso}, समय ${time}`;
+      const summary = `${name} ji, mobile ${formatIndianMobileForReadback(phone)}, email ${formatEmailForReadback(email)}, treatment ${matched.name}, date ${dateIso}, time ${time}`;
       let confirmed = false;
       for (let i = 0; i < 3; i++) {
         const t = await askAndListen(HI.confirm(summary), { short: true });
@@ -328,6 +406,11 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       setStep("submitting");
       const visitorId = getOrCreateVisitorId();
       const payload = { ...draftRef.current, visitorId };
+      const parsed = appointmentPublicSchema.safeParse(payload);
+      if (!parsed.success) {
+        const first = parsed.error.issues[0]?.message ?? "Invalid details";
+        throw new Error(first);
+      }
       setStoredVisitorContact({
         name: payload.patientName,
         email: payload.email,
@@ -360,7 +443,16 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     } finally {
       runningRef.current = false;
     }
-  }, [askAndListen, listenForFullEmail, listenForFullPhone, listenOnly, onClose, services, supported]);
+  }, [
+    askAndListen,
+    confirmContactValue,
+    listenForFullEmail,
+    listenForFullPhone,
+    listenOnly,
+    onClose,
+    services,
+    supported,
+  ]);
 
   /** getUserMedia must start in this click handler (browser permission popup). */
   const handleAllowMicAndStart = () => {

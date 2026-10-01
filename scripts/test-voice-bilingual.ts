@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { parseNameFromSpeech } from "../src/lib/voice-booking/bilingual-input";
-import { mergeSpokenPhoneParts } from "../src/lib/voice-booking/phone-email-parse";
+import { extractIndianMobileFromDigits, mergeSpokenPhoneParts } from "../src/lib/voice-booking/phone-email-parse";
+import {
+  normalizeIndianMobile,
+  normalizeVoiceEmail,
+} from "../src/lib/voice-booking/validate-contact";
 import {
   isAffirmative,
   normalizeIntentSpeech,
@@ -29,5 +33,11 @@ assert.equal(normalizeIntentSpeech("जी"), "haan");
 assert.equal(normalizeIntentSpeech("नहीं"), "nahi");
 assert.equal(isAffirmative(normalizeIntentSpeech("हं")), true);
 assert.equal(parsePhoneFromSpeech("९८७६५४३२१०"), "9876543210");
+assert.equal(parsePhoneFromSpeech("5876543210 extra noise"), null);
+assert.equal(extractIndianMobileFromDigits("919876543210"), "9876543210");
+assert.equal(normalizeIndianMobile("98 76 54 32 10"), "9876543210");
+assert.equal(normalizeIndianMobile("5876543210"), null);
+assert.equal(normalizeVoiceEmail("rahul at gmail dot com"), "rahul@gmail.com");
+assert.equal(normalizeVoiceEmail("not an email"), null);
 
 console.log("voice-bilingual: all checks passed");
