@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         data.doctorId,
         data.appointmentDate,
         data.appointmentTime,
+        data.branchId,
       );
       if (!slotOk) {
         return NextResponse.json(

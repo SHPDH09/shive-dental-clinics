@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 
 type BranchOption = {
   id: string;
@@ -17,6 +17,8 @@ type BranchOption = {
 type DoctorOption = { id: string; name: string; slug: string; specialization: string };
 type ServiceOption = { id: string; name: string; slug?: string };
 
+type SlotEntry = { time: string; status: "available" | "booked" | "past" };
+
 type Props = {
   branches: BranchOption[];
   doctors: DoctorOption[];
@@ -26,7 +28,7 @@ type Props = {
   initialServiceSlug?: string | null;
 };
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export function AppointmentBookingWizard({
   branches,
@@ -55,7 +57,7 @@ export function AppointmentBookingWizard({
   const [serviceId, setServiceId] = useState(preService?.id ?? "");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [slots, setSlots] = useState<string[]>([]);
+  const [slotEntries, setSlotEntries] = useState<SlotEntry[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [closedDay, setClosedDay] = useState(false);
   const [patientName, setPatientName] = useState("");
@@ -82,6 +84,11 @@ export function AppointmentBookingWizard({
   const selectedDoctor = branchDoctors.find((d) => d.id === doctorId) ?? doctors.find((d) => d.id === doctorId);
   const selectedService = branchServices.find((s) => s.id === serviceId) ?? services.find((s) => s.id === serviceId);
   const treatmentName = selectedService?.name ?? "";
+
+  const availableCount = useMemo(
+    () => slotEntries.filter((s) => s.status === "available").length,
+    [slotEntries],
+  );
 
   useEffect(() => {
     if (preBranch) setBranchId(preBranch.id);
@@ -112,21 +119,28 @@ export function AppointmentBookingWizard({
   }, [preService, branchServices]);
 
   useEffect(() => {
-    if (step !== 5 || !doctorId || !date) return;
+    if (step !== 5 || !doctorId || !date || !branchId) return;
     setSlotsLoading(true);
     setTime("");
-    void fetch(`/api/public/appointments/slots?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(date)}`)
+    const params = new URLSearchParams({
+      doctorId,
+      date,
+      branchId,
+    });
+    void fetch(`/api/public/appointments/slots?${params.toString()}`)
       .then((r) => r.json())
-      .then((json: { slots?: string[]; closed?: boolean }) => {
-        setSlots(json.slots ?? []);
+      .then((json: { slots?: SlotEntry[]; closed?: boolean }) => {
+        setSlotEntries(json.slots ?? []);
         setClosedDay(Boolean(json.closed));
       })
       .catch(() => {
-        setSlots([]);
+        setSlotEntries([]);
         setClosedDay(true);
       })
       .finally(() => setSlotsLoading(false));
-  }, [step, doctorId, date]);
+  }, [step, doctorId, date, branchId]);
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const canNext = () => {
     if (step === 1) return Boolean(branchId);
@@ -134,10 +148,10 @@ export function AppointmentBookingWizard({
     if (step === 3) return Boolean(serviceId);
     if (step === 4) return Boolean(date);
     if (step === 5) return Boolean(time);
-    if (step === 6) {
-      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-      return patientName.trim().length >= 2 && phone.trim().length >= 10 && emailOk;
-    }
+    if (step === 6) return patientName.trim().length >= 2;
+    if (step === 7) return phone.trim().length >= 10;
+    if (step === 8) return emailOk;
+    if (step === 9) return patientName.trim().length >= 2 && phone.trim().length >= 10 && emailOk;
     return false;
   };
 
@@ -189,12 +203,15 @@ export function AppointmentBookingWizard({
   }
 
   const steps = [
-    "Select Branch",
-    "Select Doctor",
-    "Select Treatment",
-    "Select Date",
-    "Select Time",
-    "Your Details",
+    "Branch",
+    "Doctor",
+    "Treatment",
+    "Date",
+    "Time",
+    "Your name",
+    "Phone",
+    "Email",
+    "Confirm",
   ] as const;
 
   return (
@@ -219,7 +236,8 @@ export function AppointmentBookingWizard({
 
       {step === 1 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Branch</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select branch</h3>
+          <p className="text-sm text-slate-600">Appointment times follow this branch&apos;s opening hours.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {branches.map((b) => (
               <button
@@ -240,7 +258,7 @@ export function AppointmentBookingWizard({
 
       {step === 2 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Doctor</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select doctor</h3>
           {branchDoctors.length === 0 ? (
             <p className="text-sm text-slate-600">No doctors listed for this branch. Please call the clinic.</p>
           ) : (
@@ -265,7 +283,7 @@ export function AppointmentBookingWizard({
 
       {step === 3 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Treatment</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select treatment</h3>
           <Select value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
             {branchServices.map((s) => (
               <option key={s.id} value={s.id}>
@@ -278,7 +296,7 @@ export function AppointmentBookingWizard({
 
       {step === 4 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Date</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select date</h3>
           <Input
             type="date"
             value={date}
@@ -290,36 +308,129 @@ export function AppointmentBookingWizard({
 
       {step === 5 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Select Available Time</h3>
+          <h3 className="text-lg font-bold text-slate-900">Select time</h3>
+          <p className="text-sm text-slate-600">
+            Showing slots for <strong>{selectedBranch?.name}</strong>
+            {selectedDoctor ? (
+              <>
+                {" "}
+                with <strong>{selectedDoctor.name}</strong>
+              </>
+            ) : null}
+            . Full slots are locked.
+          </p>
           {slotsLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
           ) : closedDay ? (
-            <p className="text-sm text-slate-600">This doctor is not available on the selected day. Please pick another date.</p>
-          ) : slots.length === 0 ? (
-            <p className="text-sm text-slate-600">No open slots left for this day. Try another date.</p>
+            <p className="text-sm text-slate-600">
+              This branch or doctor is not available on the selected day. Please pick another date.
+            </p>
+          ) : slotEntries.length === 0 ? (
+            <p className="text-sm text-slate-600">No time slots for this day. Try another date.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {slots.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  onClick={() => setTime(slot)}
-                  className={`rounded-lg border px-4 py-2 text-sm font-medium ${
-                    time === slot ? "border-sky-600 bg-sky-50 text-sky-900" : "border-slate-200 hover:border-sky-300"
-                  }`}
-                >
-                  {slot}
-                </button>
-              ))}
-            </div>
+            <>
+              {availableCount === 0 ? (
+                <p className="text-sm text-amber-800 rounded-lg bg-amber-50 px-3 py-2">
+                  All slots are full or past for this day. Please choose another date.
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {slotEntries.map((slot) => {
+                  const locked = slot.status !== "available";
+                  const label =
+                    slot.status === "booked" ? "Full" : slot.status === "past" ? "Past" : null;
+                  return (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      disabled={locked}
+                      title={
+                        slot.status === "booked"
+                          ? "This slot is already booked"
+                          : slot.status === "past"
+                            ? "This time has passed"
+                            : undefined
+                      }
+                      onClick={() => !locked && setTime(slot.time)}
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                        locked
+                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                          : time === slot.time
+                            ? "border-sky-600 bg-sky-50 text-sky-900"
+                            : "border-slate-200 hover:border-sky-300 text-slate-800"
+                      }`}
+                    >
+                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden /> : null}
+                      <span>{slot.time}</span>
+                      {label ? (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{label}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
 
       {step === 6 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">Confirm Appointment</h3>
-          <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700 space-y-1">
+          <h3 className="text-lg font-bold text-slate-900">Your full name</h3>
+          <div>
+            <Label htmlFor="patient-name">Name as on ID / records</Label>
+            <Input
+              id="patient-name"
+              autoFocus
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
+              placeholder="e.g. Rahul Sharma"
+            />
+          </div>
+        </div>
+      )}
+
+      {step === 7 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900">Mobile number</h3>
+          <div>
+            <Label htmlFor="patient-phone">We will call or WhatsApp to confirm</Label>
+            <Input
+              id="patient-phone"
+              type="tel"
+              autoFocus
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="10-digit mobile number"
+            />
+          </div>
+        </div>
+      )}
+
+      {step === 8 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900">Email address</h3>
+          <div>
+            <Label htmlFor="patient-email">For appointment confirmation</Label>
+            <Input
+              id="patient-email"
+              type="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@email.com"
+            />
+            {email.trim() && !emailOk ? (
+              <p className="mt-1 text-xs text-red-600">Enter a valid email address.</p>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {step === 9 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900">Review & confirm</h3>
+          <div className="space-y-1 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
             <p>
               <strong>Branch:</strong> {selectedBranch?.name}
             </p>
@@ -330,35 +441,21 @@ export function AppointmentBookingWizard({
               <strong>Treatment:</strong> {treatmentName}
             </p>
             <p>
-              <strong>Date:</strong> {date} at {time}
+              <strong>Date & time:</strong> {date} at {time}
+            </p>
+            <p>
+              <strong>Name:</strong> {patientName}
+            </p>
+            <p>
+              <strong>Phone:</strong> {phone}
+            </p>
+            <p>
+              <strong>Email:</strong> {email}
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <Label>Full name</Label>
-              <Input value={patientName} onChange={(e) => setPatientName(e.target.value)} />
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                required
-              />
-              {step === 6 && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? (
-                <p className="mt-1 text-xs text-red-600">Enter a valid email for your confirmation.</p>
-              ) : null}
-            </div>
-            <div className="sm:col-span-2">
-              <Label>Message (optional)</Label>
-              <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
-            </div>
+          <div>
+            <Label>Message (optional)</Label>
+            <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
         </div>
       )}
@@ -371,15 +468,15 @@ export function AppointmentBookingWizard({
             Back
           </Button>
         )}
-        {step < 6 && (
+        {step < 9 && (
           <Button type="button" disabled={!canNext()} onClick={() => setStep((s) => (s + 1) as Step)}>
             Continue
           </Button>
         )}
-        {step === 6 && (
+        {step === 9 && (
           <Button type="button" disabled={!canNext() || submitting} onClick={() => void submit()}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Confirm Appointment
+            Confirm appointment
           </Button>
         )}
       </div>

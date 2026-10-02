@@ -1,5 +1,5 @@
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { getAvailableAppointmentSlots } from "@/lib/appointment-slots";
+import { getPublicAppointmentSlots } from "@/lib/appointment-slots";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -8,6 +8,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const doctorId = searchParams.get("doctorId")?.trim();
+  const branchId = searchParams.get("branchId")?.trim() || null;
   const date = searchParams.get("date")?.trim();
 
   if (!doctorId || !date) {
@@ -15,8 +16,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    const { slots, closed } = await getAvailableAppointmentSlots(doctorId, date);
-    return NextResponse.json({ slots, closed });
+    const { slots, closed } = await getPublicAppointmentSlots(doctorId, date, branchId);
+    const available = slots.filter((s) => s.status === "available").map((s) => s.time);
+    return NextResponse.json({ slots, available, closed });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Could not load slots" }, { status: 503 });

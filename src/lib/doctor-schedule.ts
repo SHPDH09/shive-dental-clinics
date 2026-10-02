@@ -107,15 +107,32 @@ function formatTime12(time: string): string {
   return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
+function minutesToTime(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
+/** Overlap of branch and doctor hours for one day (booking window). */
+export function intersectDaySchedules(a: DaySchedule, b: DaySchedule): DaySchedule {
+  if (!a.enabled || !b.enabled) {
+    return { enabled: false, start: a.start, end: a.end };
+  }
+  const start = Math.max(parseTimeToMinutes(a.start), parseTimeToMinutes(b.start));
+  const end = Math.min(parseTimeToMinutes(a.end), parseTimeToMinutes(b.end));
+  if (start >= end) {
+    return { enabled: false, start: a.start, end: a.end };
+  }
+  return { enabled: true, start: minutesToTime(start), end: minutesToTime(end) };
+}
+
 export function generateTimeSlotsForDay(day: DaySchedule, intervalMinutes = 30): string[] {
   if (!day.enabled) return [];
   const start = parseTimeToMinutes(day.start);
   const end = parseTimeToMinutes(day.end);
   const slots: string[] = [];
   for (let t = start; t + intervalMinutes <= end; t += intervalMinutes) {
-    const h = Math.floor(t / 60);
-    const m = t % 60;
-    slots.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+    slots.push(minutesToTime(t));
   }
   return slots;
 }
