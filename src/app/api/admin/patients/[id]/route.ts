@@ -1,5 +1,5 @@
 import { requirePermission } from "@/lib/api-auth";
-import { getPatientProfile } from "@/lib/patients/build-patient-profile";
+import { getPatientProfileForAdmin } from "@/lib/patients/build-patient-profile";
 import { logPatientActivity } from "@/lib/patients/patient-activity";
 import { canViewPatientClinical } from "@/lib/patients/patient-access";
 import { prisma } from "@/lib/prisma";
@@ -81,8 +81,8 @@ export async function GET(req: Request, context: RouteContext) {
     searchParams.get("profile") === "full" || req.headers.get("x-patient-profile") === "1";
 
   try {
-    if (!canUseSupabaseDataLayer() && full) {
-      const profile = await getPatientProfile(id, session!.user.role);
+    if (full) {
+      const profile = await getPatientProfileForAdmin(id, session!.user.role);
       if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
       return NextResponse.json(profile);
     }
@@ -90,16 +90,6 @@ export async function GET(req: Request, context: RouteContext) {
     if (canUseSupabaseDataLayer()) {
       const item = await supabaseFindUnique("patient", id);
       if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
-      if (full) {
-        const sb = await getAdminSupabaseClient();
-        const { data: appointments } = await sb
-          .from("Appointment")
-          .select("*")
-          .eq("patientId", id)
-          .order("appointmentDate", { ascending: false })
-          .limit(20);
-        return NextResponse.json({ ...item, appointments: appointments ?? [], access: { clinical: canViewPatientClinical(session!.user.role) } });
-      }
       return NextResponse.json(item);
     }
 

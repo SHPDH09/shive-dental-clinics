@@ -87,7 +87,27 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
 
   useEffect(() => {
     void adminFetch<Profile>(`/api/admin/patients/${patientId}?profile=full`)
-      .then(setProfile)
+      .then((data) => {
+        setProfile({
+          ...data,
+          overview: data.overview ?? {
+            totalAppointments: 0,
+            completedAppointments: 0,
+            cancelledAppointments: 0,
+            lastVisit: null,
+            nextAppointment: null,
+            currentTreatment: null,
+            paymentsSummary: { totalBilled: 0, totalPaid: 0, pending: 0 },
+          },
+          appointments: data.appointments ?? [],
+          treatments: data.treatments ?? [],
+          documents: data.documents ?? [],
+          payments: data.payments ?? [],
+          messages: data.messages ?? [],
+          timeline: data.timeline ?? [],
+          access: data.access ?? { clinical: false },
+        });
+      })
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
   }, [patientId]);
