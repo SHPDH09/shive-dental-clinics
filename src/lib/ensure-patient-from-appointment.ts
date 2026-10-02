@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { supabaseCreate } from "@/lib/supabase/crud";
 import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
-import { generateCode } from "@/lib/utils";
+import { generatePatientCode } from "@/lib/patients/patient-code";
 import { normalizeIndianMobile, normalizeVoiceEmail } from "@/lib/voice-booking/validate-contact";
 
 export type AppointmentPatientInput = {
@@ -74,7 +74,7 @@ export async function ensurePatientForConfirmedAppointment(
     return { patientId: existingId, created: false };
   }
 
-  const patientCode = generateCode("PAT");
+  const patientCode = await generatePatientCode();
 
   try {
     if (options.useSupabase) {

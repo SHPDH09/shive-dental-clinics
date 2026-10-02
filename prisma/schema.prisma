@@ -22,6 +22,38 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  FOLLOW_UP_REQUIRED
+  ARCHIVED
+}
+
+enum PatientDocumentCategory {
+  XRAY
+  REPORT
+  PRESCRIPTION
+  TREATMENT
+  BEFORE_TREATMENT
+  AFTER_TREATMENT
+  DENTAL_SCAN
+  OTHER
+}
+
+enum PatientTreatmentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PatientPaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
 enum LeadStatus {
   NEW
   CONTACTED
@@ -126,20 +158,118 @@ model AdminActivityLog {
 }
 
 model Patient {
-  id             String        @id @default(cuid())
-  patientCode    String        @unique
-  name           String
-  phone          String
-  email          String?
-  gender         String?
-  dateOfBirth    DateTime?
-  address        String?
-  medicalNotes   String?
-  treatmentHistory String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  appointments   Appointment[]
-  enquiries      Enquiry[]
+  id                    String        @id @default(cuid())
+  patientCode           String        @unique
+  name                  String
+  phone                 String
+  email                 String?
+  gender                String?
+  dateOfBirth           DateTime?
+  profilePhoto          String?
+  address               String?
+  city                  String?
+  state                 String?
+  pinCode               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  preferredBranchId     String?
+  preferredBranch       Branch?       @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  assignedDoctorId      String?
+  assignedDoctor        Doctor?       @relation("PatientAssignedDoctor", fields: [assignedDoctorId], references: [id], onDelete: SetNull)
+  commWhatsApp          Boolean       @default(true)
+  commPhone             Boolean       @default(true)
+  commEmail             Boolean       @default(false)
+  status                PatientStatus @default(ACTIVE)
+  medicalNotes          String?
+  treatmentHistory      String?
+  allergies             String?
+  dentalHistory         String?
+  diagnosis             String?
+  treatmentPlan         String?
+  followUpInstructions  String?
+  examinationNotes      String?
+  consent               Json          @default("{}")
+  archivedAt            DateTime?
+  archivedBy            String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  appointments          Appointment[]
+  enquiries             Enquiry[]
+  treatments            PatientTreatment[]
+  documents             PatientDocument[]
+  payments              PatientPayment[]
+  activities            PatientActivity[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PatientTreatment {
+  id             String                 @id @default(cuid())
+  patientId      String
+  patient        Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatmentName  String
+  doctorId       String?
+  doctorName     String?
+  treatmentDate  DateTime
+  toothArea      String?
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+  status         PatientTreatmentStatus @default(COMPLETED)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([patientId, treatmentDate])
+}
+
+model PatientDocument {
+  id         String                  @id @default(cuid())
+  patientId  String
+  patient    Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  category   PatientDocumentCategory @default(OTHER)
+  title      String?
+  fileName   String
+  fileUrl    String
+  mimeType   String?
+  sizeBytes  Int?
+  uploadedBy String?
+  createdAt  DateTime                @default(now())
+
+  @@index([patientId])
+}
+
+model PatientPayment {
+  id            String               @id @default(cuid())
+  patientId     String
+  patient       Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatmentName String?
+  amountBilled  Decimal              @db.Decimal(12, 2)
+  amountPaid    Decimal              @default(0) @db.Decimal(12, 2)
+  method        String?
+  status        PatientPaymentStatus @default(PENDING)
+  invoiceRef    String?
+  notes         String?
+  paidAt        DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([patientId])
+}
+
+model PatientActivity {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  kind      String
+  title     String
+  detail    String?
+  at        DateTime @default(now())
+  createdBy String?
+
+  @@index([patientId, at])
 }
 
 model ServiceCategory {
@@ -199,6 +329,7 @@ model Doctor {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   appointments       Appointment[]
+  assignedPatients   Patient[]     @relation("PatientAssignedDoctor")
 }
 
 model Appointment {
@@ -396,6 +527,7 @@ model Branch {
   updatedAt      DateTime       @updatedAt
   appointments   Appointment[]
   admins         Admin[]
+  patients       Patient[]
 }
 
 model ClinicSettings {

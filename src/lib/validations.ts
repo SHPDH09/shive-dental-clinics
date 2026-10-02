@@ -89,15 +89,46 @@ export const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+export const patientConsentSchema = z.object({
+  treatment: z.boolean().optional(),
+  communication: z.boolean().optional(),
+  whatsApp: z.boolean().optional(),
+  email: z.boolean().optional(),
+  patientPhotos: z.boolean().optional(),
+  beforeAfter: z.boolean().optional(),
+  marketing: z.boolean().optional(),
+  consentDate: z.string().optional(),
+});
+
 export const patientSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
   email: z.string().email().optional().or(z.literal("")),
   gender: z.string().optional(),
   dateOfBirth: z.string().optional(),
+  profilePhoto: z.string().max(2000).optional().or(z.literal("")),
   address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pinCode: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  preferredBranchId: z.string().optional(),
+  assignedDoctorId: z.string().optional(),
+  commWhatsApp: z.boolean().optional(),
+  commPhone: z.boolean().optional(),
+  commEmail: z.boolean().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "FOLLOW_UP_REQUIRED", "ARCHIVED"]).optional(),
   medicalNotes: z.string().optional(),
   treatmentHistory: z.string().optional(),
+  allergies: z.string().optional(),
+  dentalHistory: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatmentPlan: z.string().optional(),
+  followUpInstructions: z.string().optional(),
+  examinationNotes: z.string().optional(),
+  consent: patientConsentSchema.optional(),
+  forceCreate: z.boolean().optional(),
 });
 
 export const leadSchema = z.object({
