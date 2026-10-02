@@ -1,4 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
+import { generateLeadCode } from "@/lib/leads/lead-code";
+import { logLeadActivity } from "@/lib/leads/lead-activity";
 import { prisma } from "@/lib/prisma";
 import { getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
@@ -195,12 +197,15 @@ export async function recordWebsiteVisitLead(
     lastSeenAt: now,
   };
 
+  const leadCode = await generateLeadCode();
   const row = {
+    leadCode,
     name: displayName(payload),
     phone: displayPhone(payload),
     email: payload.email?.trim() || null,
     source: "WEBSITE" as const,
     status: "NEW" as const,
+    priority: "MEDIUM" as const,
     interestedService: payload.path,
     notes: JSON.stringify(notes),
   };
@@ -212,9 +217,21 @@ export async function recordWebsiteVisitLead(
     const sb = await getAdminWriteSupabaseClient();
     const { error } = await sb.from("Lead").insert({ id, ...row, createdAt: ts, updatedAt: ts });
     if (error) throw new Error(error.message);
+    await logLeadActivity({
+      leadId: id,
+      kind: "created",
+      title: "Lead created from website visit",
+      detail: payload.path,
+    });
     return { id, created: true, updated: false };
   }
 
   const created = await prisma.lead.create({ data: { id, ...row } });
+  await logLeadActivity({
+    leadId: created.id,
+    kind: "created",
+    title: "Lead created from website visit",
+    detail: payload.path,
+  });
   return { id: created.id, created: true, updated: false };
 }

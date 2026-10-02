@@ -24,10 +24,13 @@ const APPOINTMENT_STATUSES = new Set<string>([
 const LEAD_SOURCES = new Set<string>([
   "WEBSITE",
   "GOOGLE",
+  "GOOGLE_ADS",
   "INSTAGRAM",
   "FACEBOOK",
   "WHATSAPP",
   "REFERRAL",
+  "WALK_IN",
+  "PHONE",
   "WALK_IN",
   "OTHER",
 ]);

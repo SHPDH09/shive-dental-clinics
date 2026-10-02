@@ -134,13 +134,31 @@ export const patientSchema = z.object({
 export const leadSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
+  whatsAppNumber: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
+  age: z.number().int().min(0).max(120).optional(),
   source: z.string(),
+  sourceCustom: z.string().optional(),
   interestedService: z.string().optional(),
-  status: z.string().optional(),
+  preferredBranchId: z.string().optional(),
+  preferredDoctorId: z.string().optional(),
+  status: z
+    .enum([
+      "NEW",
+      "CONTACTED",
+      "FOLLOW_UP",
+      "INTERESTED",
+      "APPOINTMENT_BOOKED",
+      "CONVERTED",
+      "LOST",
+    ])
+    .optional(),
+  priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
   followUpDate: z.string().optional(),
+  followUpTime: z.string().optional(),
   notes: z.string().optional(),
   assignedStaff: z.string().optional(),
+  lastContactAt: z.string().optional(),
 });
 
 const serviceFaqSchema = z.object({

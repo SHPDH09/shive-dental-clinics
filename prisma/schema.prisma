@@ -58,6 +58,8 @@ enum LeadStatus {
   NEW
   CONTACTED
   FOLLOW_UP
+  INTERESTED
+  APPOINTMENT_BOOKED
   CONVERTED
   LOST
 }
@@ -65,12 +67,20 @@ enum LeadStatus {
 enum LeadSource {
   WEBSITE
   GOOGLE
+  GOOGLE_ADS
   INSTAGRAM
   FACEBOOK
   WHATSAPP
   REFERRAL
   WALK_IN
+  PHONE
   OTHER
+}
+
+enum LeadPriority {
+  HIGH
+  MEDIUM
+  LOW
 }
 
 enum PublishStatus {
@@ -330,6 +340,7 @@ model Doctor {
   updatedAt          DateTime      @updatedAt
   appointments       Appointment[]
   assignedPatients   Patient[]     @relation("PatientAssignedDoctor")
+  preferredLeads     Lead[]
 }
 
 model Appointment {
@@ -362,21 +373,50 @@ model Appointment {
 }
 
 model Lead {
-  id              String     @id @default(cuid())
-  name            String
-  phone           String
-  email           String?
-  source          LeadSource @default(WEBSITE)
-  interestedService String?
-  status          LeadStatus @default(NEW)
-  followUpDate    DateTime?
-  notes           String?
-  assignedStaff   String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                 String       @id @default(cuid())
+  leadCode           String       @unique
+  name               String
+  phone              String
+  whatsAppNumber     String?
+  email              String?
+  age                Int?
+  source             LeadSource   @default(WEBSITE)
+  sourceCustom       String?
+  interestedService  String?
+  preferredBranchId  String?
+  preferredBranch    Branch?      @relation(fields: [preferredBranchId], references: [id], onDelete: SetNull)
+  preferredDoctorId  String?
+  preferredDoctor    Doctor?      @relation(fields: [preferredDoctorId], references: [id], onDelete: SetNull)
+  status             LeadStatus   @default(NEW)
+  priority           LeadPriority @default(MEDIUM)
+  followUpDate       DateTime?
+  followUpTime       String?
+  lastContactAt      DateTime?
+  notes              String?
+  assignedStaff      String?
+  patientId          String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  activities         LeadActivity[]
 
   @@index([status])
   @@index([createdAt])
+  @@index([followUpDate])
+  @@index([phone])
+  @@index([leadCode])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  kind      String
+  title     String
+  detail    String?
+  at        DateTime @default(now())
+  createdBy String?
+
+  @@index([leadId, at])
 }
 
 model Testimonial {
@@ -528,6 +568,7 @@ model Branch {
   appointments   Appointment[]
   admins         Admin[]
   patients       Patient[]
+  leads          Lead[]
 }
 
 model ClinicSettings {

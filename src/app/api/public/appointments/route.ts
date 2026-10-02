@@ -6,6 +6,7 @@ import { appointmentPublicSchema } from "@/lib/validations";
 import { generateCode } from "@/lib/utils";
 import { createAppointmentEnquiry } from "@/lib/create-appointment-enquiry";
 import { createNotification } from "@/lib/notifications";
+import { captureLeadFromWebsite } from "@/lib/leads/capture-lead";
 import { recordWebsiteVisitLead } from "@/lib/record-website-visit-lead";
 import { NextResponse } from "next/server";
 
@@ -75,6 +76,19 @@ export async function POST(req: Request) {
           status: "PENDING",
         },
       });
+    }
+
+    try {
+      await captureLeadFromWebsite({
+        name: data.patientName,
+        phone: data.phone,
+        email: data.email,
+        interestedService: data.treatmentName,
+        source: "WEBSITE",
+        captureChannel: "appointment_form",
+      });
+    } catch (leadErr) {
+      console.error("Lead capture after appointment:", leadErr);
     }
 
     if (data.visitorId) {

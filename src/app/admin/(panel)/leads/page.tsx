@@ -1,10 +1,11 @@
 import { AdminPageShell } from "@/components/admin/page-shell";
-import { LeadsView } from "@/components/admin/leads-view";
+import { LeadsCrmView } from "@/components/admin/leads/leads-crm-view";
 
 export default function AdminLeadsPage() {
   return (
-    <AdminPageShell title="Leads" description="Track inquiries and follow-ups">
-      <LeadsView />
+    <AdminPageShell title="Lead management" description="Capture, follow up, and convert enquiries across all channels">
+      <LeadsCrmView />
     </AdminPageShell>
   );
 }
+

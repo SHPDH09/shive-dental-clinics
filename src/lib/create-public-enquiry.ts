@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import { captureLeadFromWebsite } from "@/lib/leads/capture-lead";
 import { findPatientIdByPhone } from "@/lib/enquiry-helpers";
 import { prisma } from "@/lib/prisma";
 import { getAdminWriteSupabaseClient } from "@/lib/supabase/data-client";
@@ -67,16 +68,45 @@ export async function createPublicEnquiry(data: PublicEnquiryInput): Promise<{ i
 
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Enquiry was not created");
+    void captureLeadFromWebsite({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      interestedService: subject,
+      source: "WEBSITE",
+      captureChannel: "contact_form",
+      notes: data.message,
+    }).catch((e) => console.error("Lead capture from enquiry:", e));
     return row as { id: string; name: string };
   }
 
   try {
-    return await prisma.enquiry.create({
+    const created = await prisma.enquiry.create({
       data: { ...fullPayload, source: "WEBSITE", status: "NEW" },
     });
+    void captureLeadFromWebsite({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      interestedService: subject,
+      source: "WEBSITE",
+      captureChannel: "contact_form",
+      notes: data.message,
+    }).catch((e) => console.error("Lead capture from enquiry:", e));
+    return created;
   } catch {
-    return await prisma.enquiry.create({
+    const created = await prisma.enquiry.create({
       data: { ...minimalPayload, status: "NEW" },
     });
+    void captureLeadFromWebsite({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      interestedService: subject,
+      source: "WEBSITE",
+      captureChannel: "contact_form",
+      notes: data.message,
+    }).catch((e) => console.error("Lead capture from enquiry:", e));
+    return created;
   }
 }
