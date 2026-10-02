@@ -44,12 +44,13 @@ export function AppointmentsView() {
         body: JSON.stringify({ status }),
       });
       if (status === "CONFIRMED") {
+        const base = "Appointment confirmed — patient added to Patients list.";
         if (res.patientEmailSent) {
-          setActionMsg("Appointment confirmed — confirmation email sent to patient.");
+          setActionMsg(`${base} Confirmation email sent.`);
         } else if (res.patientEmailWarning) {
-          setActionMsg(res.patientEmailWarning);
+          setActionMsg(`${base} ${res.patientEmailWarning}`);
         } else {
-          setActionMsg("Appointment confirmed.");
+          setActionMsg(base);
         }
       }
       reload();

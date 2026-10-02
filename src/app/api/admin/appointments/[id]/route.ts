@@ -8,6 +8,7 @@ import {
 import { useSupabaseCrud } from "@/lib/supabase/crud";
 import type { AppointmentMailContext } from "@/lib/mail/appointment-emails";
 import { emailPatientOnStatusChange } from "@/lib/mail/appointment-status-mail";
+import { ensurePatientForConfirmedAppointment } from "@/lib/ensure-patient-from-appointment";
 import { NextResponse } from "next/server";
 import type { AppointmentStatus } from "@/generated/prisma/client";
 
@@ -112,6 +113,24 @@ export async function PATCH(req: Request, context: RouteContext) {
   try {
     if (useSupabaseCrud()) {
       const before = await getAppointmentAdmin(id);
+      if (
+        before &&
+        body.status === "CONFIRMED" &&
+        String(before.status) !== "CONFIRMED"
+      ) {
+        const { patientId } = await ensurePatientForConfirmedAppointment(
+          {
+            patientName: String(before.patientName),
+            phone: String(before.phone),
+            email: (before.email as string | null) ?? null,
+          },
+          {
+            useSupabase: true,
+            existingPatientId: (before.patientId as string | null) ?? null,
+          },
+        );
+        if (patientId) data.patientId = patientId;
+      }
       const item = await updateAppointmentAdmin(id, data);
       let patientEmailSent = false;
       let patientEmailWarning: string | undefined;
@@ -150,13 +169,34 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     const beforePrisma = await prisma.appointment.findUnique({ where: { id } });
 
+    let linkedPatientId: string | null = beforePrisma?.patientId ?? null;
+    if (
+      beforePrisma &&
+      body.status === "CONFIRMED" &&
+      beforePrisma.status !== "CONFIRMED"
+    ) {
+      const ensured = await ensurePatientForConfirmedAppointment(
+        {
+          patientName: beforePrisma.patientName,
+          phone: beforePrisma.phone,
+          email: beforePrisma.email,
+        },
+        { useSupabase: false, existingPatientId: beforePrisma.patientId },
+      );
+      if (ensured.patientId) linkedPatientId = ensured.patientId;
+    }
+
     const prismaData: {
       status?: AppointmentStatus;
       notes?: string | null;
       appointmentDate?: Date;
       appointmentTime?: string;
+      patientId?: string | null;
     } = {};
     if (body.status !== undefined) prismaData.status = body.status;
+    if (linkedPatientId && body.status === "CONFIRMED") {
+      prismaData.patientId = linkedPatientId;
+    }
     if (body.notes !== undefined) prismaData.notes = body.notes;
     if (data.appointmentDate) prismaData.appointmentDate = new Date(data.appointmentDate as string);
     if (data.appointmentTime) prismaData.appointmentTime = data.appointmentTime as string;
