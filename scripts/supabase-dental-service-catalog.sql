@@ -1,0 +1,9 @@
+-- Shiv Dental Clinic — full service catalog (12 categories, 65+ treatments)
+--
+-- Recommended: run the TypeScript sync against your Supabase Postgres URL (keeps JSON fields correct):
+--   DATABASE_URL="postgresql://..." npx tsx scripts/apply-dental-service-catalog.ts
+--
+-- Source of truth for names, slugs, images, and copy:
+--   src/lib/dental-service-catalog.ts
+--
+-- After sync, refresh the admin Services page and public /services listing.
