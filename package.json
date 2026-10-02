@@ -13,6 +13,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "catalog:sync": "tsx scripts/apply-dental-service-catalog.ts",
+    "catalog:sync-services": "SERVICES_ONLY=1 tsx scripts/apply-dental-service-catalog.ts",
     "db:setup": "tsx scripts/db-setup.ts",
     "admin:reset": "tsx scripts/reset-admin.ts",
     "admin:seed-supabase": "tsx scripts/seed-admin-supabase.ts",

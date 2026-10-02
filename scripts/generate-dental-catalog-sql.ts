@@ -25,16 +25,20 @@ function svcId(slug: string) {
   return `svc_${slug.replace(/-/g, "_")}`;
 }
 
+const servicesOnly = process.argv.includes("--services-only");
+
 const lines: string[] = [
-  "-- Shiv Dental Clinic — full service catalog (generated)",
+  servicesOnly
+    ? "-- Shiv Dental Clinic — SERVICES ONLY (categories must already exist)"
+    : "-- Shiv Dental Clinic — full service catalog (generated)",
   "-- Supabase → SQL Editor → paste & Run (backup first)",
-  "-- Regenerate: npx tsx scripts/generate-dental-catalog-sql.ts",
+  "-- Regenerate: npx tsx scripts/generate-dental-catalog-sql.ts [--services-only]",
   "",
   "BEGIN;",
   "",
 ];
 
-for (let i = 0; i < DENTAL_CATALOG_CATEGORIES.length; i++) {
+if (!servicesOnly) for (let i = 0; i < DENTAL_CATALOG_CATEGORIES.length; i++) {
   const c = DENTAL_CATALOG_CATEGORIES[i]!;
   lines.push(`INSERT INTO "ServiceCategory" ("id", "name", "slug", "sortOrder", "createdAt", "updatedAt")`);
   lines.push(
@@ -114,6 +118,13 @@ lines.push("");
 lines.push(`NOTIFY pgrst, 'reload schema';`);
 lines.push("COMMIT;");
 
-const outPath = join(__dirname, "supabase-dental-service-catalog-generated.sql");
+const outPath = join(
+  __dirname,
+  servicesOnly
+    ? "supabase-dental-services-only-generated.sql"
+    : "supabase-dental-service-catalog-generated.sql",
+);
 writeFileSync(outPath, lines.join("\n"), "utf8");
-console.log(`Wrote ${outPath} (${DENTAL_CATALOG_CATEGORIES.length} categories, ${DENTAL_CATALOG_SERVICES.length} services)`);
+console.log(
+  `Wrote ${outPath} (${servicesOnly ? "services only" : `${DENTAL_CATALOG_CATEGORIES.length} categories +`} ${DENTAL_CATALOG_SERVICES.length} services)`,
+);
