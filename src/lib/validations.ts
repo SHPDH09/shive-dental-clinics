@@ -81,6 +81,22 @@ export const messageTemplateSchema = z.object({
   slug: z.string().min(2).optional(),
   subject: z.string().min(2),
   body: z.string().min(10),
+  channel: z.enum(["WHATSAPP", "SMS", "EMAIL", "IN_APP"]).optional(),
+  category: z
+    .enum([
+      "APPOINTMENT",
+      "REMINDER",
+      "FOLLOW_UP",
+      "ENQUIRY",
+      "PAYMENT",
+      "TREATMENT",
+      "WELCOME",
+      "MARKETING",
+      "GENERAL",
+    ])
+    .optional(),
+  variables: z.array(z.string()).optional(),
+  enabled: z.boolean().optional(),
   sortOrder: z.number().optional(),
 });
 

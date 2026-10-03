@@ -31,6 +31,10 @@ export async function POST(req: Request) {
       slug,
       subject: data.subject,
       body: data.body,
+      channel: data.channel ?? "EMAIL",
+      category: data.category ?? "GENERAL",
+      variables: data.variables ?? [],
+      enabled: data.enabled ?? true,
       sortOrder: data.sortOrder ?? 0,
     });
     return NextResponse.json(item);
@@ -42,6 +46,10 @@ export async function POST(req: Request) {
       slug,
       subject: data.subject,
       body: data.body,
+      channel: (data.channel ?? "EMAIL") as never,
+      category: data.category ?? "GENERAL",
+      variables: (data.variables ?? []) as object,
+      enabled: data.enabled ?? true,
       sortOrder: data.sortOrder ?? 0,
     },
   });

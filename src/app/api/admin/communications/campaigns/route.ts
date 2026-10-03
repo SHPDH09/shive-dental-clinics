@@ -23,14 +23,29 @@ export async function GET() {
   if (useSupabaseCrud()) {
     const sb = await getAdminSupabaseClient();
     const { data } = await sb.from("CommunicationCampaign").select("*").order("createdAt", { ascending: false });
-    return NextResponse.json({ items: data ?? [] });
+    const items = data ?? [];
+    const stats = {
+      total: items.length,
+      active: items.filter((c) => c.status === "RUNNING").length,
+      scheduled: items.filter((c) => c.status === "SCHEDULED").length,
+      completed: items.filter((c) => c.status === "COMPLETED").length,
+      failed: items.filter((c) => Number(c.failedCount) > 0 && c.status === "COMPLETED").length,
+    };
+    return NextResponse.json({ items, stats });
   }
 
   try {
     const items = await prisma.communicationCampaign.findMany({ orderBy: { createdAt: "desc" } });
-    return NextResponse.json({ items });
+    const stats = {
+      total: items.length,
+      active: items.filter((c) => c.status === "RUNNING").length,
+      scheduled: items.filter((c) => c.status === "SCHEDULED").length,
+      completed: items.filter((c) => c.status === "COMPLETED").length,
+      failed: items.filter((c) => c.failedCount > 0 && c.status === "COMPLETED").length,
+    };
+    return NextResponse.json({ items, stats });
   } catch {
-    return NextResponse.json({ items: [] });
+    return NextResponse.json({ items: [], stats: { total: 0, active: 0, scheduled: 0, completed: 0, failed: 0 } });
   }
 }
 
