@@ -14,6 +14,12 @@ export async function GET(req: Request) {
   const status = searchParams.get("status")?.trim();
   const patientId = searchParams.get("patientId")?.trim();
   const leadId = searchParams.get("leadId")?.trim();
+  const branchId = searchParams.get("branchId")?.trim();
+  const campaignId = searchParams.get("campaignId")?.trim();
+  const templateSlug = searchParams.get("template")?.trim();
+  const staffId = searchParams.get("staff")?.trim();
+  const from = searchParams.get("from")?.trim();
+  const to = searchParams.get("to")?.trim();
   const limit = Math.min(Number(searchParams.get("limit") ?? "100"), 200);
 
   if (useSupabaseCrud()) {
@@ -23,6 +29,12 @@ export async function GET(req: Request) {
     if (status) query = query.eq("status", status);
     if (patientId) query = query.eq("patientId", patientId);
     if (leadId) query = query.eq("leadId", leadId);
+    if (branchId) query = query.eq("branchId", branchId);
+    if (campaignId) query = query.eq("campaignId", campaignId);
+    if (templateSlug) query = query.eq("templateSlug", templateSlug);
+    if (staffId) query = query.eq("sentByAdminId", staffId);
+    if (from) query = query.gte("createdAt", from);
+    if (to) query = query.lte("createdAt", to);
     const { data, error: qErr } = await query;
     if (qErr) return NextResponse.json({ items: [], warning: qErr.message });
     let items = data ?? [];
@@ -44,6 +56,18 @@ export async function GET(req: Request) {
         ...(status ? { status: status as never } : {}),
         ...(patientId ? { patientId } : {}),
         ...(leadId ? { leadId } : {}),
+        ...(branchId ? { branchId } : {}),
+        ...(campaignId ? { campaignId } : {}),
+        ...(templateSlug ? { templateSlug } : {}),
+        ...(staffId ? { sentByAdminId: staffId } : {}),
+        ...(from || to
+          ? {
+              createdAt: {
+                ...(from ? { gte: new Date(from) } : {}),
+                ...(to ? { lte: new Date(to) } : {}),
+              },
+            }
+          : {}),
         ...(q
           ? {
               OR: [

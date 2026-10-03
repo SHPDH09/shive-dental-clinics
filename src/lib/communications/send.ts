@@ -17,6 +17,10 @@ export type SendCommunicationInput = {
   message: string;
   templateSlug?: string | null;
   sentByAdminId?: string | null;
+  sentByStaffName?: string | null;
+  messageType?: string;
+  branchId?: string | null;
+  campaignId?: string | null;
   marketing?: boolean;
   commPrefs?: { commWhatsApp?: boolean; commPhone?: boolean; commEmail?: boolean };
 };
@@ -65,6 +69,10 @@ export async function sendCommunication(
         templateSlug: input.templateSlug,
         failureReason: prefBlock,
         sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
       });
       results.push({ channel, ok: false, status: "FAILED", error: prefBlock, logId });
       continue;
@@ -83,6 +91,10 @@ export async function sendCommunication(
           subject: input.subject ?? "Message from Shiv Dental Clinic",
           failureReason: "No email address",
           sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
         });
         results.push({ channel, ok: false, status: "FAILED", error: "No email address", logId });
         continue;
@@ -106,6 +118,10 @@ export async function sendCommunication(
         failureReason: mail.ok ? undefined : mail.error,
         externalId: mail.ok ? mail.messageId : undefined,
         sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
       });
       results.push({
         channel,
@@ -124,6 +140,10 @@ export async function sendCommunication(
           recipientName: input.recipientName,
           failureReason: "No phone number",
           sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
         });
         results.push({ channel, ok: false, status: "FAILED", error: "No phone number", logId });
         continue;
@@ -139,6 +159,10 @@ export async function sendCommunication(
         body: input.message,
         templateSlug: input.templateSlug,
         sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
         metadata: { whatsAppUrl: url, delivery: "staff_handoff" },
       });
       results.push({ channel, ok: true, status: "SENT", whatsAppUrl: url, logId });
@@ -153,6 +177,10 @@ export async function sendCommunication(
         body: input.message,
         failureReason: "SMS provider not configured on server",
         sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
       });
       results.push({
         channel,
@@ -171,6 +199,10 @@ export async function sendCommunication(
         body: input.message,
         subject: input.subject,
         sentByAdminId: input.sentByAdminId,
+        sentByStaffName: input.sentByStaffName,
+        messageType: input.messageType,
+        branchId: input.branchId,
+        campaignId: input.campaignId,
       });
       results.push({ channel, ok: true, status: "SENT", logId });
     }

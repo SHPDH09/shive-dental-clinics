@@ -90,6 +90,7 @@ export async function POST(req: Request) {
     message,
     templateSlug: data.templateSlug,
     sentByAdminId: session!.user.id,
+    sentByStaffName: session!.user.name,
     marketing: data.marketing,
     commPrefs,
   });

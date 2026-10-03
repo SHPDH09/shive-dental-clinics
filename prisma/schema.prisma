@@ -524,6 +524,25 @@ enum CampaignStatus {
   CANCELLED
 }
 
+enum CommunicationThreadStatus {
+  OPEN
+  ARCHIVED
+  CLOSED
+}
+
+enum CommunicationMessageType {
+  GENERAL
+  APPOINTMENT
+  REMINDER
+  FOLLOW_UP
+  ENQUIRY
+  PAYMENT
+  TREATMENT
+  WELCOME
+  MARKETING
+  CONFIRMATION
+}
+
 model MessageTemplate {
   id        String   @id @default(cuid())
   name      String
@@ -533,9 +552,55 @@ model MessageTemplate {
   channel   CommunicationChannel @default(EMAIL)
   category  String   @default("GENERAL")
   variables Json     @default("[]")
+  enabled   Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CommunicationThread {
+  id                String                    @id @default(cuid())
+  channel           CommunicationChannel
+  status            CommunicationThreadStatus @default(OPEN)
+  contactName       String
+  contactPhone      String?
+  contactEmail      String?
+  patientId         String?
+  leadId            String?
+  enquiryId         String?
+  branchId          String?
+  assignedAdminId   String?
+  assignedStaffName String?
+  unreadCount       Int                       @default(0)
+  important         Boolean                   @default(false)
+  lastMessage       String?
+  lastMessageAt     DateTime                  @default(now())
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  messages          CommunicationThreadMessage[]
+
+  @@index([channel, status])
+  @@index([patientId])
+  @@index([leadId])
+  @@index([lastMessageAt])
+  @@index([assignedAdminId])
+  @@index([branchId])
+}
+
+model CommunicationThreadMessage {
+  id              String                 @id @default(cuid())
+  threadId        String
+  thread          CommunicationThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  direction       CommunicationDirection
+  channel         CommunicationChannel?
+  body            String
+  senderLabel     String?
+  sentByAdminId   String?
+  communicationLogId String?
+  readAt          DateTime?
+  createdAt       DateTime               @default(now())
+
+  @@index([threadId, createdAt])
 }
 
 model CommunicationLog {
@@ -543,18 +608,23 @@ model CommunicationLog {
   channel         CommunicationChannel
   direction       CommunicationDirection @default(OUTBOUND)
   status          CommunicationStatus    @default(PENDING)
+  messageType     CommunicationMessageType @default(GENERAL)
   recipientName   String?
   recipientPhone  String?
   recipientEmail  String?
   patientId       String?
   leadId          String?
   enquiryId       String?
+  threadId        String?
+  branchId        String?
+  campaignId      String?
   subject         String?
   body            String
   templateSlug    String?
   failureReason   String?
   externalId      String?
   sentByAdminId   String?
+  sentByStaffName String?
   metadata        Json                   @default("{}")
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
@@ -562,6 +632,8 @@ model CommunicationLog {
   @@index([channel, status])
   @@index([patientId, createdAt])
   @@index([leadId, createdAt])
+  @@index([threadId])
+  @@index([campaignId])
   @@index([createdAt])
 }
 
@@ -577,8 +649,21 @@ model CommunicationAutomation {
   sortOrder     Int                  @default(0)
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
+  runs          CommunicationAutomationRun[]
 
   @@unique([trigger, channel])
+}
+
+model CommunicationAutomationRun {
+  id           String                  @id @default(cuid())
+  automationId String
+  automation   CommunicationAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  status       String                  @default("SUCCESS")
+  detail       String?
+  recipientCount Int                   @default(0)
+  createdAt    DateTime                @default(now())
+
+  @@index([automationId, createdAt])
 }
 
 model CommunicationCampaign {
