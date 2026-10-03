@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input, Label, Textarea } from "@/components/ui/input";
 import { LoadingState } from "@/components/admin/loading-state";
 import { adminFetch } from "@/lib/admin-client";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
@@ -84,9 +86,14 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const [loading, setLoading] = useState(true);
+  const [treatmentForm, setTreatmentForm] = useState({ treatmentName: "", treatmentDate: "", notes: "" });
+  const [paymentForm, setPaymentForm] = useState({ treatmentName: "", amountBilled: "", amountPaid: "" });
+  const [docForm, setDocForm] = useState({ fileName: "", fileUrl: "", category: "XRAY" });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    void adminFetch<Profile>(`/api/admin/patients/${patientId}?profile=full`)
+  const loadProfile = useCallback(() => {
+    setLoading(true);
+    return adminFetch<Profile>(`/api/admin/patients/${patientId}?profile=full`)
       .then((data) => {
         setProfile({
           ...data,
@@ -111,6 +118,70 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
   }, [patientId]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const addTreatment = async () => {
+    if (treatmentForm.treatmentName.trim().length < 2 || !treatmentForm.treatmentDate) return;
+    setSaving(true);
+    try {
+      await adminFetch(`/api/admin/patients/${patientId}/treatments`, {
+        method: "POST",
+        body: JSON.stringify({
+          treatmentName: treatmentForm.treatmentName.trim(),
+          treatmentDate: treatmentForm.treatmentDate,
+          notes: treatmentForm.notes.trim() || undefined,
+          status: "COMPLETED",
+        }),
+      });
+      setTreatmentForm({ treatmentName: "", treatmentDate: "", notes: "" });
+      await loadProfile();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addPayment = async () => {
+    const billed = Number(paymentForm.amountBilled);
+    const paid = Number(paymentForm.amountPaid || 0);
+    if (!Number.isFinite(billed) || billed < 0) return;
+    setSaving(true);
+    try {
+      await adminFetch(`/api/admin/patients/${patientId}/payments`, {
+        method: "POST",
+        body: JSON.stringify({
+          treatmentName: paymentForm.treatmentName.trim() || undefined,
+          amountBilled: billed,
+          amountPaid: paid,
+        }),
+      });
+      setPaymentForm({ treatmentName: "", amountBilled: "", amountPaid: "" });
+      await loadProfile();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addDocument = async () => {
+    if (!docForm.fileName.trim() || !docForm.fileUrl.trim()) return;
+    setSaving(true);
+    try {
+      await adminFetch(`/api/admin/patients/${patientId}/documents`, {
+        method: "POST",
+        body: JSON.stringify({
+          fileName: docForm.fileName.trim(),
+          fileUrl: docForm.fileUrl.trim(),
+          category: docForm.category,
+        }),
+      });
+      setDocForm({ fileName: "", fileUrl: "", category: "XRAY" });
+      await loadProfile();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <LoadingState />;
   if (!profile) return <p className="text-sm text-red-600">Patient not found.</p>;
@@ -270,11 +341,48 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
 
       {tab === "Treatment History" && (
         <div className="space-y-3">
-          {!profile.access.clinical && (
+          {!profile.access.clinical && profile.appointments.length === 0 && (
             <p className="text-sm text-amber-700">Clinical records are restricted for your role.</p>
           )}
+          {profile.access.clinical && (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 space-y-3">
+              <p className="text-sm font-medium text-slate-800">Add clinical treatment record</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <Label>Treatment</Label>
+                  <Input
+                    value={treatmentForm.treatmentName}
+                    onChange={(e) => setTreatmentForm((f) => ({ ...f, treatmentName: e.target.value }))}
+                    placeholder="e.g. Root Canal"
+                  />
+                </div>
+                <div>
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={treatmentForm.treatmentDate}
+                    onChange={(e) => setTreatmentForm((f) => ({ ...f, treatmentDate: e.target.value }))}
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <Label>Notes (optional)</Label>
+                  <Textarea
+                    rows={2}
+                    value={treatmentForm.notes}
+                    onChange={(e) => setTreatmentForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <Button type="button" disabled={saving} onClick={() => void addTreatment()}>
+                Save treatment
+              </Button>
+            </div>
+          )}
           {profile.treatments.length === 0 ? (
-            <p className="text-sm text-slate-500">No treatment records yet.</p>
+            <p className="text-sm text-slate-500">
+              No visits yet. Link appointments to this patient or confirm/completed status — visits appear here
+              automatically.
+            </p>
           ) : (
             profile.treatments.map((t) => (
               <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-4">
@@ -290,6 +398,39 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
 
       {tab === "Documents" && (
         <ul className="space-y-2">
+          {profile.access.clinical && (
+            <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 space-y-3 list-none">
+              <p className="text-sm font-medium">Upload document (paste file URL from storage)</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>File name</Label>
+                  <Input
+                    value={docForm.fileName}
+                    onChange={(e) => setDocForm((f) => ({ ...f, fileName: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Input
+                    value={docForm.category}
+                    onChange={(e) => setDocForm((f) => ({ ...f, category: e.target.value }))}
+                    placeholder="XRAY, REPORT, OTHER"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>File URL</Label>
+                  <Input
+                    value={docForm.fileUrl}
+                    onChange={(e) => setDocForm((f) => ({ ...f, fileUrl: e.target.value }))}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <Button type="button" disabled={saving} onClick={() => void addDocument()}>
+                Add document
+              </Button>
+            </li>
+          )}
           {profile.documents.length === 0 ? (
             <li className="text-sm text-slate-500">No documents uploaded.</li>
           ) : (
@@ -309,12 +450,49 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
 
       {tab === "Payments" && (
         <div className="space-y-2">
-          {profile.payments.map((p) => (
-            <div key={p.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-              {p.treatmentName ?? "Treatment"} — {formatCurrency(p.amountPaid)} /{" "}
-              {formatCurrency(p.amountBilled)} ({p.status})
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 space-y-3">
+            <p className="text-sm font-medium">Record payment</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <Label>Treatment (optional)</Label>
+                <Input
+                  value={paymentForm.treatmentName}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, treatmentName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Amount billed (₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={paymentForm.amountBilled}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, amountBilled: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Amount paid (₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={paymentForm.amountPaid}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, amountPaid: e.target.value }))}
+                />
+              </div>
             </div>
-          ))}
+            <Button type="button" disabled={saving} onClick={() => void addPayment()}>
+              Save payment
+            </Button>
+          </div>
+          {profile.payments.length === 0 ? (
+            <p className="text-sm text-slate-500">No payments recorded yet.</p>
+          ) : (
+            profile.payments.map((p) => (
+              <div key={p.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                {p.treatmentName ?? "Treatment"} — {formatCurrency(p.amountPaid)} /{" "}
+                {formatCurrency(p.amountBilled)} ({p.status})
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -336,13 +514,19 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
 
       {tab === "Timeline" && (
         <ol className="relative ml-3 border-l border-violet-200 pl-6">
-          {profile.timeline.map((e, i) => (
-            <li key={`${e.at}-${i}`} className="mb-4">
-              <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-violet-500" />
-              <p className="text-xs text-slate-500">{e.label}</p>
-              <p className="font-medium text-slate-800">{e.title}</p>
+          {profile.timeline.length === 0 ? (
+            <li className="text-sm text-slate-500 list-none">
+              No timeline events yet. Patient registration and appointments appear here once linked.
             </li>
-          ))}
+          ) : (
+            profile.timeline.map((e, i) => (
+              <li key={`${e.at}-${i}`} className="mb-4">
+                <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-violet-500" />
+                <p className="text-xs text-slate-500">{e.label}</p>
+                <p className="font-medium text-slate-800">{e.title}</p>
+              </li>
+            ))
+          )}
         </ol>
       )}
     </div>

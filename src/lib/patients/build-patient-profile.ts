@@ -2,6 +2,12 @@ import { format, startOfDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { patientAgeFromDob } from "@/lib/patients/patient-age";
 import { canViewPatientClinical, stripClinicalFields } from "@/lib/patients/patient-access";
+import {
+  mergeMessages,
+  mergeTreatmentLists,
+  messagesFromAppointments,
+  treatmentsFromAppointments,
+} from "@/lib/patients/profile-visit-records";
 import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 import { supabaseFindUnique, useSupabaseCrud } from "@/lib/supabase/crud";
 
@@ -189,6 +195,7 @@ async function getPatientProfileSupabase(patientId: string, role: string | null 
       .select("*")
       .eq("patientId", patientId)
       .order("treatmentDate", { ascending: false });
+    if (t.error) console.warn("PatientTreatment load:", t.error.message);
     treatmentRows = t.data ?? [];
   } catch {
     /* table may not exist yet */
@@ -217,14 +224,20 @@ async function getPatientProfileSupabase(patientId: string, role: string | null 
     /* ignore */
   }
 
-  const treatments = treatmentRows.map((t) => ({
+  const dbTreatments = treatmentRows.map((t) => ({
     id: String(t.id),
     treatmentName: String(t.treatmentName ?? ""),
     doctorName: (t.doctorName as string | null) ?? null,
     treatmentDate: String(t.treatmentDate),
     status: String(t.status ?? "COMPLETED"),
     notes: (t.notes as string | null) ?? null,
+    fromAppointment: false as const,
   }));
+
+  const apptVisits = treatmentsFromAppointments(appts);
+  const treatments = clinical
+    ? mergeTreatmentLists(dbTreatments, apptVisits)
+    : apptVisits;
 
   const payments = paymentRows.map((pay) => ({
     id: String(pay.id),
@@ -306,7 +319,7 @@ async function getPatientProfileSupabase(patientId: string, role: string | null 
       branch: a.branch?.name ?? null,
       status: a.status,
     })),
-    treatments: clinical ? treatments : [],
+    treatments,
     documents: clinical
       ? documentRows.map((d) => ({
           id: String(d.id),
@@ -320,14 +333,15 @@ async function getPatientProfileSupabase(patientId: string, role: string | null 
         }))
       : [],
     payments,
-    messages: activityRows
-      .filter((a) => a.kind === "message" || a.kind === "communication")
-      .map((a) => ({
+    messages: mergeMessages(
+      activityRows.map((a) => ({
         id: String(a.id),
         at: String(a.at ?? new Date().toISOString()),
         title: String(a.title),
         detail: (a.detail as string | null) ?? null,
       })),
+      messagesFromAppointments(appts),
+    ),
     notes: (p.medicalNotes as string | null) ?? null,
     timeline,
     access: { clinical },
@@ -432,19 +446,30 @@ export async function getPatientProfile(patientId: string, role: string | null |
       branch: a.branch?.name ?? null,
       status: a.status,
     })),
-    treatments: clinical
-      ? patient.treatments.map((t) => ({
-          id: t.id,
-          treatmentName: t.treatmentName,
-          doctorName: t.doctorName,
-          treatmentDate: t.treatmentDate.toISOString(),
-          toothArea: t.toothArea,
-          diagnosis: t.diagnosis,
-          notes: t.notes,
-          followUpDate: t.followUpDate?.toISOString() ?? null,
-          status: t.status,
-        }))
-      : [],
+    treatments: (() => {
+      const dbTreatments = clinical
+        ? patient.treatments.map((t) => ({
+            id: t.id,
+            treatmentName: t.treatmentName,
+            doctorName: t.doctorName,
+            treatmentDate: t.treatmentDate.toISOString(),
+            notes: t.notes,
+            status: t.status,
+            fromAppointment: false as const,
+          }))
+        : [];
+      const apptVisits = treatmentsFromAppointments(
+        appts.map((a) => ({
+          id: a.id,
+          appointmentCode: a.appointmentCode,
+          appointmentDate: a.appointmentDate,
+          treatmentName: a.treatmentName,
+          status: a.status,
+          doctor: a.doctor,
+        })),
+      );
+      return clinical ? mergeTreatmentLists(dbTreatments, apptVisits) : apptVisits;
+    })(),
     documents: clinical
       ? patient.documents.map((d) => ({
           id: d.id,
@@ -468,14 +493,24 @@ export async function getPatientProfile(patientId: string, role: string | null |
       paidAt: p.paidAt?.toISOString() ?? null,
       createdAt: p.createdAt.toISOString(),
     })),
-    messages: patient.activities
-      .filter((a) => a.kind === "message" || a.kind === "communication")
-      .map((a) => ({
+    messages: mergeMessages(
+      patient.activities.map((a) => ({
         id: a.id,
         at: a.at.toISOString(),
         title: a.title,
         detail: a.detail,
       })),
+      messagesFromAppointments(
+        appts.map((a) => ({
+          id: a.id,
+          appointmentCode: a.appointmentCode,
+          appointmentDate: a.appointmentDate,
+          treatmentName: a.treatmentName,
+          status: a.status,
+          doctor: a.doctor,
+        })),
+      ),
+    ),
     notes: patient.medicalNotes,
     timeline,
     access: { clinical },

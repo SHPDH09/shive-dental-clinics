@@ -6,9 +6,11 @@ import {
   updateAppointmentAdmin,
 } from "@/lib/supabase/appointments-admin";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
+import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 import type { AppointmentMailContext } from "@/lib/mail/appointment-emails";
 import { emailPatientOnStatusChange } from "@/lib/mail/appointment-status-mail";
 import { ensurePatientForConfirmedAppointment } from "@/lib/ensure-patient-from-appointment";
+import { syncAppointmentToPatientProfile } from "@/lib/patients/appointment-patient-sync";
 import { NextResponse } from "next/server";
 import type { AppointmentStatus } from "@/generated/prisma/client";
 
@@ -160,6 +162,29 @@ export async function PATCH(req: Request, context: RouteContext) {
           }
         }
       }
+      const patientIdForSync =
+        (data.patientId as string | undefined) ??
+        (item.patientId as string | null) ??
+        (before?.patientId as string | null);
+      if (patientIdForSync && body.status !== undefined && before && body.status !== before.status) {
+        let doctorName: string | null = null;
+        const doctorId = (item.doctorId ?? before.doctorId) as string | null;
+        if (doctorId) {
+          const sb = await getAdminSupabaseClient();
+          const { data: dr } = await sb.from("Doctor").select("name").eq("id", doctorId).maybeSingle();
+          doctorName = dr?.name ? String(dr.name) : null;
+        }
+        await syncAppointmentToPatientProfile({
+          patientId: patientIdForSync,
+          treatmentName: String(item.treatmentName ?? before.treatmentName),
+          appointmentDate: String(item.appointmentDate ?? before.appointmentDate),
+          doctorName,
+          doctorId,
+          status: String(body.status),
+          appointmentCode: String(item.appointmentCode ?? before.appointmentCode),
+        });
+      }
+
       return NextResponse.json({
         ...item,
         patientEmailSent,
@@ -204,7 +229,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     const item = await prisma.appointment.update({
       where: { id },
       data: prismaData,
-      include: { patient: true, service: true },
+      include: { patient: true, service: true, doctor: { select: { name: true } } },
     });
     let patientEmailSent = false;
     let patientEmailWarning: string | undefined;
@@ -225,6 +250,19 @@ export async function PATCH(req: Request, context: RouteContext) {
         }
       }
     }
+    const syncPatientId = item.patientId ?? linkedPatientId;
+    if (syncPatientId && body.status !== undefined && beforePrisma && body.status !== beforePrisma.status) {
+      await syncAppointmentToPatientProfile({
+        patientId: syncPatientId,
+        treatmentName: item.treatmentName,
+        appointmentDate: item.appointmentDate,
+        doctorName: item.doctor?.name ?? null,
+        doctorId: item.doctorId,
+        status: item.status,
+        appointmentCode: item.appointmentCode,
+      });
+    }
+
     return NextResponse.json({
       ...item,
       patientEmailSent,
