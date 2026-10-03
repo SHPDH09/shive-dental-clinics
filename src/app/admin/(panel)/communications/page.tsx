@@ -1,5 +1,5 @@
-import { CommunicationsView } from "@/components/admin/communications-view";
+import { CommunicationsHub } from "@/components/admin/communications/communications-hub";
 
 export default function CommunicationsPage() {
-  return <CommunicationsView />;
+  return <CommunicationsHub />;
 }

@@ -495,15 +495,109 @@ model Enquiry {
   @@index([important])
 }
 
+enum CommunicationChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  IN_APP
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CommunicationDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
 model MessageTemplate {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
   subject   String
   body      String
+  channel   CommunicationChannel @default(EMAIL)
+  category  String   @default("GENERAL")
+  variables Json     @default("[]")
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CommunicationLog {
+  id              String                 @id @default(cuid())
+  channel         CommunicationChannel
+  direction       CommunicationDirection @default(OUTBOUND)
+  status          CommunicationStatus    @default(PENDING)
+  recipientName   String?
+  recipientPhone  String?
+  recipientEmail  String?
+  patientId       String?
+  leadId          String?
+  enquiryId       String?
+  subject         String?
+  body            String
+  templateSlug    String?
+  failureReason   String?
+  externalId      String?
+  sentByAdminId   String?
+  metadata        Json                   @default("{}")
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([channel, status])
+  @@index([patientId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([createdAt])
+}
+
+model CommunicationAutomation {
+  id            String               @id @default(cuid())
+  name          String
+  trigger       String
+  channel       CommunicationChannel
+  enabled       Boolean              @default(true)
+  timingLabel   String?
+  offsetMinutes Int?
+  templateSlug  String?
+  sortOrder     Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([trigger, channel])
+}
+
+model CommunicationCampaign {
+  id             String               @id @default(cuid())
+  name           String
+  channel        CommunicationChannel
+  status         CampaignStatus       @default(DRAFT)
+  audienceFilter Json                 @default("{}")
+  messageBody    String?
+  templateSlug   String?
+  recipientCount Int                  @default(0)
+  scheduledAt    DateTime?
+  sentCount      Int                  @default(0)
+  failedCount    Int                  @default(0)
+  createdBy      String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([status])
 }
 
 model Notification {
