@@ -9,7 +9,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { KeyRound, Loader2, UserRound } from "lucide-react";
 
 type FormValues = z.infer<typeof loginSchema>;
 
@@ -67,55 +67,69 @@ export function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className={`admin-login-form-enter mx-auto w-full max-w-md space-y-5 rounded-2xl border border-white/20 bg-white/95 p-8 shadow-2xl backdrop-blur-sm ${shake ? "admin-login-shake" : ""}`}
-    >
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#0f1d3d]">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-600">Use your Admin ID or email and password</p>
-      </div>
+    <div className={`admin-login-form-enter admin-login-card w-full ${shake ? "admin-login-shake" : ""}`}>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 p-8 pt-7 md:p-9">
+        <div className="text-center lg:text-left">
+          <span className="admin-login-badge inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider">
+            Staff portal
+          </span>
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-[#0f1d3d]">Welcome back</h2>
+          <p className="mt-1.5 text-sm text-slate-600">Sign in with your Admin ID or work email</p>
+        </div>
 
-      <div className="admin-login-field-enter admin-login-field-delay-1">
-        <Label>Email or Admin ID</Label>
-        <Input
-          type="text"
-          autoComplete="username"
-          placeholder="admin@example.com"
-          className="admin-login-input transition-shadow duration-300 focus:shadow-[0_0_0_3px_rgb(244_196_48/0.35)]"
-          {...register("loginId")}
-        />
-      </div>
-      <div className="admin-login-field-enter admin-login-field-delay-2">
-        <Label>Password</Label>
-        <Input
-          type="password"
-          autoComplete="current-password"
-          className="admin-login-input transition-shadow duration-300 focus:shadow-[0_0_0_3px_rgb(244_196_48/0.35)]"
-          {...register("password")}
-        />
-      </div>
-      {error && (
-        <p className="admin-login-error-enter text-sm font-medium text-[#d91f26]" role="alert">
-          {error}
-        </p>
-      )}
-      <div className="admin-login-field-enter admin-login-field-delay-3">
-        <Button
-          type="submit"
-          className="admin-login-submit w-full transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              Signing in…
-            </>
-          ) : (
-            "Sign in"
-          )}
-        </Button>
-      </div>
-    </form>
+        <div className="admin-login-field-enter admin-login-field-delay-1">
+          <Label htmlFor="loginId">Email or Admin ID</Label>
+          <div className="relative mt-1">
+            <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Input
+              id="loginId"
+              type="text"
+              autoComplete="username"
+              placeholder="e.g. reception or admin@clinic.com"
+              className="admin-login-input pl-10"
+              {...register("loginId")}
+            />
+          </div>
+        </div>
+
+        <div className="admin-login-field-enter admin-login-field-delay-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative mt-1">
+            <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              className="admin-login-input pl-10"
+              {...register("password")}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="admin-login-error-enter rounded-xl border border-[#d91f26]/25 bg-[#d91f26]/5 px-4 py-3 text-sm font-medium text-[#b01820]" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="admin-login-field-enter admin-login-field-delay-3 pt-1">
+          <Button
+            type="submit"
+            className="admin-login-submit w-full py-3 text-base shadow-lg shadow-[#d91f26]/20 transition-transform duration-200 hover:scale-[1.01] hover:brightness-105 active:scale-[0.99]"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Signing in…
+              </>
+            ) : (
+              "Sign in to dashboard"
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
