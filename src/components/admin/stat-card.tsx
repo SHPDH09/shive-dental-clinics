@@ -9,6 +9,7 @@ const accentStyles = {
   rose: "from-rose-500/15 to-rose-600/5 text-rose-700 ring-rose-200/60",
   teal: "from-teal-500/15 to-teal-600/5 text-teal-700 ring-teal-200/60",
   gold: "from-yellow-500/20 to-amber-600/5 text-amber-800 ring-yellow-200/60",
+  brand: "from-red-500/12 to-[#1a3260]/8 text-[#0f1d3d] ring-[#f4c430]/40",
 } as const;
 
 export type StatAccent = keyof typeof accentStyles;
@@ -36,7 +37,7 @@ export function StatCard({
       )}
     >
       <div
-        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-sky-100/80 to-transparent"
+        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-[#fff8e1]/90 to-transparent"
         aria-hidden
       />
       <div className="relative flex items-start justify-between gap-3">

@@ -403,9 +403,9 @@ export function CommunicationsHub() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Communications</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          WhatsApp, SMS, email, and notifications — one place for patient engagement.
+        <h1 className="admin-page-title text-2xl font-bold md:text-3xl">Communications</h1>
+        <p className="admin-help-text mt-2 max-w-2xl">
+          All patient messages in one place — WhatsApp, SMS, and email. Pick a tab below to read, send, or manage templates.
         </p>
       </div>
 
@@ -455,9 +455,7 @@ export function CommunicationsHub() {
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-2 text-sm font-medium ${
-              tab === t ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
+            className={tab === t ? "admin-tab admin-tab-active" : "admin-tab"}
           >
             {t}
           </button>
@@ -867,7 +865,7 @@ export function CommunicationsHub() {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         {String(h.status) === "FAILED" && (
-                          <button type="button" className="text-violet-700 hover:underline" onClick={() => void retryFailed(String(h.id))}>
+                          <button type="button" className="font-medium text-[#d91f26] hover:underline" onClick={() => void retryFailed(String(h.id))}>
                             Retry
                           </button>
                         )}
@@ -934,7 +932,7 @@ export function CommunicationsHub() {
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               SMTP, WhatsApp number, and SMS keys are managed in{" "}
-              <Link href="/admin/settings" className="text-violet-700 underline">
+              <Link href="/admin/settings" className="font-medium text-[#d91f26] underline">
                 Admin Settings
               </Link>{" "}
               (Super Admin). API secrets are never exposed to the browser.

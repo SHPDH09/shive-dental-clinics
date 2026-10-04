@@ -161,7 +161,7 @@ export function PatientsManagementView() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={p.profilePhoto} alt="" className="h-10 w-10 rounded-full object-cover" />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff8e1] text-sm font-bold text-[#0f1d3d]">
                           {p.name.charAt(0)}
                         </div>
                       )}
@@ -196,7 +196,7 @@ export function PatientsManagementView() {
                     <div className="flex flex-wrap gap-1">
                       <Link
                         href={`/admin/patients/${p.id}`}
-                        className="rounded-lg px-2 py-1 text-xs font-medium text-violet-700 hover:bg-violet-50"
+                        className="rounded-lg px-2 py-1 text-xs font-medium text-[#d91f26] hover:bg-[#fff8e1]"
                       >
                         View
                       </Link>

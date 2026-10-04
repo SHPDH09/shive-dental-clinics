@@ -58,28 +58,110 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Shiv Dental / SDC admin — logo colors: navy, gold, red */
 .admin-canvas {
+  --admin-navy: #0f1d3d;
+  --admin-navy-mid: #1a3260;
+  --admin-red: #d91f26;
+  --admin-red-dark: #b01820;
+  --admin-gold: #f4c430;
+  --admin-gold-soft: #fff8e1;
+  --primary: var(--admin-navy-mid);
+  --primary-light: #2d4a7a;
+  --cta: var(--admin-red);
+  --accent: var(--admin-gold);
+  --background: #faf8f5;
+  --border: #e8e4df;
+
   background:
-    radial-gradient(ellipse 120% 80% at 100% -20%, rgb(14 165 233 / 0.08), transparent 50%),
-    radial-gradient(ellipse 80% 60% at 0% 100%, rgb(13 148 136 / 0.06), transparent 45%),
-    #f1f5f9;
+    radial-gradient(ellipse 100% 70% at 100% 0%, rgb(244 196 48 / 0.07), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 0% 100%, rgb(217 31 38 / 0.04), transparent 50%),
+    var(--background);
 }
 
 .admin-sidebar {
-  background: linear-gradient(180deg, #0b1f3a 0%, #0f172a 48%, #0c4a6e 100%);
-  border-color: rgb(255 255 255 / 0.08);
+  background: linear-gradient(180deg, #0f1d3d 0%, #152848 55%, #1a3260 100%);
+  border-color: rgb(244 196 48 / 0.12);
+  box-shadow: 4px 0 24px -8px rgb(15 29 61 / 0.35);
 }
 
 .admin-nav-active {
-  background: linear-gradient(90deg, rgb(234 179 8 / 0.22), rgb(14 165 233 / 0.12));
-  box-shadow: inset 3px 0 0 #eab308;
+  background: linear-gradient(90deg, rgb(244 196 48 / 0.2), rgb(255 255 255 / 0.06));
+  box-shadow: inset 3px 0 0 var(--admin-gold);
   color: #fff;
 }
 
 .admin-stat-glow {
   box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.8) inset,
-    0 12px 40px -16px rgb(3 105 161 / 0.2);
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 12px 40px -16px rgb(15 29 61 / 0.12);
+}
+
+.admin-header-bar {
+  background: rgb(255 255 255 / 0.92);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgb(244 196 48 / 0.35);
+}
+
+.admin-page-card {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 29 61 / 0.04);
+}
+
+.admin-page-title {
+  color: var(--admin-navy);
+  letter-spacing: -0.02em;
+}
+
+.admin-help-text {
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.admin-tab {
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.admin-tab:hover {
+  background: #e8e4df;
+  color: var(--admin-navy);
+}
+
+.admin-tab-active {
+  background: var(--admin-navy);
+  color: #fff;
+  box-shadow: 0 2px 8px -2px rgb(15 29 61 / 0.35);
+}
+
+.admin-chip-gold {
+  background: var(--admin-gold-soft);
+  color: #7c5e00;
+  border: 1px solid rgb(244 196 48 / 0.45);
+}
+
+.admin-bubble-staff {
+  background: var(--admin-navy);
+  color: #fff;
+}
+
+.admin-bubble-patient {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.admin-login-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgb(244 196 48 / 0.15), transparent 50%),
+    linear-gradient(165deg, #0f1d3d 0%, #1a3260 45%, #0f1d3d 100%);
 }
 
 .btn-primary {

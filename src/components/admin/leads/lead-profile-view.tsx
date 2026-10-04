@@ -84,7 +84,7 @@ export function LeadProfileView({ leadId }: { leadId: string }) {
         <ArrowLeft className="h-4 w-4" /> Back to leads
       </Link>
 
-      <div className="rounded-2xl border bg-gradient-to-br from-white to-violet-50/30 p-6 shadow-sm">
+      <div className="rounded-2xl border bg-gradient-to-br from-white to-[#fff8e1]/40 p-6 shadow-sm">
         <h1 className="text-2xl font-bold">{profile.name}</h1>
         <p className="font-mono text-sm text-slate-500">{profile.leadCode}</p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -135,7 +135,7 @@ export function LeadProfileView({ leadId }: { leadId: string }) {
             <>
               <dt className="mt-3 text-slate-500">Patient</dt>
               <dd>
-                <Link href={`/admin/patients/${profile.patientId}`} className="text-violet-700 underline">
+                <Link href={`/admin/patients/${profile.patientId}`} className="font-medium text-[#d91f26] underline">
                   View patient
                 </Link>
               </dd>
@@ -153,10 +153,10 @@ export function LeadProfileView({ leadId }: { leadId: string }) {
 
       <div className="rounded-2xl border bg-white p-5">
         <h3 className="font-semibold">Activity timeline</h3>
-        <ol className="relative ml-3 mt-4 border-l border-violet-200 pl-6">
+        <ol className="relative ml-3 mt-4 border-l border-[#f4c430]/40 pl-6">
           {profile.timeline.map((e, i) => (
             <li key={`${e.at}-${i}`} className="mb-4">
-              <span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-violet-500" />
+              <span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-[#d91f26]" />
               <p className="text-xs text-slate-500">{e.label}</p>
               <p className="font-medium">{e.title}</p>
               {e.detail && <p className="text-sm text-slate-600">{e.detail}</p>}

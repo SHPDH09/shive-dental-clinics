@@ -58,10 +58,10 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="card-premium mx-auto w-full max-w-md space-y-5 p-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-white p-8 shadow-2xl">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900">Admin sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Shiv Dental Clinic — admin portal</p>
+        <h1 className="text-2xl font-bold text-[#0f1d3d]">Sign in</h1>
+        <p className="mt-1 text-sm text-slate-600">Use your Admin ID or email and password</p>
       </div>
 
       <div>
