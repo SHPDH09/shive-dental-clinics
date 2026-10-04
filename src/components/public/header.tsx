@@ -33,13 +33,38 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
   const isHome = pathname === "/";
 
   return (
-    <header className="relative sticky top-0 z-50 border-b border-white/20 shadow-md">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url("${bgUrl.replace(/"/g, "%22")}")` }}
-      />
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--primary)]/82" />
+    <header
+      className={cn(
+        "relative sticky top-0 z-50 border-b shadow-md",
+        isHome ? "border-[#f4c430]/30" : "border-white/20",
+      )}
+    >
+      {isHome ? (
+        <>
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#0f1d3d]" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 95% 140% at 0% 100%, rgba(244, 196, 48, 0.72) 0%, rgba(244, 196, 48, 0.28) 34%, transparent 64%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-20 -left-12 h-44 w-72 rounded-full bg-[#f4c430]/45 blur-3xl"
+          />
+        </>
+      ) : (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url("${bgUrl.replace(/"/g, "%22")}")` }}
+          />
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--primary)]/82" />
+        </>
+      )}
 
       <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="flex min-w-0 items-center gap-3 font-bold text-white">
@@ -76,7 +101,12 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
           </a>
           <Link
             href="/appointment"
-            className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[var(--primary)] transition hover:bg-sky-50"
+            className={cn(
+              "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition",
+              isHome
+                ? "bg-[#f4c430] text-[#0f1d3d] hover:bg-[#ffd54f]"
+                : "bg-white text-[var(--primary)] hover:bg-sky-50",
+            )}
           >
             Book Appointment
           </Link>
@@ -111,7 +141,12 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
           ))}
           <Link
             href="/appointment"
-            className="mt-2 inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-center text-sm font-semibold text-[var(--primary)]"
+            className={cn(
+              "mt-2 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-center text-sm font-semibold",
+              isHome
+                ? "bg-[#f4c430] text-[#0f1d3d] hover:bg-[#ffd54f]"
+                : "bg-white text-[var(--primary)]",
+            )}
             onClick={() => setOpen(false)}
           >
             Book Appointment
