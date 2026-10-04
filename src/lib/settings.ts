@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 const defaultSettings = {
@@ -28,7 +29,7 @@ const defaultSettings = {
   updatedAt: new Date(),
 };
 
-export async function getClinicSettings() {
+export const getClinicSettings = cache(async function getClinicSettings() {
   try {
     let settings = await prisma.clinicSettings.findUnique({ where: { id: "default" } });
     if (!settings) {
@@ -38,9 +39,9 @@ export async function getClinicSettings() {
   } catch {
     return defaultSettings;
   }
-}
+});
 
-export async function getHeroStats() {
+export const getHeroStats = cache(async function getHeroStats() {
   try {
     const stats = await prisma.heroStat.findMany({ orderBy: { sortOrder: "asc" } });
     if (stats.length === 0) {
@@ -60,4 +61,4 @@ export async function getHeroStats() {
       { label: "Patient Rating", value: "4.9/5" },
     ];
   }
-}
+});

@@ -9,12 +9,17 @@ import { PublicHeader } from "@/components/public/header";
 import { MobileStickyActions } from "@/components/public/mobile-sticky-actions";
 import { DentalClinicJsonLd } from "@/components/public/json-ld";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
-import { getPublicBranches } from "@/lib/public-data";
 import { getSiteUrl } from "@/lib/seo/site-url";
-import { getClinicSettings } from "@/lib/settings";
+import { getCachedClinicSettings, getCachedPublicBranches, getCachedPublicSiteStatus } from "@/lib/cached-public";
+import { redirect } from "next/navigation";
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const [settings, branches] = await Promise.all([getClinicSettings(), getPublicBranches()]);
+  const status = await getCachedPublicSiteStatus();
+  if (status.maintenance) {
+    redirect("/maintenance");
+  }
+
+  const [settings, branches] = await Promise.all([getCachedClinicSettings(), getCachedPublicBranches()]);
   const social = (settings.socialLinks ?? {}) as Record<string, string>;
   const siteUrl = getSiteUrl();
 

@@ -130,9 +130,86 @@ export async function getPublicServiceBySlug(slug: string): Promise<PublicServic
   }
 }
 
+export type PublicServicePickerOption = { id: string; name: string; slug: string };
+
+export async function getPublicServicePickerOptions(): Promise<PublicServicePickerOption[]> {
+  try {
+    const rows = await prisma.service.findMany({
+      where: { enabled: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, slug: true },
+    });
+    return rows.map((r) => ({ id: r.id, name: r.name, slug: r.slug }));
+  } catch {
+    if (!getSupabaseSecretKey()) return [];
+    try {
+      const sb = createSupabaseServiceClient();
+      const { data, error } = await sb
+        .from("Service")
+        .select("id,name,slug")
+        .eq("enabled", true)
+        .order("sortOrder", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((r) => ({
+        id: String(r.id),
+        name: String(r.name),
+        slug: String(r.slug),
+      }));
+    } catch {
+      return [];
+    }
+  }
+}
+
 export async function getFeaturedPublicServices(limit = 6): Promise<PublicService[]> {
-  const all = await getPublicServicesList();
-  const featured = all.filter((s) => s.featured);
-  if (featured.length > 0) return featured.slice(0, limit);
-  return all.slice(0, limit);
+  try {
+    let rows = await prisma.service.findMany({
+      where: { enabled: true, featured: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      take: limit,
+      include: { category: true },
+    });
+    if (rows.length === 0) {
+      rows = await prisma.service.findMany({
+        where: { enabled: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        take: limit,
+        include: { category: true },
+      });
+    }
+    return rows.map((r) =>
+      mapPublicService(r as unknown as Record<string, unknown>, r.category ?? null),
+    );
+  } catch {
+    if (!getSupabaseSecretKey()) return [];
+    try {
+      const sb = createSupabaseServiceClient();
+      let { data: services, error } = await sb
+        .from("Service")
+        .select("*")
+        .eq("enabled", true)
+        .eq("featured", true)
+        .order("sortOrder", { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      if (!services?.length) {
+        const fallback = await sb
+          .from("Service")
+          .select("*")
+          .eq("enabled", true)
+          .order("sortOrder", { ascending: true })
+          .limit(limit);
+        services = fallback.data ?? [];
+      }
+      const { data: categories } = await sb.from("ServiceCategory").select("id,name,slug");
+      const catMap = new Map(
+        (categories ?? []).map((c) => [String(c.id), { name: String(c.name), slug: String(c.slug) }]),
+      );
+      return (services ?? []).map((r) =>
+        mapPublicService(r as Record<string, unknown>, catMap.get(String(r.categoryId)) ?? null),
+      );
+    } catch {
+      return [];
+    }
+  }
 }

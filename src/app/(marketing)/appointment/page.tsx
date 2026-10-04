@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { AppointmentBookingWizard } from "@/components/public/appointment-booking-wizard";
 import { AppointmentForm } from "@/components/public/appointment-form";
 import { VoiceBookingTrigger } from "@/components/public/voice-booking-trigger";
-import { getPublicBranches, getPublicDoctors, getPublicServices } from "@/lib/public-data";
+import { getPublicDoctors, getPublicServicePickerOptions } from "@/lib/public-data";
+import { getCachedPublicBranches } from "@/lib/cached-public";
+
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Book Appointment",
@@ -15,10 +18,10 @@ type PageProps = {
 
 export default async function AppointmentPage({ searchParams }: PageProps) {
   const { service: serviceSlug, doctor: doctorSlug, branch: branchSlug } = await searchParams;
-  const [services, doctors, branches] = await Promise.all([
-    getPublicServices(),
+  const [serviceOptions, doctors, branches] = await Promise.all([
+    getPublicServicePickerOptions(),
     getPublicDoctors(),
-    getPublicBranches(),
+    getCachedPublicBranches(),
   ]);
 
   const useWizard = branches.length > 0 && doctors.length > 0;
@@ -33,7 +36,7 @@ export default async function AppointmentPage({ searchParams }: PageProps) {
       </p>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <VoiceBookingTrigger
-          services={services.map((s) => ({ id: s.id, name: s.name }))}
+          services={serviceOptions.map((s) => ({ id: s.id, name: s.name }))}
           variant="primary"
           label="Book with voice assistant"
         />
@@ -56,14 +59,14 @@ export default async function AppointmentPage({ searchParams }: PageProps) {
               slug: d.slug,
               specialization: d.specialization,
             }))}
-            services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
+            services={serviceOptions}
             initialBranchSlug={branchSlug ?? null}
             initialDoctorSlug={doctorSlug ?? null}
             initialServiceSlug={serviceSlug ?? null}
           />
         ) : (
           <AppointmentForm
-            services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
+            services={serviceOptions}
             initialServiceSlug={serviceSlug ?? null}
           />
         )}
