@@ -3,10 +3,14 @@ import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getSupabaseSecretKey } from "@/lib/supabase/env";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
 import {
+  DAY_LABELS,
   generateTimeSlotsForDay,
   intersectDaySchedules,
+  parseLocalDateIso,
   parseWeeklySchedule,
+  WEEKDAY_KEYS,
   weekdayKeyFromDate,
+  type WeekdayKey,
   type WeeklySchedule,
 } from "@/lib/doctor-schedule";
 
@@ -109,29 +113,77 @@ function isSlotInPast(date: Date, time: string): boolean {
   return slotAt.getTime() <= now.getTime();
 }
 
+export type BookingWeekdayInfo = {
+  key: WeekdayKey;
+  label: string;
+  shortLabel: string;
+  enabled: boolean;
+  start: string | null;
+  end: string | null;
+};
+
+function resolveBookingDaySchedule(
+  doctorSchedule: WeeklySchedule,
+  branchId: string | null | undefined,
+  dayKey: WeekdayKey,
+  branchSchedule?: WeeklySchedule | null,
+) {
+  const doctorDay = doctorSchedule[dayKey];
+  if (!branchId) return doctorDay;
+  const branch = branchSchedule ?? null;
+  if (!branch) return { enabled: false, start: doctorDay.start, end: doctorDay.end };
+  return intersectDaySchedules(branch[dayKey], doctorDay);
+}
+
+export async function getPublicBookingAvailability(
+  doctorId: string,
+  branchId?: string | null,
+): Promise<{ weekdays: BookingWeekdayInfo[] }> {
+  const doctorSchedule = await getDoctorSchedule(doctorId);
+  if (!doctorSchedule) return { weekdays: [] };
+
+  const branchSchedule = branchId ? await getBranchSchedule(branchId) : null;
+
+  const weekdays: BookingWeekdayInfo[] = WEEKDAY_KEYS.map((key) => {
+    const bookingDay = resolveBookingDaySchedule(doctorSchedule, branchId, key, branchSchedule);
+    return {
+      key,
+      label: DAY_LABELS[key],
+      shortLabel: DAY_LABELS[key].slice(0, 3),
+      enabled: bookingDay.enabled,
+      start: bookingDay.enabled ? bookingDay.start : null,
+      end: bookingDay.enabled ? bookingDay.end : null,
+    };
+  });
+
+  return { weekdays };
+}
+
+export function isDateOpenForBooking(dateIso: string, weekdays: BookingWeekdayInfo[]): boolean {
+  const date = parseLocalDateIso(dateIso);
+  if (Number.isNaN(date.getTime())) return false;
+  const dayKey = weekdayKeyFromDate(date);
+  return weekdays.find((w) => w.key === dayKey)?.enabled ?? false;
+}
+
 export async function getPublicAppointmentSlots(
   doctorId: string,
   dateIso: string,
   branchId?: string | null,
-): Promise<{ slots: PublicAppointmentSlot[]; closed: boolean }> {
-  const date = new Date(dateIso);
+): Promise<{ slots: PublicAppointmentSlot[]; closed: boolean; dayLabel?: string }> {
+  const date = parseLocalDateIso(dateIso);
   if (Number.isNaN(date.getTime())) return { slots: [], closed: true };
 
   const doctorSchedule = await getDoctorSchedule(doctorId);
   if (!doctorSchedule) return { slots: [], closed: true };
 
   const dayKey = weekdayKeyFromDate(date);
-  const doctorDay = doctorSchedule[dayKey];
+  const branchSchedule = branchId ? await getBranchSchedule(branchId) : null;
+  const bookingDay = resolveBookingDaySchedule(doctorSchedule, branchId ?? null, dayKey, branchSchedule);
 
-  let bookingDay = doctorDay;
-  if (branchId) {
-    const branchSchedule = await getBranchSchedule(branchId);
-    if (branchSchedule) {
-      bookingDay = intersectDaySchedules(branchSchedule[dayKey], doctorDay);
-    }
+  if (!bookingDay.enabled) {
+    return { slots: [], closed: true, dayLabel: DAY_LABELS[dayKey] };
   }
-
-  if (!bookingDay.enabled) return { slots: [], closed: true };
 
   const allTimes = generateTimeSlotsForDay(bookingDay);
   const booked = await getBookedTimes(doctorId, date);
@@ -142,7 +194,7 @@ export async function getPublicAppointmentSlots(
     return { time, status: "available" };
   });
 
-  return { slots, closed: false };
+  return { slots, closed: false, dayLabel: DAY_LABELS[dayKey] };
 }
 
 /** @deprecated Prefer getPublicAppointmentSlots — kept for callers expecting available-only list */
@@ -173,6 +225,6 @@ export async function isAppointmentSlotAvailable(
     return match?.status === "available";
   }
 
-  const booked = await getBookedTimes(null, new Date(dateIso));
+  const booked = await getBookedTimes(null, parseLocalDateIso(dateIso));
   return !booked.has(normalizedTime);
 }

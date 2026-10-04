@@ -11,8 +11,8 @@ export async function GET(req: Request) {
   const branchId = searchParams.get("branchId")?.trim() || null;
   const date = searchParams.get("date")?.trim();
 
-  if (!doctorId || !date) {
-    return NextResponse.json({ error: "doctorId and date are required" }, { status: 400 });
+  if (!doctorId || !date || !branchId) {
+    return NextResponse.json({ error: "doctorId, branchId and date are required" }, { status: 400 });
   }
 
   try {
