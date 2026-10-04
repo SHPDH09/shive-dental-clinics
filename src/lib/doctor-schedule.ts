@@ -28,7 +28,7 @@ export const DEFAULT_WEEKLY_SCHEDULE: WeeklySchedule = {
   sunday: { enabled: false, start: "10:00", end: "14:00" },
 };
 
-const DAY_LABELS: Record<WeekdayKey, string> = {
+export const DAY_LABELS: Record<WeekdayKey, string> = {
   monday: "Monday",
   tuesday: "Tuesday",
   wednesday: "Wednesday",
@@ -37,6 +37,13 @@ const DAY_LABELS: Record<WeekdayKey, string> = {
   saturday: "Saturday",
   sunday: "Sunday",
 };
+
+/** Parse `YYYY-MM-DD` as local calendar date (avoids UTC day-shift in date pickers). */
+export function parseLocalDateIso(isoDate: string): Date {
+  const parts = isoDate.trim().slice(0, 10).split("-").map((x) => parseInt(x, 10));
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return new Date(NaN);
+  return new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+}
 
 export function weekdayKeyFromDate(date: Date): WeekdayKey {
   const idx = date.getDay();

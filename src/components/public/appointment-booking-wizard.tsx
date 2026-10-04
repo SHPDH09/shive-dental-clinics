@@ -19,6 +19,24 @@ type ServiceOption = { id: string; name: string; slug?: string };
 
 type SlotEntry = { time: string; status: "available" | "booked" | "past" };
 
+type WeekdayAvailability = {
+  key: string;
+  label: string;
+  shortLabel: string;
+  enabled: boolean;
+  start: string | null;
+  end: string | null;
+};
+
+function isDateOpenOnSchedule(dateIso: string, weekdays: WeekdayAvailability[]): boolean | null {
+  if (!dateIso || weekdays.length === 0) return null;
+  const d = new Date(`${dateIso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return false;
+  const map = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+  const key = map[d.getDay()];
+  return weekdays.find((w) => w.key === key)?.enabled ?? false;
+}
+
 type Props = {
   branches: BranchOption[];
   doctors: DoctorOption[];
@@ -60,6 +78,8 @@ export function AppointmentBookingWizard({
   const [slotEntries, setSlotEntries] = useState<SlotEntry[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [closedDay, setClosedDay] = useState(false);
+  const [weekdays, setWeekdays] = useState<WeekdayAvailability[]>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -118,8 +138,38 @@ export function AppointmentBookingWizard({
     if (preService && branchServices.some((s) => s.id === preService.id)) setServiceId(preService.id);
   }, [preService, branchServices]);
 
+  const dateOpen = useMemo(() => isDateOpenOnSchedule(date, weekdays), [date, weekdays]);
+
+  const selectedDayHours = useMemo(() => {
+    if (!date || weekdays.length === 0) return null;
+    const d = new Date(`${date}T12:00:00`);
+    const map = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+    const key = map[d.getDay()];
+    return weekdays.find((w) => w.key === key) ?? null;
+  }, [date, weekdays]);
+
+  useEffect(() => {
+    if (!doctorId || !branchId) return;
+    if (step !== 4 && step !== 5) return;
+    setAvailabilityLoading(true);
+    void fetch(
+      `/api/public/appointments/availability?doctorId=${encodeURIComponent(doctorId)}&branchId=${encodeURIComponent(branchId)}`,
+    )
+      .then((r) => r.json())
+      .then((json: { weekdays?: WeekdayAvailability[] }) => {
+        setWeekdays(json.weekdays ?? []);
+      })
+      .catch(() => setWeekdays([]))
+      .finally(() => setAvailabilityLoading(false));
+  }, [doctorId, branchId, step]);
+
   useEffect(() => {
     if (step !== 5 || !doctorId || !date || !branchId) return;
+    if (dateOpen === false) {
+      setSlotEntries([]);
+      setClosedDay(true);
+      return;
+    }
     setSlotsLoading(true);
     setTime("");
     const params = new URLSearchParams({
@@ -146,7 +196,7 @@ export function AppointmentBookingWizard({
     if (step === 1) return Boolean(branchId);
     if (step === 2) return Boolean(doctorId);
     if (step === 3) return Boolean(serviceId);
-    if (step === 4) return Boolean(date);
+    if (step === 4) return Boolean(date) && dateOpen === true && !availabilityLoading;
     if (step === 5) return Boolean(time);
     if (step === 6) return patientName.trim().length >= 2;
     if (step === 7) return phone.trim().length >= 10;
@@ -297,12 +347,60 @@ export function AppointmentBookingWizard({
       {step === 4 && (
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900">Select date</h3>
-          <Input
-            type="date"
-            value={date}
-            min={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <p className="text-sm text-slate-600">
+            We show only days when <strong>{selectedDoctor?.name ?? "the doctor"}</strong> is available at{" "}
+            <strong>{selectedBranch?.name}</strong> (branch hours apply).
+          </p>
+          {availabilityLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+          ) : weekdays.length > 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Available days</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {weekdays.map((w) => (
+                  <span
+                    key={w.key}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      w.enabled ? "bg-teal-50 text-teal-900 ring-1 ring-teal-200" : "bg-slate-200 text-slate-500 line-through"
+                    }`}
+                    title={
+                      w.enabled && w.start && w.end
+                        ? `${w.label}: ${w.start} – ${w.end} (branch + doctor)`
+                        : `${w.label}: closed`
+                    }
+                  >
+                    {w.shortLabel}
+                    {w.enabled && w.start ? ` · ${w.start}` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div>
+            <Label htmlFor="appt-date">Appointment date</Label>
+            <Input
+              id="appt-date"
+              type="date"
+              value={date}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setTime("");
+              }}
+            />
+          </div>
+          {date && dateOpen === false ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              This day is closed for the selected doctor at this branch. Please pick a highlighted day above (Mon, Tue,
+              etc.).
+            </p>
+          ) : null}
+          {date && dateOpen === true && selectedDayHours?.start && selectedDayHours.end ? (
+            <p className="text-sm text-teal-800">
+              On this day, booking window is <strong>{selectedDayHours.start}</strong> to{" "}
+              <strong>{selectedDayHours.end}</strong> (branch & doctor schedule).
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -323,7 +421,9 @@ export function AppointmentBookingWizard({
             <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
           ) : closedDay ? (
             <p className="text-sm text-slate-600">
-              This branch or doctor is not available on the selected day. Please pick another date.
+              {selectedDayHours?.label
+                ? `${selectedDayHours.label} is closed for this doctor at ${selectedBranch?.name}. Go back and pick an available day (Mon, Tue, …).`
+                : "This branch or doctor is not available on the selected day. Please pick another date."}
             </p>
           ) : slotEntries.length === 0 ? (
             <p className="text-sm text-slate-600">No time slots for this day. Try another date.</p>
