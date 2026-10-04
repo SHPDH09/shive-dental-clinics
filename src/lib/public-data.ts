@@ -2,7 +2,9 @@ export {
   getPublicServicesList as getPublicServices,
   getPublicServiceBySlug as getServiceBySlug,
   getFeaturedPublicServices,
+  getPublicServicePickerOptions,
 } from "@/lib/public-services";
+export type { PublicServicePickerOption } from "@/lib/public-services";
 export type { PublicService } from "@/lib/public-service-types";
 
 export {

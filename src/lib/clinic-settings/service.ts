@@ -3,6 +3,8 @@ import { secretsMeta, stripSecretsFromPatch, toAdminResponse, type DbSettingsRow
 import type { ClinicSecrets } from "@/lib/clinic-settings/types";
 import { prisma } from "@/lib/prisma";
 import { canUseSupabaseDataLayer, getAdminSupabaseClient } from "@/lib/supabase/data-client";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getSupabaseSecretKey } from "@/lib/supabase/env";
 
 const SETTINGS_ID = "default";
 
@@ -61,8 +63,50 @@ export async function getAdminSettings() {
   return response;
 }
 
+/** Public reads — service role or Prisma only (safe inside `unstable_cache`, no cookies). */
+async function loadPublicSettingsRow(): Promise<DbSettingsRow> {
+  if (getSupabaseSecretKey()) {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb
+      .from("ClinicSettings")
+      .select("*")
+      .eq("id", SETTINGS_ID)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) return data as DbSettingsRow;
+    return {
+      id: SETTINGS_ID,
+      clinicName: "Shiv Dental Clinic",
+      extendedSettings: DEFAULT_EXTENDED,
+      secrets: {},
+      updatedAt: new Date().toISOString(),
+    } as DbSettingsRow;
+  }
+
+  try {
+    let row = await prisma.clinicSettings.findUnique({ where: { id: SETTINGS_ID } });
+    if (!row) {
+      row = await prisma.clinicSettings.create({
+        data: {
+          id: SETTINGS_ID,
+          extendedSettings: DEFAULT_EXTENDED as object,
+        },
+      });
+    }
+    return row as unknown as DbSettingsRow;
+  } catch {
+    return {
+      id: SETTINGS_ID,
+      clinicName: "Shiv Dental Clinic",
+      extendedSettings: DEFAULT_EXTENDED,
+      secrets: {},
+      updatedAt: new Date().toISOString(),
+    } as DbSettingsRow;
+  }
+}
+
 export async function getPublicSiteStatus() {
-  const row = await loadSettingsRow();
+  const row = await loadPublicSettingsRow();
   const extended = mergeExtended(row.extendedSettings ?? {});
   return {
     maintenance: extended.maintenance.enabled,

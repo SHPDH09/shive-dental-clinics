@@ -21,14 +21,14 @@ import { JsonLdScript } from "@/components/public/json-ld";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { buildHomeMetadata } from "@/lib/seo/home-metadata";
 import { getPublicHeroSlides } from "@/lib/hero-slides";
-import { getClinicSettings, getHeroStats } from "@/lib/settings";
+import { getCachedClinicSettings, getCachedHeroStats, getCachedPublicBranches } from "@/lib/cached-public";
 import {
   getPublicBeforeAfter,
-  getPublicBranches,
   getFeaturedDoctor,
   getFeaturedPublicDoctors,
+  getFeaturedPublicServices,
   getPublicGallery,
-  getPublicServices,
+  getPublicServicePickerOptions,
   getPublicTestimonials,
   getPublicVideos,
 } from "@/lib/public-data";
@@ -36,7 +36,7 @@ import {
 export const revalidate = 120;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getClinicSettings();
+  const settings = await getCachedClinicSettings();
   return buildHomeMetadata({
     clinicName: settings.clinicName,
     tagline: settings.tagline,
@@ -48,26 +48,39 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [settings, stats, heroSlides, services, branches, featuredDoctor, teamDoctors, testimonials, gallery, videos, beforeAfterCases] =
-    await Promise.all([
-      getClinicSettings(),
-      getHeroStats(),
-      getPublicHeroSlides(),
-      getPublicServices(),
-      getPublicBranches(),
-      getFeaturedDoctor(),
-      getFeaturedPublicDoctors(6),
-      getPublicTestimonials(),
-      getPublicGallery(),
-      getPublicVideos(6),
-      getPublicBeforeAfter(12, { featuredOnly: false }),
-    ]);
+  const [
+    settings,
+    stats,
+    heroSlides,
+    featuredServices,
+    serviceOptions,
+    branches,
+    featuredDoctor,
+    teamDoctors,
+    testimonials,
+    gallery,
+    videos,
+    beforeAfterCases,
+  ] = await Promise.all([
+    getCachedClinicSettings(),
+    getCachedHeroStats(),
+    getPublicHeroSlides(),
+    getFeaturedPublicServices(6),
+    getPublicServicePickerOptions(),
+    getCachedPublicBranches(),
+    getFeaturedDoctor(),
+    getFeaturedPublicDoctors(6),
+    getPublicTestimonials(),
+    getPublicGallery(),
+    getPublicVideos(6),
+    getPublicBeforeAfter(8, { featuredOnly: true }),
+  ]);
 
   const featuredCases = beforeAfterCases.filter((c) => c.featured);
   const beforeAfter = featuredCases.length >= 3 ? featuredCases.slice(0, 6) : beforeAfterCases.slice(0, 6);
 
   const openingHours = settings.openingHours as { weekdays?: string; sunday?: string } | null;
-  const voiceServices = services.map((s) => ({ id: s.id, name: s.name }));
+  const voiceServices = serviceOptions.map((s) => ({ id: s.id, name: s.name }));
 
   return (
     <>
@@ -93,15 +106,12 @@ export default async function HomePage() {
                 <VoiceBookingTrigger services={voiceServices} variant="primary" label="Book with voice" />
               </div>
             </div>
-            <AppointmentForm
-              services={services.map((s) => ({ id: s.id, name: s.name, slug: s.slug }))}
-              compact
-            />
+            <AppointmentForm services={serviceOptions} compact />
           </div>
         </div>
       </section>
       <HomeQuickLinks />
-      <ServicesSection services={services} />
+      <ServicesSection services={featuredServices} featuredOnly={false} />
       <AboutSection
         aboutIntro={settings.aboutIntro}
         mission={settings.mission}
