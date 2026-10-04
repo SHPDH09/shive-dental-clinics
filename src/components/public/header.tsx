@@ -6,7 +6,7 @@ import { Menu, Phone, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ClinicNameAlternate } from "@/components/public/clinic-name-alternate";
-import { CLINIC_LOGO_URL, CLINIC_STOREFRONT_BG } from "@/lib/branding";
+import { CLINIC_LOGO_URL, PUBLIC_HEADER_BG } from "@/lib/branding";
 import Image from "next/image";
 
 const nav = [
@@ -25,8 +25,7 @@ type HeaderProps = {
   backgroundImageUrl?: string | null;
 };
 
-export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }: HeaderProps) {
-  const bgUrl = backgroundImageUrl?.trim() || CLINIC_STOREFRONT_BG;
+export function PublicHeader({ clinicName, phone, logoUrl }: HeaderProps) {
   const logo = logoUrl?.trim() || CLINIC_LOGO_URL;
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -34,38 +33,9 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
 
   return (
     <header
-      className={cn(
-        "relative sticky top-0 z-50 border-b shadow-md",
-        isHome ? "border-[#f4c430]/30" : "border-white/20",
-      )}
+      className="relative sticky top-0 z-50 border-b border-white/10 shadow-md"
+      style={{ backgroundColor: PUBLIC_HEADER_BG }}
     >
-      {isHome ? (
-        <>
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[#0f1d3d]" />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse 95% 140% at 0% 100%, rgba(244, 196, 48, 0.72) 0%, rgba(244, 196, 48, 0.28) 34%, transparent 64%)",
-            }}
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-20 -left-12 h-44 w-72 rounded-full bg-[#f4c430]/45 blur-3xl"
-          />
-        </>
-      ) : (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("${bgUrl.replace(/"/g, "%22")}")` }}
-          />
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[var(--primary)]/82" />
-        </>
-      )}
-
       <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="flex min-w-0 items-center gap-3 font-bold text-white">
           <Image
@@ -101,12 +71,7 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
           </a>
           <Link
             href="/appointment"
-            className={cn(
-              "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition",
-              isHome
-                ? "bg-[#f4c430] text-[#0f1d3d] hover:bg-[#ffd54f]"
-                : "bg-white text-[var(--primary)] hover:bg-sky-50",
-            )}
+            className="inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#0a192f] transition hover:bg-sky-50"
           >
             Book Appointment
           </Link>
@@ -124,7 +89,7 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
 
       <div
         className={cn(
-          "relative z-10 border-t border-white/20 px-4 py-4 lg:hidden",
+          "relative z-10 border-t border-white/10 px-4 py-4 lg:hidden",
           open ? "block" : "hidden",
         )}
       >
@@ -141,12 +106,7 @@ export function PublicHeader({ clinicName, phone, logoUrl, backgroundImageUrl }:
           ))}
           <Link
             href="/appointment"
-            className={cn(
-              "mt-2 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-center text-sm font-semibold",
-              isHome
-                ? "bg-[#f4c430] text-[#0f1d3d] hover:bg-[#ffd54f]"
-                : "bg-white text-[var(--primary)]",
-            )}
+            className="mt-2 inline-flex items-center justify-center rounded-full bg-white px-5 py-2.5 text-center text-sm font-semibold text-[#0a192f]"
             onClick={() => setOpen(false)}
           >
             Book Appointment

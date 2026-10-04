@@ -5,6 +5,9 @@ export const CLINIC_STOREFRONT_BG = "/branding/clinic-header-bg.png";
 export const CLINIC_LOGO_URL = "/branding/sdc-logo.png";
 
 /** SDC logo palette — used in admin UI (matches sdc-logo.png). */
+/** Solid public site header (homepage + inner pages). */
+export const PUBLIC_HEADER_BG = "#0a192f";
+
 export const SDC_BRAND = {
   navy: "#0f1d3d",
   navyMid: "#1a3260",
