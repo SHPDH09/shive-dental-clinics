@@ -146,7 +146,7 @@ export function InboxPanel({ onRefresh }: Props) {
                 type="button"
                 onClick={() => void loadDetail(row.id)}
                 className={`w-full rounded-xl px-3 py-3 text-left text-sm transition ${
-                  selectedId === row.id ? "bg-violet-50 ring-1 ring-violet-200" : "hover:bg-slate-50"
+                  selectedId === row.id ? "bg-[#fff8e1] ring-1 ring-[#f4c430]/50" : "hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -155,7 +155,7 @@ export function InboxPanel({ onRefresh }: Props) {
                     {row.contactName}
                   </p>
                   {row.unreadCount > 0 && (
-                    <span className="rounded-full bg-violet-600 px-2 py-0.5 text-xs text-white">{row.unreadCount}</span>
+                    <span className="rounded-full bg-[#d91f26] px-2 py-0.5 text-xs font-semibold text-white">{row.unreadCount}</span>
                   )}
                 </div>
                 <p className="mt-1 truncate text-xs text-slate-500">{row.lastMessage}</p>
@@ -191,12 +191,12 @@ export function InboxPanel({ onRefresh }: Props) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {detail.patientId && (
-                    <Link href={`/admin/patients/${detail.patientId}`} className="text-sm text-violet-700 hover:underline">
+                        <Link href={`/admin/patients/${detail.patientId}`} className="text-sm font-medium text-[#d91f26] hover:underline">
                       Patient profile
                     </Link>
                   )}
                   {detail.leadId && (
-                    <Link href={`/admin/leads/${detail.leadId}`} className="text-sm text-violet-700 hover:underline">
+                        <Link href={`/admin/leads/${detail.leadId}`} className="text-sm font-medium text-[#d91f26] hover:underline">
                       Lead profile
                     </Link>
                   )}
@@ -221,7 +221,7 @@ export function InboxPanel({ onRefresh }: Props) {
                 <div
                   key={m.id}
                   className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
-                    m.direction === "OUTBOUND" ? "ml-auto bg-violet-600 text-white" : "bg-slate-100 text-slate-800"
+                    m.direction === "OUTBOUND" ? "admin-bubble-staff ml-auto" : "admin-bubble-patient"
                   }`}
                 >
                   <p className="text-xs opacity-80">{m.senderLabel ?? (m.direction === "OUTBOUND" ? "Staff" : "Patient")}</p>
@@ -240,7 +240,7 @@ export function InboxPanel({ onRefresh }: Props) {
                     type="button"
                     onClick={() => setReplyChannel(ch)}
                     className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium ${
-                      replyChannel === ch ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-700"
+                      replyChannel === ch ? "bg-[#1a3260] text-white" : "bg-slate-100 text-slate-700"
                     }`}
                   >
                     {ch === "WHATSAPP" && <MessageCircle className="h-3 w-3" />}

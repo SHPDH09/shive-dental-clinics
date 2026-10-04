@@ -70,7 +70,7 @@ type DashboardData = {
   };
 };
 
-const PIE_COLORS = ["#0ea5e9", "#14b8a6", "#eab308", "#f43f5e", "#8b5cf6", "#64748b"];
+const PIE_COLORS = ["#1a3260", "#d91f26", "#f4c430", "#14b8a6", "#64748b", "#0ea5e9"];
 
 const quickActions = [
   { href: "/admin/appointments", label: "Appointments", icon: Calendar },
@@ -181,12 +181,15 @@ export function DashboardView() {
       className="mx-auto w-full max-w-[1600px] space-y-8 pb-8 animate-fade-up"
       style={{ zoom: zoom / 100 }}
     >
-      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm md:px-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-600">Overview of clinic activity · {rangeLabel}</p>
+      <div className="admin-page-card space-y-4 px-4 py-5 md:px-6">
+        <div className="text-center md:text-left">
+          <h1 className="admin-page-title text-2xl font-bold md:text-3xl">Dashboard</h1>
+          <p className="admin-help-text mt-2">
+            A simple overview of your clinic. Pick dates and branch below, then tap <strong>Refresh</strong>.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Showing: {rangeLabel}</p>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start md:gap-3">
           <label className="sr-only" htmlFor="dash-from">
             From date
           </label>
@@ -282,7 +285,7 @@ export function DashboardView() {
           {updatedAt && <span className="text-xs text-slate-500">Updated {format(updatedAt, "h:mm a")}</span>}
         </div>
         {data.branchName && (
-          <p className="text-center text-xs font-medium text-sky-700">Branch: {data.branchName}</p>
+          <p className="text-center text-xs font-medium text-[#1a3260] md:text-left">Branch: {data.branchName}</p>
         )}
       </div>
 
@@ -294,12 +297,12 @@ export function DashboardView() {
       )}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#0b1f3a] via-[#0c4a6e] to-[#0369a1] p-5 text-white shadow-lg md:p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-amber-300/90">Clinic pulse</p>
+        <div className="rounded-2xl border border-[#f4c430]/25 bg-gradient-to-br from-[#0f1d3d] via-[#1a3260] to-[#152848] p-5 text-white shadow-lg md:p-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#f4c430]">Today at a glance</p>
           <h2 className="mt-1 text-xl font-bold md:text-2xl">
             {format(new Date(), "EEEE, d MMMM")}
           </h2>
-          <p className="mt-2 max-w-md text-sm text-sky-100/90">
+          <p className="mt-2 max-w-md text-sm text-slate-200">
             {data.cards.todayAppointments > 0
               ? `${data.cards.todayAppointments} appointment(s) scheduled today · ${data.cards.pendingAppointments} pending confirmation`
               : "No appointments on the calendar for today yet."}
@@ -312,15 +315,15 @@ export function DashboardView() {
           <Link
             key={href}
             href={href}
-            className="group flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm transition hover:border-sky-200 hover:shadow-md"
+            className="group flex items-center justify-between rounded-2xl border border-[#e8e4df] bg-white px-4 py-3.5 shadow-sm transition hover:border-[#f4c430]/50 hover:shadow-md"
           >
             <span className="flex items-center gap-3 text-sm font-semibold text-slate-800">
-              <span className="rounded-xl bg-sky-50 p-2 text-[var(--primary)]">
+              <span className="rounded-xl bg-[#fff8e1] p-2.5 text-[#0f1d3d]">
                 <Icon className="h-4 w-4" />
               </span>
               {label}
             </span>
-            <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600" />
+            <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-[#d91f26]" />
           </Link>
         ))}
       </div>
@@ -334,7 +337,7 @@ export function DashboardView() {
           icon={CheckCircle2}
           accent="emerald"
         />
-        <StatCard label="Patients" value={data.cards.totalPatients} icon={Users} accent="violet" />
+        <StatCard label="Patients" value={data.cards.totalPatients} icon={Users} accent="brand" />
         <StatCard label="New leads" value={data.cards.newLeads} icon={ClipboardList} accent="rose" />
         <StatCard
           label="Conversion"

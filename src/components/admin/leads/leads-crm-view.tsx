@@ -121,14 +121,14 @@ export function LeadsCrmView() {
         <div className="flex rounded-xl border p-1">
           <button
             type="button"
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "table" ? "bg-violet-600 text-white" : ""}`}
+            className={view === "table" ? "admin-tab admin-tab-active" : "admin-tab"}
             onClick={() => setView("table")}
           >
             <List className="inline h-4 w-4" /> Table
           </button>
           <button
             type="button"
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "kanban" ? "bg-violet-600 text-white" : ""}`}
+            className={view === "kanban" ? "admin-tab admin-tab-active" : "admin-tab"}
             onClick={() => setView("kanban")}
           >
             <LayoutGrid className="inline h-4 w-4" /> Kanban
@@ -169,7 +169,7 @@ export function LeadsCrmView() {
                     >
                       <div className="flex items-center gap-2">
                         <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT[l.priority] ?? PRIORITY_DOT.MEDIUM}`} />
-                        <Link href={`/admin/leads/${l.id}`} className="font-semibold text-slate-900 hover:text-violet-700">
+                        <Link href={`/admin/leads/${l.id}`} className="font-semibold text-slate-900 hover:text-[#d91f26]">
                           {l.name}
                         </Link>
                       </div>
@@ -209,7 +209,7 @@ export function LeadsCrmView() {
                       <div className="flex items-center gap-2">
                         <span className={`h-2.5 w-2.5 rounded-full ${PRIORITY_DOT[l.priority] ?? ""}`} />
                         <div>
-                          <Link href={`/admin/leads/${l.id}`} className="font-semibold text-violet-700">
+                          <Link href={`/admin/leads/${l.id}`} className="font-semibold text-[#d91f26]">
                             {l.name}
                           </Link>
                           <p className="font-mono text-xs text-slate-500">{l.leadCode}</p>
@@ -233,13 +233,13 @@ export function LeadsCrmView() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-violet-800">
+                      <span className="admin-chip-gold rounded-full px-2 py-1 text-xs font-medium">
                         {LEAD_STATUS_LABEL[l.status] ?? l.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 text-xs">
-                        <Link href={`/admin/leads/${l.id}`} className="text-violet-700 hover:underline">View</Link>
+                        <Link href={`/admin/leads/${l.id}`} className="text-[#d91f26] hover:underline">View</Link>
                         <a href={`tel:${l.phone}`} className="text-sky-700"><Phone className="inline h-3 w-3" /></a>
                         <a href={whatsappLink(l.whatsAppNumber || l.phone, `Hello ${l.name}`)} target="_blank" rel="noreferrer" className="text-emerald-700">WA</a>
                       </div>

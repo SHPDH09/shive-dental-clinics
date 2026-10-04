@@ -82,7 +82,7 @@ const emptyForm: FormState = {
 
 function roleBadge(role: string) {
   const colors: Record<string, string> = {
-    SUPER_ADMIN: "bg-violet-100 text-violet-800",
+    SUPER_ADMIN: "admin-chip-gold",
     MANAGER: "bg-sky-100 text-sky-800",
     RECEPTIONIST: "bg-teal-100 text-teal-800",
     STAFF: "bg-sky-100 text-sky-800",

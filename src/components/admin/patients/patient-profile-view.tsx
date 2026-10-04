@@ -202,7 +202,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.profilePhoto} alt="" className="h-20 w-20 rounded-2xl object-cover" />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-violet-600 text-2xl font-bold text-white">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1a3260] text-2xl font-bold text-white ring-2 ring-[#f4c430]/40">
                 {profile.name.charAt(0)}
               </div>
             )}
@@ -251,7 +251,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
             type="button"
             onClick={() => setTab(t)}
             className={`rounded-full px-4 py-2 text-sm font-medium ${
-              tab === t ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              tab === t ? "admin-tab admin-tab-active" : "admin-tab"
             }`}
           >
             {t}
@@ -439,7 +439,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
                 <span className="text-sm">
                   {d.category}: {d.fileName}
                 </span>
-                <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-violet-700">
+                <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#d91f26]">
                   Download
                 </a>
               </li>
@@ -513,7 +513,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
       )}
 
       {tab === "Timeline" && (
-        <ol className="relative ml-3 border-l border-violet-200 pl-6">
+        <ol className="relative ml-3 border-l border-[#f4c430]/40 pl-6">
           {profile.timeline.length === 0 ? (
             <li className="text-sm text-slate-500 list-none">
               No timeline events yet. Patient registration and appointments appear here once linked.
@@ -521,7 +521,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
           ) : (
             profile.timeline.map((e, i) => (
               <li key={`${e.at}-${i}`} className="mb-4">
-                <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-violet-500" />
+                <span className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-[#d91f26]" />
                 <p className="text-xs text-slate-500">{e.label}</p>
                 <p className="font-medium text-slate-800">{e.title}</p>
               </li>

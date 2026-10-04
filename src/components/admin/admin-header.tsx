@@ -27,7 +27,7 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
   const today = format(new Date(), "EEE, d MMM yyyy");
 
   return (
-    <header className="relative z-30 shrink-0 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
+    <header className="admin-header-bar relative z-30 shrink-0 backdrop-blur-md">
       <div className="flex min-h-[4rem] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
       <div className="flex min-w-0 items-center gap-3">
         {sidebarHidden && onShowSidebar && (
@@ -51,8 +51,8 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
         <div>
           <p className="text-xs font-medium text-slate-500">{today}</p>
           <p className="text-sm text-slate-700">
-            Welcome,{" "}
-            <span className="font-semibold text-slate-900">{session?.user?.name ?? "Admin"}</span>
+            Hello,{" "}
+            <span className="font-semibold text-[var(--admin-navy,#0f1d3d)]">{session?.user?.name ?? "Admin"}</span>
           </p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {isSuper && (
-          <span className="hidden rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 sm:inline">
+          <span className="admin-chip-gold hidden rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline">
             Super admin
           </span>
         )}
@@ -75,7 +75,7 @@ export function AdminHeader({ sidebarHidden, onShowSidebar }: Props) {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-[var(--primary)] transition hover:bg-sky-50"
+          className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-[var(--admin-navy,#0f1d3d)] transition hover:bg-[var(--admin-gold-soft,#fff8e1)]"
         >
           View site
           <ExternalLink className="h-3.5 w-3.5" />

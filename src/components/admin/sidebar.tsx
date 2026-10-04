@@ -102,8 +102,8 @@ export function AdminSidebar({ onHide }: Props) {
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-        active ? "admin-nav-active text-white" : "text-slate-300 hover:bg-white/8 hover:text-white",
+        "flex items-center gap-3 rounded-xl px-3 py-3 text-[0.9375rem] font-medium transition-all duration-200",
+        active ? "admin-nav-active text-white" : "text-slate-200 hover:bg-white/10 hover:text-white",
       )}
     >
       {icon}
@@ -124,7 +124,7 @@ export function AdminSidebar({ onHide }: Props) {
           />
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-bold text-white">Shiv Dental</p>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-amber-400/90">Admin</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#f4c430]">Admin Panel</p>
           </div>
         </Link>
         {onHide && (
@@ -146,7 +146,7 @@ export function AdminSidebar({ onHide }: Props) {
           if (groupLinks.length === 0) return null;
           return (
             <div key={group.label} className="mb-2">
-              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <p className="px-3 pb-1.5 pt-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 {group.label}
               </p>
               {groupLinks.map(({ href, label, resource }) => {
