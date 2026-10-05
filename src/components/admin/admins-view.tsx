@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { PermissionMatrixEditor } from "@/components/admin/permission-matrix";
 import { StatCard } from "@/components/admin/stat-card";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
@@ -272,8 +272,9 @@ export function AdminsView() {
     return row.branchName ?? branches.find((b) => b.id === row.branchId)?.name ?? row.branchId;
   };
 
+  if (loading && items.length === 0) return <LoadingState label="Loading admin accounts…" />;
+
   return (
-    <DataLoadingSection loading={loading} label="Loading admin accounts…" minHeight="min-h-[50vh]">
     <div className="space-y-8">
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -523,6 +524,5 @@ export function AdminsView() {
         </div>
       )}
     </div>
-    </DataLoadingSection>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAdminList } from "@/components/admin/use-admin-list";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection, LoadingState } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import {
   type AppointmentDetail,
@@ -101,12 +101,12 @@ export function AppointmentsView() {
     printAppointment(detail);
   };
 
-  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <LoadingState />;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   const items = data?.items ?? [];
 
   return (
-    <DataLoadingSection loading={loading} label="Loading appointments…" minHeight="min-h-[50vh]">
     <>
       {actionMsg && (
         <p className="mb-4 rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900">{actionMsg}</p>
@@ -218,6 +218,5 @@ export function AppointmentsView() {
         </div>
       )}
     </>
-    </DataLoadingSection>
   );
 }

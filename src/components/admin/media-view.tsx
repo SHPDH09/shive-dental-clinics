@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch, type Paginated } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 
 type Media = {
   id: string;
@@ -28,10 +28,11 @@ export function MediaView({ mediaType }: { mediaType: "IMAGE" | "VIDEO" }) {
       .finally(() => setLoading(false));
   }, [mediaType]);
 
+  if (loading) return <LoadingState />;
+
   const items = data?.items ?? [];
 
   return (
-    <DataLoadingSection loading={loading} label="Loading media…" minHeight="min-h-[240px]">
     <DataTable headers={["Title", "URL", "Status", "Public"]} empty={items.length === 0}>
       {items.map((m) => (
         <tr key={m.id}>
@@ -42,6 +43,5 @@ export function MediaView({ mediaType }: { mediaType: "IMAGE" | "VIDEO" }) {
         </tr>
       ))}
     </DataTable>
-    </DataLoadingSection>
   );
 }

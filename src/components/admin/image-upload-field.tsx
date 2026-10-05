@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
-import { ButtonLogoSpinner } from "@/components/branding/button-logo-spinner";
+import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
 import { parseJsonResponse } from "@/lib/parse-json-response";
@@ -58,7 +57,7 @@ export function ImageUploadField({ label = "Photo", folder = "doctors", value, o
         </div>
         <div>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
-            {uploading ? <ButtonLogoSpinner label="Uploading…" /> : <Upload className="h-4 w-4" />}
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Upload image
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
           </label>

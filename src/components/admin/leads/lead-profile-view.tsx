@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { adminFetch } from "@/lib/admin-client";
 import { whatsappLink } from "@/lib/utils";
 import { format } from "date-fns";
@@ -73,13 +73,12 @@ export function LeadProfileView({ leadId }: { leadId: string }) {
     }
   };
 
-  if (!profile && !loading) return <p className="text-sm text-red-600">Lead not found.</p>;
+  if (loading) return <LoadingState />;
+  if (!profile) return <p className="text-sm text-red-600">Lead not found.</p>;
 
-  const wa = profile ? profile.whatsAppNumber || profile.phone : "";
+  const wa = profile.whatsAppNumber || profile.phone;
 
   return (
-    <DataLoadingSection loading={loading} label="Loading lead…" minHeight="min-h-[50vh]">
-    {profile ? (
     <div className="space-y-6">
       <Link href="/admin/leads" className="inline-flex items-center gap-2 text-sm text-slate-600">
         <ArrowLeft className="h-4 w-4" /> Back to leads
@@ -166,7 +165,5 @@ export function LeadProfileView({ leadId }: { leadId: string }) {
         </ol>
       </div>
     </div>
-    ) : null}
-    </DataLoadingSection>
   );
 }

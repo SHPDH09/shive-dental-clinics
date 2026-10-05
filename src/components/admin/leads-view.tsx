@@ -2,7 +2,7 @@
 
 import { useAdminList } from "@/components/admin/use-admin-list";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 
 type Lead = {
   id: string;
@@ -22,12 +22,12 @@ function isAutoVisit(notes: string | null | undefined): boolean {
 export function LeadsView() {
   const { data, loading, error } = useAdminList<Lead>("/api/admin/leads");
 
-  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <LoadingState />;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   const items = data?.items ?? [];
 
   return (
-    <DataLoadingSection loading={loading} label="Loading leads…" minHeight="min-h-[240px]">
     <div className="space-y-4">
       <div className="rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm text-slate-700">
         <strong className="text-slate-900">Auto leads:</strong> Site visits create leads automatically. Email/phone appear when
@@ -57,6 +57,5 @@ export function LeadsView() {
       ))}
     </DataTable>
     </div>
-    </DataLoadingSection>
   );
 }

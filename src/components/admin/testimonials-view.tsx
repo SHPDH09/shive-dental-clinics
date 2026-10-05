@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -144,10 +144,10 @@ export function TestimonialsView() {
     await load();
   };
 
-  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <LoadingState />;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
-    <DataLoadingSection loading={loading} label="Loading testimonials…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500">
@@ -329,6 +329,5 @@ export function TestimonialsView() {
         ))}
       </DataTable>
     </div>
-    </DataLoadingSection>
   );
 }

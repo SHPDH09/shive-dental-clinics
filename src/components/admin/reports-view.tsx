@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { StatCard } from "@/components/admin/stat-card";
 import { Button } from "@/components/ui/button";
 import { DATE_PRESET_LABELS } from "@/lib/reports/date-range";
@@ -306,11 +306,11 @@ export function ReportsView() {
         ))}
       </div>
 
-      {!data && !loading ? (
+      {loading && !data ? (
+        <LoadingState label="Loading analytics…" />
+      ) : !data ? (
         <p className="text-sm text-slate-500">No report data.</p>
       ) : (
-        <DataLoadingSection loading={loading} label="Loading analytics…" minHeight="min-h-[360px]">
-        {data ? (
         <>
           {data.dbUnavailable && (
             <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -339,8 +339,6 @@ export function ReportsView() {
             />
           )}
         </>
-        ) : null}
-        </DataLoadingSection>
       )}
     </div>
   );

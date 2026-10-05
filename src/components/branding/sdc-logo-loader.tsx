@@ -50,6 +50,7 @@ export function SdcLogoLoader({
       <div className="sdc-logo-loader__visual" style={{ width: px, height: px }}>
         <div className="sdc-logo-loader__halo" aria-hidden />
         <div className="sdc-logo-loader__orbit" aria-hidden />
+        <div className="sdc-logo-loader__ring" aria-hidden />
         <div className="sdc-logo-loader__stage">
           <div className="sdc-logo-loader__flip">
             <div className="sdc-logo-loader__face">

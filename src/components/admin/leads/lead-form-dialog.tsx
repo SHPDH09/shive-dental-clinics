@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adminFetch } from "@/lib/admin-client";
 import { LEAD_SOURCE_LABEL } from "@/lib/leads/lead-pipeline";
-import { X } from "lucide-react";
-import { ButtonLogoSpinner } from "@/components/branding/button-logo-spinner";
+import { Loader2, X } from "lucide-react";
 
 type Branch = { id: string; name: string };
 type Doctor = { id: string; name: string };
@@ -151,7 +150,7 @@ export function LeadFormDialog({ open, onClose, onSaved }: Props) {
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="button" disabled={saving} onClick={() => void submit()}>
-            {saving ? <ButtonLogoSpinner className="mr-2" label="Saving…" /> : null}
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save
           </Button>
         </div>
