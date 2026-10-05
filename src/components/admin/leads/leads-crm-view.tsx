@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/admin/stat-card";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { LeadFormDialog } from "@/components/admin/leads/lead-form-dialog";
 import { adminFetch } from "@/lib/admin-client";
 import type { LeadListRow } from "@/lib/leads/build-lead-dashboard";
@@ -79,9 +79,8 @@ export function LeadsCrmView() {
     void load();
   };
 
-  if (loading && !stats) return <LoadingState />;
-
   return (
+    <DataLoadingSection loading={loading} label="Loading leads…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       {stats && stats.overdueFollowUps > 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -254,5 +253,6 @@ export function LeadsCrmView() {
 
       <LeadFormDialog open={showAdd} onClose={() => setShowAdd(false)} onSaved={() => void load()} />
     </div>
+    </DataLoadingSection>
   );
 }

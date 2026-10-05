@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
@@ -311,8 +311,7 @@ export function ServicesView() {
     }
   };
 
-  if (loading && tab === "services" && items.length === 0) return <LoadingState />;
-  if (error && items.length === 0) return <p className="text-sm text-red-600">{error}</p>;
+  if (error && items.length === 0 && !loading) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
     <div className="space-y-6">
@@ -392,7 +391,7 @@ export function ServicesView() {
       )}
 
       {tab === "services" && (
-        <>
+        <DataLoadingSection loading={loading} label="Loading services…" minHeight="min-h-[320px]">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Input
@@ -511,7 +510,7 @@ export function ServicesView() {
               </tr>
             ))}
           </DataTable>
-        </>
+        </DataLoadingSection>
       )}
 
       {formOpen && (

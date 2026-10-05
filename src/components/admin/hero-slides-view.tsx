@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Trash2 } from "lucide-react";
@@ -76,9 +76,8 @@ export function HeroSlidesView() {
     await load();
   };
 
-  if (loading) return <LoadingState label="Loading hero slides…" />;
-
   return (
+    <DataLoadingSection loading={loading} label="Loading hero slides…" minHeight="min-h-[50vh]">
     <div className="space-y-8">
       {message && <p className="text-sm text-teal-700">{message}</p>}
       <div className="card-premium space-y-4 p-6">
@@ -115,5 +114,6 @@ export function HeroSlidesView() {
         ))}
       </ul>
     </div>
+    </DataLoadingSection>
   );
 }

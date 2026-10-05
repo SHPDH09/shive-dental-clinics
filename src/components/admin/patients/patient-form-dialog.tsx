@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adminFetch } from "@/lib/admin-client";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
+import { ButtonLogoSpinner } from "@/components/branding/button-logo-spinner";
 import Link from "next/link";
 
 type Branch = { id: string; name: string };
@@ -286,7 +287,7 @@ export function PatientFormDialog({ open, onClose, onSaved }: Props) {
             Cancel
           </Button>
           <Button type="button" disabled={saving} onClick={() => void submit(false)}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {saving ? <ButtonLogoSpinner className="mr-2" label="Saving…" /> : null}
             Save patient
           </Button>
         </div>

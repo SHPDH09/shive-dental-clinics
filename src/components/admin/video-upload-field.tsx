@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Film, Loader2, Upload } from "lucide-react";
+import { Film, Upload } from "lucide-react";
+import { ButtonLogoSpinner } from "@/components/branding/button-logo-spinner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/input";
 
@@ -102,7 +103,7 @@ export function VideoUploadField({ videoUrl, onVideoUrl, onDuration }: Props) {
         </div>
         <div className="min-w-[200px] flex-1">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {uploading ? <ButtonLogoSpinner label="Uploading…" /> : <Upload className="h-4 w-4" />}
             Choose video
             <input
               type="file"

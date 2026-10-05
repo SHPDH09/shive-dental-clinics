@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Check, Lock } from "lucide-react";
-import { InlineLogoLoader, SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
+import { DataLoadingSection } from "@/components/branding/data-loading-section";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 
 type BranchOption = {
   id: string;
@@ -352,9 +353,8 @@ export function AppointmentBookingWizard({
             We show only days when <strong>{selectedDoctor?.name ?? "the doctor"}</strong> is available at{" "}
             <strong>{selectedBranch?.name}</strong> (branch hours apply).
           </p>
-          {availabilityLoading ? (
-            <InlineLogoLoader label="Checking available days…" />
-          ) : weekdays.length > 0 ? (
+          <DataLoadingSection loading={availabilityLoading} label="Checking available days…" minHeight="min-h-[120px]">
+          {weekdays.length > 0 ? (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Available days</p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -377,6 +377,7 @@ export function AppointmentBookingWizard({
               </div>
             </div>
           ) : null}
+          </DataLoadingSection>
           <div>
             <Label htmlFor="appt-date">Appointment date</Label>
             <Input
@@ -418,9 +419,8 @@ export function AppointmentBookingWizard({
             ) : null}
             . Full slots are locked.
           </p>
-          {slotsLoading ? (
-            <InlineLogoLoader label="Loading time slots…" size="sm" />
-          ) : closedDay ? (
+          <DataLoadingSection loading={slotsLoading} label="Loading time slots…" minHeight="min-h-[160px]">
+          {closedDay ? (
             <p className="text-sm text-slate-600">
               {selectedDayHours?.label
                 ? `${selectedDayHours.label} is closed for this doctor at ${selectedBranch?.name}. Go back and pick an available day (Mon, Tue, …).`
@@ -472,6 +472,7 @@ export function AppointmentBookingWizard({
               </div>
             </>
           )}
+          </DataLoadingSection>
         </div>
       )}
 

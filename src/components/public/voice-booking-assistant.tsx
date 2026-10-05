@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Mic, X } from "lucide-react";
+import { DataLoadingSection } from "@/components/branding/data-loading-section";
 import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistantOrb } from "@/components/public/voice-assistant-orb";
@@ -124,12 +125,16 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
     if (servicesProp?.length) setServices(servicesProp);
   }, [servicesProp]);
 
+  const [servicesLoading, setServicesLoading] = useState(false);
+
   useEffect(() => {
     if (!open || servicesProp?.length) return;
+    setServicesLoading(true);
     fetch("/api/public/services")
       .then((r) => r.json())
       .then((j: { items?: ServiceOption[] }) => setServices(j.items ?? []))
-      .catch(() => setServices([]));
+      .catch(() => setServices([]))
+      .finally(() => setServicesLoading(false));
   }, [open, servicesProp]);
 
   useEffect(() => {
@@ -624,6 +629,13 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-4 pb-6 sm:px-8">
+        <DataLoadingSection
+          loading={servicesLoading}
+          label="Loading services…"
+          minHeight="min-h-[200px]"
+          theme="dark"
+          className="w-full flex-1"
+        >
         {!started ? (
           <div className="flex w-full max-w-lg flex-1 flex-col items-center justify-center text-center">
             <VoiceAssistantOrb active={false} listening={false} className="mb-8" />
@@ -773,6 +785,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             )}
           </>
         )}
+        </DataLoadingSection>
       </div>
 
       <footer className="shrink-0 border-t border-white/10 px-5 py-4 text-center sm:px-8">

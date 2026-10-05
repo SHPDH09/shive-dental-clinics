@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -221,10 +221,10 @@ export function DoctorsView() {
     }));
   };
 
-  if (loading && items.length === 0) return <LoadingState />;
-  if (error && items.length === 0) return <p className="text-sm text-red-600">{error}</p>;
+  if (error && items.length === 0 && !loading) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
+    <DataLoadingSection loading={loading} label="Loading doctors…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="grid gap-2 lg:grid-cols-4">
         <Input placeholder="Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -493,5 +493,6 @@ export function DoctorsView() {
         </div>
       )}
     </div>
+    </DataLoadingSection>
   );
 }

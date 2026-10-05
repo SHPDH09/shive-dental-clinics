@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CLINIC_LOGO_URL } from "@/lib/branding";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/admin/login-form";
 import { Calendar, ExternalLink, ShieldCheck, Users } from "lucide-react";
@@ -81,7 +82,13 @@ export function AdminLoginScene() {
             <p className="mt-1 text-sm text-slate-400">Staff admin portal</p>
           </div>
 
-          <Suspense fallback={<div className="admin-login-form-skeleton h-[360px] w-full rounded-2xl" />}>
+          <Suspense
+            fallback={
+              <div className="admin-login-form-skeleton flex h-[360px] w-full items-center justify-center rounded-2xl">
+                <SdcLogoLoader size="md" label="Loading login…" />
+              </div>
+            }
+          >
             <LoginForm />
           </Suspense>
 

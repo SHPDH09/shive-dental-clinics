@@ -2,7 +2,7 @@
 
 import { useAdminList } from "@/components/admin/use-admin-list";
 import { DataTable } from "@/components/admin/data-table";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { format } from "date-fns";
 
 type Patient = {
@@ -17,12 +17,12 @@ type Patient = {
 export function PatientsView() {
   const { data, loading, error } = useAdminList<Patient>("/api/admin/patients");
 
-  if (loading) return <LoadingState />;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
 
   const items = data?.items ?? [];
 
   return (
+    <DataLoadingSection loading={loading} label="Loading patients…" minHeight="min-h-[240px]">
     <DataTable headers={["Code", "Name", "Contact", "Registered"]} empty={items.length === 0}>
       {items.map((p) => (
         <tr key={p.id}>
@@ -36,5 +36,6 @@ export function PatientsView() {
         </tr>
       ))}
     </DataTable>
+    </DataLoadingSection>
   );
 }

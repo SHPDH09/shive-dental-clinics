@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { adminFetch } from "@/lib/admin-client";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
 import { format } from "date-fns";
@@ -183,12 +183,15 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
     }
   };
 
-  if (loading) return <LoadingState />;
-  if (!profile) return <p className="text-sm text-red-600">Patient not found.</p>;
+  if (!profile && !loading) return <p className="text-sm text-red-600">Patient not found.</p>;
 
-  const addr = [profile.address, profile.city, profile.state, profile.pinCode].filter(Boolean).join(", ");
+  const addr = profile
+    ? [profile.address, profile.city, profile.state, profile.pinCode].filter(Boolean).join(", ")
+    : "";
 
   return (
+    <DataLoadingSection loading={loading} label="Loading patient…" minHeight="min-h-[50vh]">
+    {profile ? (
     <div className="space-y-6">
       <Link href="/admin/patients" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
         <ArrowLeft className="h-4 w-4" />
@@ -530,5 +533,7 @@ export function PatientProfileView({ patientId }: { patientId: string }) {
         </ol>
       )}
     </div>
+    ) : null}
+    </DataLoadingSection>
   );
 }
