@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { Check, Loader2, Lock } from "lucide-react";
+import { Check, Lock } from "lucide-react";
+import { InlineLogoLoader, SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 
 type BranchOption = {
   id: string;
@@ -352,7 +353,7 @@ export function AppointmentBookingWizard({
             <strong>{selectedBranch?.name}</strong> (branch hours apply).
           </p>
           {availabilityLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+            <InlineLogoLoader label="Checking available days…" />
           ) : weekdays.length > 0 ? (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Available days</p>
@@ -418,7 +419,7 @@ export function AppointmentBookingWizard({
             . Full slots are locked.
           </p>
           {slotsLoading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
+            <InlineLogoLoader label="Loading time slots…" size="sm" />
           ) : closedDay ? (
             <p className="text-sm text-slate-600">
               {selectedDayHours?.label
@@ -575,7 +576,9 @@ export function AppointmentBookingWizard({
         )}
         {step === 9 && (
           <Button type="button" disabled={!canNext() || submitting} onClick={() => void submit()}>
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {submitting ? (
+              <SdcLogoLoader size="xs" label="Submitting…" hideLabel inline className="py-0 [&_.sdc-logo-loader__visual]:scale-90" />
+            ) : null}
             Confirm appointment
           </Button>
         )}

@@ -7,7 +7,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 import {
   getOrCreateVisitorId,
   setStoredVisitorContact,
@@ -208,7 +209,9 @@ export function AppointmentForm({
       {error && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        {isSubmitting ? (
+          <SdcLogoLoader size="xs" label="Submitting…" hideLabel inline className="py-0" />
+        ) : null}
         Submit request
       </Button>
     </form>

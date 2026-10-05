@@ -213,7 +213,7 @@ export function CommunicationsView() {
       <div className="grid gap-4 lg:grid-cols-5">
         <div className="card-premium overflow-hidden lg:col-span-2">
           {loading ? (
-            <LoadingState label="Loading mail…" />
+            <LoadingState compact size="md" label="Loading mail…" />
           ) : items.length === 0 ? (
             <p className="p-6 text-sm text-slate-500">No messages in {folder}.</p>
           ) : (
