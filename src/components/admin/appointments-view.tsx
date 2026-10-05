@@ -175,7 +175,11 @@ export function AppointmentsView() {
               </button>
             </div>
 
-            {detailLoading && <p className="mt-6 text-sm text-slate-500">Loading…</p>}
+            {detailLoading && (
+              <div className="mt-6">
+                <LoadingState compact size="md" label="Loading appointment…" />
+              </div>
+            )}
             {detailError && <p className="mt-6 text-sm text-red-600">{detailError}</p>}
 
             {detail && !detailLoading && (

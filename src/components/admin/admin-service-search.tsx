@@ -13,6 +13,7 @@ import {
   Stethoscope,
   ChevronRight,
 } from "lucide-react";
+import { InlineLogoLoader } from "@/components/branding/sdc-logo-loader";
 import { cn } from "@/lib/utils";
 
 type ServiceHit = { id: string; name: string; slug: string; enabled?: boolean };
@@ -152,7 +153,9 @@ export function AdminServiceSearch({ className }: { className?: string }) {
           className="absolute left-0 right-0 z-[100] mt-2 max-h-[min(24rem,70vh)] overflow-y-auto rounded-2xl border border-slate-200 bg-white py-2 shadow-xl"
         >
           {loadingServices && totalCount === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">Searching…</p>
+            <div className="px-4 py-3">
+              <InlineLogoLoader label="Searching…" size="sm" />
+            </div>
           ) : totalCount === 0 ? (
             <p className="px-4 py-3 text-sm text-slate-500">No matches. Try “profile”, “slides”, or a service name.</p>
           ) : (

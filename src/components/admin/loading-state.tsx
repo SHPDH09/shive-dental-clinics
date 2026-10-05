@@ -1,10 +1,29 @@
-import { Loader2 } from "lucide-react";
+import { SdcLogoLoader, type SdcLogoLoaderSize } from "@/components/branding/sdc-logo-loader";
+import { cn } from "@/lib/utils";
 
-export function LoadingState({ label = "Loading…" }: { label?: string }) {
+type Props = {
+  label?: string;
+  size?: SdcLogoLoaderSize;
+  /** Shorter block for nested panels (mail thread, modals). */
+  compact?: boolean;
+  className?: string;
+};
+
+export function LoadingState({
+  label = "Loading…",
+  size = "lg",
+  compact = false,
+  className,
+}: Props) {
   return (
-    <div className="flex items-center justify-center gap-2 py-20 text-sm text-slate-500">
-      <Loader2 className="h-5 w-5 animate-spin text-[var(--primary)]" />
-      {label}
+    <div
+      className={cn(
+        "flex w-full items-center justify-center",
+        compact ? "py-10" : "min-h-[min(42vh,420px)] py-16",
+        className,
+      )}
+    >
+      <SdcLogoLoader size={size} label={label} />
     </div>
   );
 }

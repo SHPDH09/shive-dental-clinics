@@ -9,7 +9,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2, UserRound } from "lucide-react";
+import { KeyRound, UserRound } from "lucide-react";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 
 type FormValues = z.infer<typeof loginSchema>;
 
@@ -121,7 +122,7 @@ export function LoginForm() {
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <SdcLogoLoader size="xs" label="Signing in…" hideLabel inline className="mr-2 py-0" />
                 Signing in…
               </>
             ) : (

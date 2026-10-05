@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Loader2, Mic, X } from "lucide-react";
+import { CheckCircle2, Mic, X } from "lucide-react";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistantOrb } from "@/components/public/voice-assistant-orb";
 import { isSpeechRecognitionSupported, useSpeechRecognition } from "@/hooks/use-speech-recognition";
@@ -640,7 +641,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
               onClick={handleAllowMicAndStart}
             >
               {requestingMic ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <SdcLogoLoader size="xs" label="Starting…" hideLabel inline className="mr-2 py-0" />
               ) : (
                 <Mic className="mr-2 h-4 w-4" />
               )}
@@ -654,7 +655,7 @@ export function VoiceBookingAssistant({ open, onClose, services: servicesProp }:
             </p>
             {step === "submitting" ? (
               <div className="flex flex-1 flex-col items-center justify-center">
-                <Loader2 className="h-14 w-14 animate-spin text-violet-300" />
+                <SdcLogoLoader size="lg" theme="dark" label="Appointment confirm ho rahi hai…" />
               </div>
             ) : (
               <VoiceAssistantOrb active={started} listening={listening} className="my-2 shrink-0" />
