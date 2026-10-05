@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { BeforeAfterSlider } from "@/components/public/before-after-slider";
 import { TRANSFORMATION_CATEGORIES, transformationCategoryLabel } from "@/lib/transformation-categories";
@@ -174,10 +174,10 @@ export function BeforeAfterView() {
     await load();
   };
 
-  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading) return <LoadingState />;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
-    <DataLoadingSection loading={loading} label="Loading transformations…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-sm text-slate-500">
@@ -386,6 +386,5 @@ export function BeforeAfterView() {
         ))}
       </DataTable>
     </div>
-    </DataLoadingSection>
   );
 }

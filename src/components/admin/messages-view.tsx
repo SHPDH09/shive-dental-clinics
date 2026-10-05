@@ -12,7 +12,7 @@ import {
   type ConversationEntry,
 } from "@/lib/enquiry-sources";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { whatsappLink } from "@/lib/utils";
@@ -190,10 +190,10 @@ export function MessagesView() {
 
   const newCount = useMemo(() => (counts.NEW ?? 0) + (counts.UNREAD ?? 0), [counts]);
 
-  if (error && items.length === 0 && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading && items.length === 0) return <LoadingState />;
+  if (error && items.length === 0) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
-    <DataLoadingSection loading={loading} label="Loading messages…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant={tab === "inbox" ? "primary" : "secondary"} onClick={() => setTab("inbox")}>
@@ -458,7 +458,6 @@ export function MessagesView() {
         </div>
       )}
     </div>
-    </DataLoadingSection>
   );
 }
 

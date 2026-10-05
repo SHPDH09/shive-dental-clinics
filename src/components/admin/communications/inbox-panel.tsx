@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Archive, Mail, MessageCircle, Search, Send, Smartphone, Star } from "lucide-react";
 import { DataLoadingSection } from "@/components/branding/data-loading-section";
-import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 
 export type ThreadRow = {
   id: string;
@@ -153,7 +152,7 @@ export function InboxPanel({ onRefresh }: Props) {
             Unread only
           </label>
         </div>
-        <DataLoadingSection loading={listLoading} label="Loading conversations…" minHeight="min-h-[280px]">
+        <DataLoadingSection loading={listLoading} label="Loading conversations…" minHeight="min-h-[240px]">
         <ul className="max-h-[520px] space-y-1 overflow-y-auto">
           {rows.map((row) => (
             <li key={row.id}>
@@ -187,8 +186,12 @@ export function InboxPanel({ onRefresh }: Props) {
         </DataLoadingSection>
       </div>
 
-      <DataLoadingSection loading={detailLoading} label="Loading conversation…" minHeight="min-h-[520px]" className="flex min-h-[520px] flex-col rounded-2xl border border-slate-200 bg-white">
-        {!detail ? (
+      <div className="flex min-h-[520px] flex-col rounded-2xl border border-slate-200 bg-white">
+        {detailLoading ? (
+          <DataLoadingSection loading label="Loading conversation…" minHeight="min-h-[520px]">
+            {null}
+          </DataLoadingSection>
+        ) : !detail ? (
           <p className="flex flex-1 items-center justify-center text-sm text-slate-500">Select a conversation</p>
         ) : (
           <>
@@ -272,7 +275,7 @@ export function InboxPanel({ onRefresh }: Props) {
             </div>
           </>
         )}
-      </DataLoadingSection>
+      </div>
     </div>
   );
 }

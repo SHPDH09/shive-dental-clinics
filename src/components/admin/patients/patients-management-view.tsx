@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/admin/stat-card";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { PatientFormDialog } from "@/components/admin/patients/patient-form-dialog";
 import { adminFetch } from "@/lib/admin-client";
 import { whatsappLink } from "@/lib/utils";
@@ -81,8 +81,9 @@ export function PatientsManagementView() {
     void load();
   }, [load]);
 
+  if (loading && !stats) return <LoadingState />;
+
   return (
-    <DataLoadingSection loading={loading} label="Loading patients…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Total patients" value={stats?.totalPatients ?? 0} icon={Users} />
@@ -236,6 +237,5 @@ export function PatientsManagementView() {
 
       <PatientFormDialog open={showAdd} onClose={() => setShowAdd(false)} onSaved={() => void load()} />
     </div>
-    </DataLoadingSection>
   );
 }

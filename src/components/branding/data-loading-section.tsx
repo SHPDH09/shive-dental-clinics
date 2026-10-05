@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 type Props = {
   loading: boolean;
   label?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode | null;
   className?: string;
   minHeight?: string;
   size?: SdcLogoLoaderSize;
-  /** Dim content under the loader (default true). */
+  /** Dim content under the loader (default false — loader only in the loading zone). */
   dimContent?: boolean;
   theme?: "light" | "dark";
 };
@@ -17,11 +17,11 @@ type Props = {
 export function DataLoadingSection({
   loading,
   label = "Loading…",
-  children,
+  children = null,
   className,
   minHeight = "min-h-[200px]",
   size = "md",
-  dimContent = true,
+  dimContent = false,
   theme = "light",
 }: Props) {
   return (

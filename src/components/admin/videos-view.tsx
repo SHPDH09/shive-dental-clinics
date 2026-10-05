@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { VideoUploadField } from "@/components/admin/video-upload-field";
 import { StatCard } from "@/components/admin/stat-card";
@@ -193,10 +193,10 @@ export function VideosView() {
     await load();
   };
 
-  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (loading && !stats) return <LoadingState />;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
-    <DataLoadingSection loading={loading} label="Loading videos…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -435,6 +435,5 @@ export function VideosView() {
         ))}
       </DataTable>
     </div>
-    </DataLoadingSection>
   );
 }

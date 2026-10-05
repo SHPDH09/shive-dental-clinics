@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AdminApiError, adminFetch } from "@/lib/admin-client";
-import { DataLoadingSection } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
@@ -48,8 +48,9 @@ export function AdminProfileView() {
     void load();
   }, [load]);
 
+  if (loading || !me) return <LoadingState label="Loading profile…" />;
+
   const saveProfile = async () => {
-    if (!me) return;
     setMessage(null);
     try {
       const updated = await adminFetch<{
@@ -102,8 +103,6 @@ export function AdminProfileView() {
   };
 
   return (
-    <DataLoadingSection loading={loading || !me} label="Loading profile…" minHeight="min-h-[40vh]">
-    {me ? (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="card-premium flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:text-left">
         {photo ? (
@@ -185,7 +184,5 @@ export function AdminProfileView() {
         </Button>
       </div>
     </div>
-    ) : null}
-    </DataLoadingSection>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
 import { adminFetch } from "@/lib/admin-client";
-import { DataLoadingSection, LoadingState } from "@/components/admin/loading-state";
+import { LoadingState } from "@/components/admin/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { CommunicationsView } from "@/components/admin/communications-view";
@@ -398,7 +398,7 @@ export function CommunicationsHub() {
     void loadTabData();
   };
 
-  if (loading && !stats) return <LoadingState label="Loading communications…" />;
+  if (loading && !stats) return <LoadingState />;
 
   return (
     <div className="space-y-8">
@@ -462,7 +462,6 @@ export function CommunicationsHub() {
         ))}
       </div>
 
-      <DataLoadingSection loading={loading} label={`Loading ${tab}…`} minHeight="min-h-[320px]">
       {tab === "Inbox" && <InboxPanel onRefresh={() => void loadOverview()} />}
 
       {tab === "Send Message" && (
@@ -959,7 +958,6 @@ export function CommunicationsHub() {
           </div>
         </div>
       )}
-      </DataLoadingSection>
     </div>
   );
 }
