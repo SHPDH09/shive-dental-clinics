@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
 import { DataTable } from "@/components/admin/data-table";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { MediaUploadField } from "@/components/admin/media-upload-field";
 import {
   GALLERY_CATEGORIES,
@@ -181,10 +181,10 @@ export function GalleryView({ defaultMediaType = "ALL" }: Props) {
     await load();
   };
 
-  if (loading) return <LoadingState />;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
 
   return (
+    <DataLoadingSection loading={loading} label="Loading gallery…" minHeight="min-h-[50vh]">
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-sm text-slate-500">
@@ -392,5 +392,6 @@ export function GalleryView({ defaultMediaType = "ALL" }: Props) {
         ))}
       </DataTable>
     </div>
+    </DataLoadingSection>
   );
 }

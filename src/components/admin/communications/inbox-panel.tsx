@@ -7,6 +7,8 @@ import { adminFetch } from "@/lib/admin-client";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Archive, Mail, MessageCircle, Search, Send, Smartphone, Star } from "lucide-react";
+import { DataLoadingSection } from "@/components/branding/data-loading-section";
+import { SdcLogoLoader } from "@/components/branding/sdc-logo-loader";
 
 export type ThreadRow = {
   id: string;
@@ -52,29 +54,41 @@ export function InboxPanel({ onRefresh }: Props) {
   const [replyChannel, setReplyChannel] = useState<"WHATSAPP" | "SMS" | "EMAIL">("WHATSAPP");
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const loadList = useCallback(async () => {
+    setListLoading(true);
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (channel) params.set("channel", channel);
     if (status) params.set("status", status);
     if (unreadOnly) params.set("unread", "1");
-    const res = await adminFetch<{ items: ThreadRow[] }>(`/api/admin/communications/threads?${params}`);
-    setRows(res.items);
+    try {
+      const res = await adminFetch<{ items: ThreadRow[] }>(`/api/admin/communications/threads?${params}`);
+      setRows(res.items);
+    } finally {
+      setListLoading(false);
+    }
   }, [q, channel, status, unreadOnly]);
 
   const loadDetail = useCallback(async (id: string) => {
-    const d = await adminFetch<ThreadDetail>(`/api/admin/communications/threads/${id}`);
-    setDetail(d);
-    setSelectedId(id);
-    if (d.channel === "EMAIL") setReplyChannel("EMAIL");
-    else if (d.channel === "SMS") setReplyChannel("SMS");
-    else setReplyChannel("WHATSAPP");
-    await adminFetch(`/api/admin/communications/threads/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ markRead: true }),
-    });
-    void loadList();
+    setDetailLoading(true);
+    try {
+      const d = await adminFetch<ThreadDetail>(`/api/admin/communications/threads/${id}`);
+      setDetail(d);
+      setSelectedId(id);
+      if (d.channel === "EMAIL") setReplyChannel("EMAIL");
+      else if (d.channel === "SMS") setReplyChannel("SMS");
+      else setReplyChannel("WHATSAPP");
+      await adminFetch(`/api/admin/communications/threads/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ markRead: true }),
+      });
+      void loadList();
+    } finally {
+      setDetailLoading(false);
+    }
   }, [loadList]);
 
   useEffect(() => {
@@ -139,6 +153,7 @@ export function InboxPanel({ onRefresh }: Props) {
             Unread only
           </label>
         </div>
+        <DataLoadingSection loading={listLoading} label="Loading conversations…" minHeight="min-h-[280px]">
         <ul className="max-h-[520px] space-y-1 overflow-y-auto">
           {rows.map((row) => (
             <li key={row.id}>
@@ -166,12 +181,13 @@ export function InboxPanel({ onRefresh }: Props) {
             </li>
           ))}
         </ul>
-        {rows.length === 0 && (
+        {rows.length === 0 && !listLoading && (
           <p className="py-8 text-center text-sm text-slate-500">No conversations match your filters.</p>
         )}
+        </DataLoadingSection>
       </div>
 
-      <div className="flex min-h-[520px] flex-col rounded-2xl border border-slate-200 bg-white">
+      <DataLoadingSection loading={detailLoading} label="Loading conversation…" minHeight="min-h-[520px]" className="flex min-h-[520px] flex-col rounded-2xl border border-slate-200 bg-white">
         {!detail ? (
           <p className="flex flex-1 items-center justify-center text-sm text-slate-500">Select a conversation</p>
         ) : (
@@ -256,7 +272,7 @@ export function InboxPanel({ onRefresh }: Props) {
             </div>
           </>
         )}
-      </div>
+      </DataLoadingSection>
     </div>
   );
 }

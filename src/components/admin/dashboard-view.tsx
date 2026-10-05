@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { format, subDays } from "date-fns";
 import { adminFetch } from "@/lib/admin-client";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection, LoadingState } from "@/components/admin/loading-state";
 import { StatCard } from "@/components/admin/stat-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -177,6 +177,7 @@ export function DashboardView() {
   };
 
   return (
+    <DataLoadingSection loading={refreshing} label="Refreshing dashboard…" minHeight="min-h-[50vh]">
     <div
       className="mx-auto w-full max-w-[1600px] space-y-8 pb-8 animate-fade-up"
       style={{ zoom: zoom / 100 }}
@@ -507,5 +508,6 @@ export function DashboardView() {
         </div>
       </div>
     </div>
+    </DataLoadingSection>
   );
 }

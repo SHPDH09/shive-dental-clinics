@@ -11,7 +11,7 @@ import {
   searchSettingsSections,
   type SettingsSectionId,
 } from "@/lib/clinic-settings/search-index";
-import { LoadingState } from "@/components/admin/loading-state";
+import { DataLoadingSection } from "@/components/admin/loading-state";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -166,13 +166,14 @@ export function SettingsView() {
     }
   };
 
-  if (loading) return <LoadingState label="Loading settings…" />;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!data) return null;
+  if (error && !loading) return <p className="text-sm text-red-600">{error}</p>;
+  if (!data && !loading) return null;
 
-  const ext = data.extended;
+  const ext = data?.extended;
 
   return (
+    <DataLoadingSection loading={loading} label="Loading settings…" minHeight="min-h-[50vh]">
+    {data && ext ? (
     <div className="flex flex-col gap-6 lg:flex-row">
       <aside className="w-full shrink-0 lg:w-56">
         <div className="card-premium sticky top-4 space-y-3 p-4">
@@ -766,6 +767,8 @@ export function SettingsView() {
         </div>
       </div>
     </div>
+    ) : null}
+    </DataLoadingSection>
   );
 }
 

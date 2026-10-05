@@ -1,6 +1,8 @@
 import { SdcLogoLoader, type SdcLogoLoaderSize } from "@/components/branding/sdc-logo-loader";
 import { cn } from "@/lib/utils";
 
+export { DataLoadingSection } from "@/components/branding/data-loading-section";
+
 type Props = {
   label?: string;
   size?: SdcLogoLoaderSize;
