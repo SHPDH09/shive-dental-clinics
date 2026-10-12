@@ -38,6 +38,10 @@ yarn-error.log*
 .open-next/
 .wrangler/
 
+# Notes marketplace is a separate repository (see premium-notes-marketplace/REPO_SETUP.md locally)
+/notes-platform/
+/premium-notes-marketplace/
+
 # vercel
 .vercel
 
