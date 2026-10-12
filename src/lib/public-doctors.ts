@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getSupabaseSecretKey } from "@/lib/supabase/env";
@@ -50,7 +51,7 @@ async function fetchDoctorsSupabase(): Promise<PublicDoctor[]> {
   return (data ?? []).map((r) => mapPublicDoctor(r as Record<string, unknown>));
 }
 
-export async function getPublicDoctorsList(): Promise<PublicDoctor[]> {
+export const getPublicDoctorsList = cache(async function getPublicDoctorsList(): Promise<PublicDoctor[]> {
   try {
     const rows = await prisma.doctor.findMany({
       where: { enabled: true },
@@ -65,7 +66,7 @@ export async function getPublicDoctorsList(): Promise<PublicDoctor[]> {
       return [];
     }
   }
-}
+});
 
 export async function getPublicDoctorBySlug(slug: string): Promise<PublicDoctor | null> {
   try {

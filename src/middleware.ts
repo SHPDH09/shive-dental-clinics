@@ -59,12 +59,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/admin",
-    /*
-     * Public HTML only — skip API, static assets, and common files (reduces Worker invocations).
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|robots.txt|sitemap.xml|.*\\..*).*)",
-  ],
+  // Admin auth only. Public routes skip middleware CPU; security headers come from next.config.ts.
+  matcher: ["/admin/:path*", "/admin"],
 };

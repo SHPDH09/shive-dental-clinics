@@ -1,11 +1,11 @@
-import { getPublicSiteStatus } from "@/lib/clinic-settings/service";
+import { getCachedPublicSiteStatus } from "@/lib/cached-public";
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function GET() {
   try {
-    const status = await getPublicSiteStatus();
+    const status = await getCachedPublicSiteStatus();
     return NextResponse.json(status, {
       headers: {
         "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
