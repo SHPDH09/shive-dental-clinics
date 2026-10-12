@@ -20,18 +20,20 @@ import { HomeFaqSection, DEFAULT_HOME_FAQS, faqJsonLd } from "@/components/publi
 import { JsonLdScript } from "@/components/public/json-ld";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
 import { buildHomeMetadata } from "@/lib/seo/home-metadata";
-import { getPublicHeroSlides } from "@/lib/hero-slides";
-import { getCachedClinicSettings, getCachedHeroStats, getCachedPublicBranches } from "@/lib/cached-public";
 import {
-  getPublicBeforeAfter,
-  getFeaturedDoctor,
-  getFeaturedPublicDoctors,
-  getFeaturedPublicServices,
-  getPublicGallery,
-  getPublicServicePickerOptions,
-  getPublicTestimonials,
-  getPublicVideos,
-} from "@/lib/public-data";
+  getCachedClinicSettings,
+  getCachedFeaturedDoctor,
+  getCachedFeaturedPublicDoctors,
+  getCachedFeaturedPublicServices,
+  getCachedHeroStats,
+  getCachedHomeBeforeAfter,
+  getCachedHomeGallery,
+  getCachedHomeTestimonials,
+  getCachedHomeVideos,
+  getCachedPublicBranches,
+  getCachedPublicHeroSlides,
+  getCachedPublicServicePickerOptions,
+} from "@/lib/cached-public";
 
 export const revalidate = 120;
 
@@ -64,16 +66,16 @@ export default async function HomePage() {
   ] = await Promise.all([
     getCachedClinicSettings(),
     getCachedHeroStats(),
-    getPublicHeroSlides(),
-    getFeaturedPublicServices(6),
-    getPublicServicePickerOptions(),
+    getCachedPublicHeroSlides(),
+    getCachedFeaturedPublicServices(),
+    getCachedPublicServicePickerOptions(),
     getCachedPublicBranches(),
-    getFeaturedDoctor(),
-    getFeaturedPublicDoctors(6),
-    getPublicTestimonials(),
-    getPublicGallery(),
-    getPublicVideos(6),
-    getPublicBeforeAfter(8, { featuredOnly: true }),
+    getCachedFeaturedDoctor(),
+    getCachedFeaturedPublicDoctors(),
+    getCachedHomeTestimonials(),
+    getCachedHomeGallery(),
+    getCachedHomeVideos(),
+    getCachedHomeBeforeAfter(),
   ]);
 
   const featuredCases = beforeAfterCases.filter((c) => c.featured);

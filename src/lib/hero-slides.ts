@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { canUseSupabaseDataLayer, getAdminSupabaseClient } from "@/lib/supabase/data-client";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { getSupabaseSecretKey } from "@/lib/supabase/env";
 
 export type PublicHeroSlide = {
   id: string;
@@ -10,8 +11,8 @@ export type PublicHeroSlide = {
 
 export async function getPublicHeroSlides(): Promise<PublicHeroSlide[]> {
   try {
-    if (canUseSupabaseDataLayer()) {
-      const sb = await getAdminSupabaseClient();
+    if (getSupabaseSecretKey()) {
+      const sb = createSupabaseServiceClient();
       const { data, error } = await sb
         .from("HeroSlide")
         .select("id, title, subtitle, imageUrl, sortOrder, enabled")
