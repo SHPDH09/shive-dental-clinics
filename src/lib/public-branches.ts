@@ -7,6 +7,7 @@ import {
   parseWeeklySchedule,
 } from "@/lib/doctor-schedule";
 import type { PublicBranch } from "@/lib/public-branch-types";
+import { normalizeMapEmbedUrl } from "@/lib/public-branch-utils";
 
 function parseIdList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -100,7 +101,7 @@ export async function mapPublicBranch(row: Record<string, unknown>): Promise<Pub
     phone,
     whatsapp,
     mapUrl: (row.mapUrl as string | null) ?? null,
-    mapEmbedUrl: (row.mapEmbedUrl as string | null) ?? null,
+    mapEmbedUrl: normalizeMapEmbedUrl((row.mapEmbedUrl as string | null) ?? null),
     latitude: (row.latitude as string | null) ?? null,
     longitude: (row.longitude as string | null) ?? null,
     openingHoursSummary:

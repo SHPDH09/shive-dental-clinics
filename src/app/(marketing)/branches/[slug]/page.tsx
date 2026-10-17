@@ -6,6 +6,7 @@ import { Check, MapPin, Navigation, Phone } from "lucide-react";
 import { shouldSkipStaticParamsAtBuild } from "@/lib/build-env";
 import {
   branchDirectionsUrl,
+  branchMapIframeSrc,
   branchOpeningLines,
   getPublicBranchBySlug,
   getPublicBranches,
@@ -35,6 +36,7 @@ export default async function BranchDetailPage({ params }: PageProps) {
 
   const settings = await getClinicSettings();
   const directions = branchDirectionsUrl(branch);
+  const mapIframeSrc = branchMapIframeSrc(branch);
   const phoneHref = branch.phone.replace(/\s/g, "");
 
   return (
@@ -124,25 +126,15 @@ export default async function BranchDetailPage({ params }: PageProps) {
           </ul>
         </section>
 
-        {(branch.mapEmbedUrl || branch.latitude) && (
+        {mapIframeSrc && (
           <section className="mt-10 overflow-hidden rounded-2xl border border-slate-200">
-            {branch.mapEmbedUrl ? (
-              <iframe
-                title="Clinic location map"
-                src={branch.mapEmbedUrl}
-                className="h-80 w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            ) : (
-              <iframe
-                title="Clinic location map"
-                className="h-80 w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(branch.fullAddress)}&output=embed`}
-              />
-            )}
+            <iframe
+              title="Clinic location map"
+              src={mapIframeSrc}
+              className="h-80 w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </section>
         )}
 

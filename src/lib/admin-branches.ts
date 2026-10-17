@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeMapEmbedUrl } from "@/lib/public-branch-utils";
 import { getAdminSupabaseClient } from "@/lib/supabase/data-client";
 import { useSupabaseCrud } from "@/lib/supabase/crud";
 
@@ -90,7 +91,7 @@ export function branchPayloadFromInput(data: {
     phone: data.phone,
     whatsapp: data.whatsapp?.trim() || data.phone,
     mapUrl: data.mapUrl?.trim() || null,
-    mapEmbedUrl: data.mapEmbedUrl?.trim() || null,
+    mapEmbedUrl: normalizeMapEmbedUrl(data.mapEmbedUrl?.trim()) ?? null,
     latitude: data.latitude?.trim() || null,
     longitude: data.longitude?.trim() || null,
     weeklySchedule: data.weeklySchedule ?? null,
