@@ -28,7 +28,9 @@ export {
 export {
   searchPublicBranches,
   branchDirectionsUrl,
+  branchMapIframeSrc,
   branchOpeningLines,
+  normalizeMapEmbedUrl,
 } from "@/lib/public-branch-utils";
 export type { PublicBranch } from "@/lib/public-branch-types";
 

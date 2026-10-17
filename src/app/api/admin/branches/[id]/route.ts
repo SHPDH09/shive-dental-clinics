@@ -3,6 +3,7 @@ import { requireAdminSession } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { supabaseUpdate, useSupabaseCrud } from "@/lib/supabase/crud";
 import { formatConsultationSummary } from "@/lib/doctor-schedule";
+import { normalizeMapEmbedUrl } from "@/lib/public-branch-utils";
 import { branchSchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
 
@@ -41,7 +42,9 @@ export async function PATCH(req: Request, context: RouteContext) {
   if (data.phone !== undefined) updateData.phone = data.phone;
   if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp?.trim() || null;
   if (data.mapUrl !== undefined) updateData.mapUrl = data.mapUrl?.trim() || null;
-  if (data.mapEmbedUrl !== undefined) updateData.mapEmbedUrl = data.mapEmbedUrl?.trim() || null;
+  if (data.mapEmbedUrl !== undefined) {
+    updateData.mapEmbedUrl = normalizeMapEmbedUrl(data.mapEmbedUrl?.trim()) ?? null;
+  }
   if (data.latitude !== undefined) updateData.latitude = data.latitude?.trim() || null;
   if (data.longitude !== undefined) updateData.longitude = data.longitude?.trim() || null;
   if (data.weeklySchedule !== undefined) {

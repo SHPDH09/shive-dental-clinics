@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactSection } from "@/components/public/contact-section";
+import { normalizeMapEmbedUrl } from "@/lib/public-branch-utils";
 import { getClinicSettings } from "@/lib/settings";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function ContactPage() {
         phone={settings.phone}
         email={settings.email}
         address={settings.address}
-        mapEmbedUrl={settings.mapEmbedUrl}
+        mapEmbedUrl={normalizeMapEmbedUrl(settings.mapEmbedUrl)}
         openingHours={openingHours}
       />
     </div>

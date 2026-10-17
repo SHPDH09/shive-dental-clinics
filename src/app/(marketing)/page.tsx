@@ -19,6 +19,7 @@ import { HomeCtaBand } from "@/components/public/home-cta-band";
 import { HomeFaqSection, DEFAULT_HOME_FAQS, faqJsonLd } from "@/components/public/home-faq-section";
 import { JsonLdScript } from "@/components/public/json-ld";
 import { CLINIC_STOREFRONT_BG } from "@/lib/branding";
+import { normalizeMapEmbedUrl } from "@/lib/public-branch-utils";
 import { buildHomeMetadata } from "@/lib/seo/home-metadata";
 import {
   getCachedClinicSettings,
@@ -133,7 +134,7 @@ export default async function HomePage() {
         phone={settings.phone}
         email={settings.email}
         address={settings.address}
-        mapEmbedUrl={settings.mapEmbedUrl}
+        mapEmbedUrl={normalizeMapEmbedUrl(settings.mapEmbedUrl)}
         openingHours={openingHours}
       />
     </>
